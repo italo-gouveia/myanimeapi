@@ -1,33 +1,22 @@
-# Stage 1: Build the Go binary
+# Stage 1: Build
 FROM golang:1.22 AS build
 
 WORKDIR /app
-
-# Copy go mod and sum files
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
-
-# Copy the source code
 COPY . .
-
-# Build the Go binary
 RUN go build -o main ./cmd/main.go
 
-# Stage 2: Create a smaller image
+# Stage 2: Run
 FROM alpine:latest
 
 WORKDIR /root/
+RUN apk --no-cache add ca-certificates postgresql-client
 
-# Install certificates
-RUN apk --no-cache add ca-certificates
-
-# Copy the binary from the build stage
 COPY --from=build /app/main .
 
-# Expose the port
-EXPOSE 8080
+# Ensure main is executable
+RUN chmod +x /root/main
 
-# Command to run the binary
+EXPOSE 8080
 CMD ["./main"]

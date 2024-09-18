@@ -36,20 +36,18 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	cfg := &Config{
-		Database: DatabaseConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnvAsInt("DB_PORT", 5432),
-			User:     getEnv("DB_USER", "user"),
-			Password: getEnv("DB_PASSWORD", "password"),
-			Name:     getEnv("DB_NAME", "dbname"),
-		},
-	}
+	var cfg Config
 
-	return cfg
+	cfg.Database.User = getEnv("DB_USER", "defaultuser")
+	cfg.Database.Password = getEnv("DB_PASSWORD", "defaultpassword")
+	cfg.Database.Name = getEnv("DB_NAME", "defaultdb")
+	cfg.Database.Host = getEnv("DB_HOST", "localhost")
+	cfg.Database.Port = getEnvAsInt("DB_PORT", 5432)
+
+	return &cfg
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key string, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
