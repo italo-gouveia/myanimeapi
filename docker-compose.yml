@@ -1,21 +1,20 @@
-version: '3.8'
-
+version: '3'
 services:
-  db:
-    image: postgres:14
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydatabase
-
   api:
-    build: .
-    environment:
-      DB_USER: myuser
-      DB_PASSWORD: mypassword
-      DB_NAME: mydatabase
-      DB_HOST: db
-      DB_PORT: 5432
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     depends_on:
       - db
-
+    environment:
+      DATABASE_URL: postgres://postgres:your_password@db:5432/your_database_name
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: your_database_name
+    ports:
+      - "5432:5432"
