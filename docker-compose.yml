@@ -1,20 +1,24 @@
 version: '3'
 services:
+  db:
+    image: postgres:14
+    container_name: myanimeapi-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: myanimeapi
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   api:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: myanimeapi-api
     ports:
       - "8080:8080"
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgres://postgres:your_password@db:5432/your_database_name
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_password
-      POSTGRES_DB: your_database_name
-    ports:
-      - "5432:5432"
+volumes:
+  db_data:

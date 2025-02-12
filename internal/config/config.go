@@ -38,10 +38,10 @@ type Config struct {
 func LoadConfig() *Config {
 	var cfg Config
 
-	cfg.Database.User = getEnv("DB_USER", "defaultuser")
-	cfg.Database.Password = getEnv("DB_PASSWORD", "defaultpassword")
-	cfg.Database.Name = getEnv("DB_NAME", "defaultdb")
-	cfg.Database.Host = getEnv("DB_HOST", "localhost")
+	cfg.Database.User = getEnv("DB_USER", "user")
+	cfg.Database.Password = getEnv("DB_PASSWORD", "password")
+	cfg.Database.Name = getEnv("DB_NAME", "myanimeapi")
+	cfg.Database.Host = getEnv("DB_HOST", "db")
 	cfg.Database.Port = getEnvAsInt("DB_PORT", 5432)
 
 	return &cfg

@@ -1,0 +1,148 @@
+{
+    "info": {
+      "_postman_id": "your-postman-id",
+      "name": "MyAnimeAPI",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Login",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"username\": \"your-username\",\n    \"password\": \"your-password\"\n}"
+          },
+          "url": {
+            "raw": "{{base_url}}/auth/login",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["auth", "login"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Register",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"username\": \"new-username\",\n    \"password\": \"new-password\"\n}"
+          },
+          "url": {
+            "raw": "{{base_url}}/auth/register",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["auth", "register"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Animes",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "{{base_url}}/animes",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["animes"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Anime by ID",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "{{base_url}}/animes/:id",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["animes", ":id"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Create Anime",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"title\": \"Anime Title\",\n    \"description\": \"Anime Description\",\n    \"release_date\": \"2024-01-01\"\n}"
+          },
+          "url": {
+            "raw": "{{base_url}}/animes",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["animes"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Anime",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"title\": \"Updated Anime Title\",\n    \"description\": \"Updated Description\"\n}"
+          },
+          "url": {
+            "raw": "{{base_url}}/animes/:id",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["animes", ":id"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Anime",
+        "request": {
+          "method": "DELETE",
+          "header": [],
+          "url": {
+            "raw": "{{base_url}}/animes/:id",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["animes", ":id"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+  

@@ -119,6 +119,8 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 func RegisterAuthRoutes(router *mux.Router) {
 	router.HandleFunc("/authenticate", AuthenticateHandler).Methods("POST")
 	router.HandleFunc("/register", RegisterUserHandler).Methods("POST")
+
+	router.Use(middleware.Authenticate)
 	router.Use(middleware.CheckAdmin)
 	router.HandleFunc("/users", GetAllUsersHandler).Methods("GET")
 }
