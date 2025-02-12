@@ -14,10 +14,10 @@ RUN go mod download
 COPY . .
 
 # Build the Go binary
-RUN go build -o main .
+RUN go build -o main ./cmd
 
 # Stage 2: Run the Go binary
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/
