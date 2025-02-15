@@ -1,14 +1,18 @@
+// pkg/database/database.go
 package database
 
 import (
 	"myanimeapi/pkg/models"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // SetupDatabase initializes the database schema
-func SetupDatabase(db *gorm.DB) {
+func SetupDatabase(db *gorm.DB) error {
 	// AutoMigrate to create/update schema
-	db.AutoMigrate(&models.User{}, &models.Anime{}, &models.Review{})
+	err := db.AutoMigrate(&models.User{}, &models.Anime{}, &models.Review{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

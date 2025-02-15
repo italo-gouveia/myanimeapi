@@ -1,3 +1,4 @@
+// cmd/main.go
 package main
 
 import (
@@ -7,6 +8,7 @@ import (
 
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/routes"
+	"myanimeapi/pkg/database"
 	"myanimeapi/pkg/handlers" // Ensure you import the handlers package
 
 	"github.com/gorilla/mux"
@@ -29,6 +31,12 @@ func main() {
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Error opening database connection: %v", err)
+	}
+
+	// AutoMigrate the database schema
+	err = database.SetupDatabase(db)
+	if err != nil {
+		log.Fatalf("Error migrating database schema: %v", err)
 	}
 
 	// Initialize the global DB variable in handlers
