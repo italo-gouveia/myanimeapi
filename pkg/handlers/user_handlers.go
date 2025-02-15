@@ -77,9 +77,22 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterUserRoutes(router *mux.Router) {
-	router.Use(middleware.Authenticate)
+	// Public routes (no authentication required)
 	router.HandleFunc("/users", CreateUserHandler).Methods("POST")
-	router.HandleFunc("/users/{id:[0-9]+}", GetUserHandler).Methods("GET")
-	router.HandleFunc("/users/{id:[0-9]+}", UpdateUserHandler).Methods("PUT")
-	router.HandleFunc("/users/{id:[0-9]+}", DeleteUserHandler).Methods("DELETE")
+
+	// Create a subrouter for protected routes
+	protectedRouter := router.PathPrefix("/users").Subrouter()
+	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
+
+	// Protected routes (require authentication)
+	protectedRouter.HandleFunc("/{id:[0-9]+}", GetUserHandler).Methods("GET")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", UpdateUserHandler).Methods("PUT")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", DeleteUserHandler).Methods("DELETE")
+
+	// Create a subrouter for admin-only routes
+	adminRouter := protectedRouter.PathPrefix("").Subrouter()
+	adminRouter.Use(middleware.CheckAdmin) // Apply admin check middleware
+
+	// Admin-only routes (require authentication and admin privileges)
+	adminRouter.HandleFunc("", GetAllUsersHandler).Methods("GET")
 }

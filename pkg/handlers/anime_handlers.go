@@ -150,11 +150,17 @@ func DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 
 // RegisterAnimeRoutes registers all anime-related routes
 func RegisterAnimeRoutes(router *mux.Router) {
-	router.Use(middleware.Authenticate)
+	// Public routes (no authentication required)
 	router.HandleFunc("/anime", GetAllAnimesHandler).Methods("GET")
 	router.HandleFunc("/anime/{id:[0-9]+}", GetAnimeHandler).Methods("GET")
-	router.HandleFunc("/anime", CreateAnimeHandler).Methods("POST")
-	router.HandleFunc("/anime/{id:[0-9]+}", UpdateAnimeHandler).Methods("PUT")
-	router.HandleFunc("/anime/{id:[0-9]+}", DeleteAnimeHandler).Methods("DELETE")
 	router.HandleFunc("/anime/{id:[0-9]+}/reviews", GetPaginatedReviewsForAnimeHandler).Methods("GET")
+
+	// Create a subrouter for protected routes
+	protectedRouter := router.PathPrefix("/anime").Subrouter()
+	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
+
+	// Protected routes (require authentication)
+	protectedRouter.HandleFunc("", CreateAnimeHandler).Methods("POST")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", UpdateAnimeHandler).Methods("PUT")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", DeleteAnimeHandler).Methods("DELETE")
 }

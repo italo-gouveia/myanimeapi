@@ -102,9 +102,15 @@ func DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterReviewRoutes(router *mux.Router) {
-	router.Use(middleware.Authenticate)
-	router.HandleFunc("/reviews", CreateReviewHandler).Methods("POST")
+	// Public routes (no authentication required)
 	router.HandleFunc("/reviews/{id:[0-9]+}", GetReviewHandler).Methods("GET")
-	router.HandleFunc("/reviews/{id:[0-9]+}", UpdateReviewHandler).Methods("PUT")
-	router.HandleFunc("/reviews/{id:[0-9]+}", DeleteReviewHandler).Methods("DELETE")
+
+	// Create a subrouter for protected routes
+	protectedRouter := router.PathPrefix("/reviews").Subrouter()
+	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
+
+	// Protected routes (require authentication)
+	protectedRouter.HandleFunc("", CreateReviewHandler).Methods("POST")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", UpdateReviewHandler).Methods("PUT")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", DeleteReviewHandler).Methods("DELETE")
 }

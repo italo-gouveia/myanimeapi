@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"myanimeapi/pkg/auth"
-	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
 
 	"github.com/gorilla/mux"
@@ -117,10 +116,7 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 // RegisterAnimeRoutes registers all anime-related routes
 func RegisterAuthRoutes(router *mux.Router) {
-	router.HandleFunc("/authenticate", AuthenticateHandler).Methods("POST")
-	router.HandleFunc("/register", RegisterUserHandler).Methods("POST")
-
-	router.Use(middleware.Authenticate)
-	router.Use(middleware.CheckAdmin)
-	router.HandleFunc("/users", GetAllUsersHandler).Methods("GET")
+	// Public routes (no authentication required)
+	router.HandleFunc("/auth/authenticate", AuthenticateHandler).Methods("POST")
+	router.HandleFunc("/auth/register", RegisterUserHandler).Methods("POST")
 }
