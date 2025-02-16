@@ -1,3 +1,4 @@
+// pkg/models/models.go
 package models
 
 import (
@@ -20,23 +21,23 @@ type Claims struct {
 
 type User struct {
 	gorm.Model
-	Username string `gorm:"unique"`
-	Email    string `gorm:"unique"`
-	Password string
-	IsAdmin  bool // Add this field to indicate if a user is an admin
+	Username string `gorm:"unique;not null"` // Username is required and unique
+	Email    string `gorm:"unique"`          // Email is unique but nullable
+	Password string `gorm:"not null"`        // Password is required
+	IsAdmin  bool   `gorm:"default:false"`   // Default value for IsAdmin
 }
 
 type Anime struct {
 	gorm.Model
-	Title       string
+	Title       string `gorm:"not null"`
 	Description string
 	Rating      float32
 }
 
 type Review struct {
 	gorm.Model
-	UserID  uint
-	AnimeID uint
-	Content string
-	Rating  int
+	UserID  uint   `gorm:"not null"`
+	AnimeID uint   `gorm:"not null"`
+	Content string `gorm:"not null"`
+	Rating  int    `gorm:"not null"`
 }

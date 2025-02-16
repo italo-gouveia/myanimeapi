@@ -15,7 +15,14 @@ import (
 // GetAnimeHandler retrieves an anime by ID
 func GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
 
 	var anime models.Anime
 	if err := database.First(&anime, id).Error; err != nil {
@@ -93,6 +100,13 @@ func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
+
+	// Check if title is provided
+	if anime.Title == "" {
+		http.Error(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+
 	if err := database.Create(&anime).Error; err != nil {
 		http.Error(w, "Failed to create anime", http.StatusInternalServerError)
 		return
@@ -138,7 +152,20 @@ func UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteAnimeHandler deletes an anime entry
 func DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	var anime models.Anime
+	if err := database.First(&anime, uint(id)).Error; err != nil {
+		http.Error(w, "Anime not found", http.StatusNotFound)
+		return
+	}
 
 	if err := database.Delete(&models.Anime{}, id).Error; err != nil {
 		http.Error(w, "Failed to delete anime", http.StatusInternalServerError)
