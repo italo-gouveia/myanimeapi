@@ -5,16 +5,24 @@ import (
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
 func GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
 
 	var review models.Review
-	if err := database.Preload("User").Preload("Anime").First(&review, id).Error; err != nil {
+	if err := database.Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
@@ -43,6 +51,18 @@ func CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate if the content is provided
+	if review.Content == "" {
+		http.Error(w, "Failed to create review: Content is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate if the rating is between 0 to 10
+	if review.Rating < 0 || review.Rating > 10 {
+		http.Error(w, "Failed to create review: Rating should be between 0 to 10", http.StatusBadRequest)
+		return
+	}
+
 	// Create the review
 	if err := database.Create(&review).Error; err != nil {
 		http.Error(w, "Failed to create review", http.StatusInternalServerError)
@@ -55,10 +75,17 @@ func CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
 
 	var review models.Review
-	if err := database.Preload("User").Preload("Anime").First(&review, id).Error; err != nil {
+	if err := database.Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
@@ -92,7 +119,21 @@ func UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	var review models.Review
+	if err := database.Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
+		http.Error(w, "Review not found", http.StatusNotFound)
+		return
+	}
+
 	if err := database.Delete(&models.Review{}, id); err != nil {
 		http.Error(w, "Failed to delete review", http.StatusInternalServerError)
 		return

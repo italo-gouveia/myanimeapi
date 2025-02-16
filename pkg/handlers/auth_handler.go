@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"myanimeapi/pkg/auth"
+	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
 
 	"github.com/gorilla/mux"
@@ -18,6 +19,27 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if username and password are provided
+	if user.Username == "" || user.Password == "" {
+		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if a user with the same username already exists
+	var existingUser models.User
+	if err := database.Where("username = ?", user.Username).First(&existingUser).Error; err == nil {
+		http.Error(w, "User with this username already exists", http.StatusConflict)
+		return
+	}
+
+	// Check if a user with the same email already exists (only if email is provided)
+	if user.Email != "" {
+		if err := database.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+			http.Error(w, "User with this email already exists", http.StatusConflict)
+			return
+		}
+	}
+
 	// Hash the user's password
 	hashedPassword, err := auth.HashPassword(user.Password)
 	if err != nil {
@@ -26,6 +48,7 @@ func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	user.Password = hashedPassword
 
+	// Create the user
 	if err := database.Create(&user).Error; err != nil {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
@@ -58,8 +81,12 @@ func AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT token (replace with actual JWT generation)
-	token := "MYANIMEAPI" + user.Username
+	// Generate JWT token
+	token, err := middleware.GenerateToken(user.ID, user.IsAdmin)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
