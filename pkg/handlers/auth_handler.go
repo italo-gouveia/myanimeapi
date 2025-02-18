@@ -1,9 +1,9 @@
+// internal/handlers/auth_handler.go
 package handlers
 
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/pkg/auth"
 	"myanimeapi/pkg/middleware"
@@ -90,55 +90,6 @@ func AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
-}
-
-// GetAllUsersHandler retrieves paginated user entries (admin access required)
-func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
-	isAdmin, ok := r.Context().Value("is_admin").(bool)
-	if !ok || !isAdmin {
-		http.Error(w, "Access denied", http.StatusForbidden)
-		return
-	}
-
-	// Extract pagination parameters
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-
-	// Default values
-	page := 1
-	limit := 10
-	var err error
-
-	// Parse page number
-	if pageStr != "" {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil {
-			http.Error(w, "Invalid page number", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Parse limit number
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil {
-			http.Error(w, "Invalid limit number", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Calculate offset
-	offset := (page - 1) * limit
-
-	var users []models.User
-	if err := database.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
-		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
-		return
-	}
-
-	// Set response header and encode the result
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
 }
 
 // RegisterAnimeRoutes registers all anime-related routes
