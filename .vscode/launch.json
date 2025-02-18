@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/main.go",
+            "env": {
+                "DB_HOST": "localhost",
+                "DB_PORT": "5432",
+                "DB_USER": "user",
+                "DB_PASSWORD": "password",
+                "DB_NAME": "myanimeapi"
+            },
+            "args": [],
+            "showLog": true
+        }
+    ]
+}

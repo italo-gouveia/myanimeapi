@@ -1,4 +1,4 @@
-// pkg/handlers/handlers.go
+// pkg/handlers/initialize_db.go
 package handlers
 
 import (

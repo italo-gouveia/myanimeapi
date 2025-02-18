@@ -1,129 +1,153 @@
-# Points for Consideration
+# MyAnimeAPI
 
-#### Consistency and Error Handling:
-- TODO: Ensure consistency in error messages and status codes across your handlers.
-- TODO: Handle errors gracefully and provide meaningful responses to the client.
+MyAnimeAPI is a RESTful API built with Go (Golang) that allows users to manage anime, reviews, and user accounts. It provides endpoints for creating, reading, updating, and deleting (CRUD) anime and reviews, as well as user authentication and authorization using JWT (JSON Web Tokens).
 
-#### Security:
-- TODO: In auth.go, consider using environment variables for sensitive data like JWT keys.
-- TODO: Ensure jwtKey is stored securely and not hardcoded.
+## Features
 
-#### Database Abstraction:
-- TODO: The mock_db.go is useful for testing, but ensure your real database interactions are robust and handle different scenarios.
+- **User Management**: Register, authenticate, and manage user accounts.
+- **Anime Management**: Create, read, update, and delete anime entries.
+- **Review Management**: Create, read, update, and delete reviews for anime.
+- **Authentication & Authorization**: Secure endpoints using JWT tokens.
+- **Pagination**: Retrieve paginated lists of users and reviews.
+- **Database Integration**: Uses PostgreSQL for data storage and GORM for ORM (Object-Relational Mapping).
 
-#### Context Management:
-- TODO: The contextKey for user data in context.go helps with managing user information securely across requests.
+## Technologies Used
 
-#### Testing:
-- TODO: Expand to cover more edge cases and potential error scenarios.
+- **Go (Golang)**: The primary programming language.
+- **Gorilla Mux**: A powerful HTTP router and URL matcher for building Go web servers.
+- **GORM**: An ORM library for Go that supports PostgreSQL, MySQL, SQLite, and more.
+- **JWT (JSON Web Tokens)**: Used for user authentication and authorization.
+- **PostgreSQL**: A powerful, open-source relational database system.
+- **Docker**: Containerization for easy deployment and development.
 
-#### Code Organization:
-- TODO: Group similar functionalities together. For example, middleware.go might become more comprehensive with additional middleware functions.
+## Getting Started
 
-#### Logging:
-- TODO: Add logging to your middleware and handlers for better observability and debugging.
+### Prerequisites
 
-#### Pagination and Query Parameters:
-- TODO: Handle invalid query parameters gracefully, as seen in the anime handlers where pagination values are parsed.
+- Go 1.22 or higher
+- PostgreSQL
+- Docker (optional)
 
+### Installation
 
-# Next Steps
+Clone the repository:
 
-#### Refactor for Scalability:
-- TODO: As the application grows, consider separating concerns into more modular packages if needed.
-
-#### Add More Tests:
-- TODO: Expand your tests to cover more edge cases, including failure modes and invalid inputs.
-
-#### Documentation:
-- TODO: Document the API endpoints and data structures clearly for future developers and users.
-
-
-
-# Observations and Suggestions:
-
-#### 1. Dependency Injection for Database:
-- Code relies on a global database variable which is set by InitializeDB. For better testability and flexibility, consider passing the database instance as a parameter to your handlers or using dependency injection.
-
-#### 2. Middleware and Context Management
-- Using the context package to store user information. Ensure that this is consistently used across all middleware and handlers. It might be useful to provide utility functions to retrieve user information from context, e.g., GetUserFromContext.
-
-#### 3. Error Handling and Responses
-- Consider creating a common error response function to reduce repetitive code. This will help maintain consistency and reduce boilerplate code.
-
-```go
-func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-    w.WriteHeader(statusCode)
-    json.NewEncoder(w).Encode(map[string]string{"error": message})
-}
+```bash
+git clone https://github.com/yourusername/myanimeapi.git
+cd myanimeapi
 ```
 
-#### 4. Token Generation and Validation
-- AuthenticateHandler function generates a JWT token as a placeholder. Should replace it with actual JWT generation using GenerateToken from the middleware package.
-- Ensure that the jwtKey is securely managed and not hardcoded in the codebase. Consider using environment variables or a secrets management service.
+Set up the database:
 
-#### 5. Pagination in Review Handlers
-- Ensure that the default pagination values (e.g., page and limit) are sensible. You may want to include limits on the maximum number of items per page to avoid excessively large queries.
+- Ensure PostgreSQL is running.
+- Create a database named `myanimeapi`.
+- Update the `.env` file with your PostgreSQL credentials.
 
-#### 6. Mocking and Testing
-- Your mock_db.go file provides a mock implementation of DBInterface. Ensure that your unit tests cover all edge cases and validate that these mocks behave as expected.
+Run the application:
 
-#### 7. Database Migration and Setup
-- In database.go, the SetupDatabase function uses AutoMigrate for schema changes. Consider using a more robust migration tool for production environments, especially for complex schema changes.
-
-#### 8. Security Considerations
-- Ensure that sensitive information like passwords is handled securely. Regularly review security practices to keep up with the latest standards and recommendations.
-
-#### 9. Route Registration
-- Register routes in separate functions for anime, auth, reviews, and users. Ensure that these functions are called in your main setup function to register all routes.
-
-```go
-func main() {
-    r := mux.NewRouter()
-    handlers.RegisterAnimeRoutes(r)
-    handlers.RegisterAuthRoutes(r)
-    handlers.RegisterReviewRoutes(r)
-    handlers.RegisterUserRoutes(r)
-    http.ListenAndServe(":8080", r)
-}
+```bash
+go run cmd/main.go
 ```
 
-#### 10. Handler Functions
-- Handler functions handle various operations such as creating, updating, and deleting resources. Ensure that you validate input data properly and handle edge cases where input might be malformed.
-Example Improvements
-Here’s an example of how you might update your AuthenticateHandler to use GenerateToken:
-```go
+The API will be available at `http://localhost:8080`.
 
-func AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
-	var loginRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+### Docker Setup
 
-	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "Invalid input")
-		return
-	}
+Build and run the Docker containers:
 
-	var user models.User
-	if err := database.Where("email = ?", loginRequest.Email).First(&user).Error; err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "User not found")
-		return
-	}
-
-	if !auth.CheckPasswordHash(loginRequest.Password, user.Password) {
-		writeErrorResponse(w, http.StatusUnauthorized, "Invalid credentials")
-		return
-	}
-
-	// Generate JWT token
-	token, err := middleware.GenerateToken(user.ID, user.IsAdmin)
-	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
-}
+```bash
+docker-compose up --build
 ```
+
+This will start both the PostgreSQL database and the Go API server.
+
+**Access the API:**  
+The API will be available at `http://localhost:8080`.
+
+## API Endpoints
+
+### Authentication
+
+- **POST** `/auth/register`: Register a new user.
+- **POST** `/auth/authenticate`: Authenticate a user and receive a JWT token.
+
+### Users
+
+- **GET** `/users`: Retrieve a paginated list of users (Admin only).
+- **GET** `/users/{id}`: Retrieve a specific user by ID.
+- **POST** `/users`: Create a new user.
+- **PUT** `/users/{id}`: Update an existing user.
+- **DELETE** `/users/{id}`: Delete a user.
+
+### Anime
+
+- **GET** `/anime`: Retrieve all anime entries.
+- **GET** `/anime/{id}`: Retrieve a specific anime by ID.
+- **POST** `/anime`: Create a new anime entry (Authenticated users only).
+- **PUT** `/anime/{id}`: Update an existing anime entry (Authenticated users only).
+- **DELETE** `/anime/{id}`: Delete an anime entry (Authenticated users only).
+
+### Reviews
+
+- **GET** `/reviews/{id}`: Retrieve a specific review by ID.
+- **POST** `/reviews`: Create a new review (Authenticated users only).
+- **PUT** `/reviews/{id}`: Update an existing review (Authenticated users only).
+- **DELETE** `/reviews/{id}`: Delete a review (Authenticated users only).
+
+## Diagrams
+
+### Architecture Diagram
+
+```
++-------------------+       +-------------------+       +-------------------+
+|   Client (HTTP)   | <---> |   Go API Server   | <---> |   PostgreSQL DB   |
++-------------------+       +-------------------+       +-------------------+
+```
+
+### Flow Diagram
+
+```
++-------------------+       +-------------------+       +-------------------+
+|   Client Request  | ----> |   Authentication  | ----> |   Authorization   |
++-------------------+       +-------------------+       +-------------------+
+        |                           |                           |
+        v                           v                           v
++-------------------+       +-------------------+       +-------------------+
+|   User Routes     |       |   Anime Routes    |       |   Review Routes   |
++-------------------+       +-------------------+       +-------------------+
+        |                           |                           |
+        v                           v                           v
++-------------------+       +-------------------+       +-------------------+
+|   Database CRUD   | <---> |   Database CRUD   | <---> |   Database CRUD   |
++-------------------+       +-------------------+       +-------------------+
+```
+
+### Database Schema
+
+```
++-------------------+       +-------------------+       +-------------------+
+|      Users        |       |      Anime        |       |      Reviews      |
++-------------------+       +-------------------+       +-------------------+
+| - ID              |       | - ID              |       | - ID              |
+| - Username        |       | - Title           |       | - UserID          |
+| - Email           |       | - Description     |       | - AnimeID         |
+| - Password        |       | - Rating          |       | - Content         |
+| - IsAdmin         |       +-------------------+       | - Rating          |
++-------------------+                                   +-------------------+
+```
+
+## Testing
+
+To run the tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

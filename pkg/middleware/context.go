@@ -1,3 +1,4 @@
+// pkg/middleware/context.go
 package middleware
 
 import "context"
@@ -6,13 +7,13 @@ import "context"
 type contextKey string
 
 const (
-    userContextKey contextKey = "user"
+	userContextKey contextKey = "user"
 )
 
 // GetUserFromContext retrieves the user ID from the context
 func GetUserFromContext(ctx context.Context) uint {
-    if userID, ok := ctx.Value(userContextKey).(uint); ok {
-        return userID
-    }
-    return 0
+	if userID, ok := ctx.Value(userContextKey).(uint); ok {
+		return userID
+	}
+	return 0
 }
