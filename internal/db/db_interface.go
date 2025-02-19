@@ -13,4 +13,5 @@ type DBInterface interface {
 	Delete(value interface{}, conds ...interface{}) *gorm.DB
 	Preload(column string, conditions ...interface{}) *gorm.DB
 	Offset(offset int) *gorm.DB
+	Unscoped() *gorm.DB
 }

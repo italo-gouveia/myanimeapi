@@ -25,6 +25,8 @@ type User struct {
 	Email    string `gorm:"unique"`          // Email is unique but nullable
 	Password string `gorm:"not null"`        // Password is required
 	IsAdmin  bool   `gorm:"default:false"`   // Default value for IsAdmin
+
+	Reviews []Review // Relationship with Review
 }
 
 type Anime struct {
@@ -32,6 +34,8 @@ type Anime struct {
 	Title       string `gorm:"not null"`
 	Description string
 	Rating      float32
+
+	Reviews []Review // Relationship with Review
 }
 
 type Review struct {
@@ -40,4 +44,7 @@ type Review struct {
 	AnimeID uint   `gorm:"not null"`
 	Content string `gorm:"not null"`
 	Rating  int    `gorm:"not null"`
+
+	User  User  `gorm:"foreignKey:UserID"`  // Relationship with User
+	Anime Anime `gorm:"foreignKey:AnimeID"` // Relationship with Anime
 }
