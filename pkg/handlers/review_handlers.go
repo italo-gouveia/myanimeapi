@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
 	"net/http"
@@ -24,6 +25,7 @@ func GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	var review models.Review
 	if err := database.Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
+		log.Printf("Error fetching review: %v\n", err)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
@@ -71,6 +73,7 @@ func CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(review)
 }
 
@@ -130,12 +133,16 @@ func DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var review models.Review
-	if err := database.Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
+	// Use Unscoped to include soft-deleted records
+	if err := database.Unscoped().Preload("User").Preload("Anime").First(&review, uint(id)).Error; err != nil {
+		log.Printf("Review not found: %v\n", err)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
 
-	if err := database.Delete(&models.Review{}, id); err != nil {
+	// Delete the review
+	if err := database.Delete(&models.Review{}, id).Error; err != nil {
+		log.Printf("Error deleting review: %v\n", err)
 		http.Error(w, "Failed to delete review", http.StatusInternalServerError)
 		return
 	}

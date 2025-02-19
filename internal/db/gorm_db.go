@@ -44,3 +44,7 @@ func (g *GormDB) Preload(column string, conditions ...interface{}) *gorm.DB {
 func (g *GormDB) Offset(offset int) *gorm.DB {
 	return g.db.Offset(offset)
 }
+
+func (g *GormDB) Unscoped() *gorm.DB {
+	return g.db.Unscoped()
+}
