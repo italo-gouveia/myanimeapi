@@ -12,6 +12,18 @@ import (
 )
 
 // GetAllUsersHandler retrieves paginated user entries (admin access required)
+// @Summary Get all users (admin only)
+// @Description Retrieve a paginated list of all users. Requires admin privileges.
+// @Tags users
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of items per page (default: 10)"
+// @Success 200 {array} models.User
+// @Failure 400 {string} string "Invalid pagination parameters"
+// @Failure 403 {string} string "Access denied"
+// @Failure 500 {string} string "Failed to retrieve users"
+// @Security ApiKeyAuth
+// @Router /users [get]
 func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	isAdmin, ok := r.Context().Value("is_admin").(bool)
 	if !ok || !isAdmin {
@@ -60,6 +72,16 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+// GetUserHandler retrieves a user by ID
+// @Summary Get a user by ID
+// @Description Retrieve a user by their ID. Requires authentication.
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.User
+// @Failure 404 {string} string "User not found"
+// @Security ApiKeyAuth
+// @Router /users/{id} [get]
 func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -74,6 +96,17 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// CreateUserHandler creates a new user
+// @Summary Create a new user
+// @Description Create a new user with the provided data.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User data"
+// @Success 201 {object} models.User
+// @Failure 400 {string} string "Invalid input"
+// @Failure 500 {string} string "Failed to create user"
+// @Router /users [post]
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -90,6 +123,20 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// UpdateUserHandler updates an existing user
+// @Summary Update a user
+// @Description Update an existing user with the provided data. Requires authentication.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body models.User true "Updated user data"
+// @Success 200 {object} models.User
+// @Failure 400 {string} string "Invalid input"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Failed to update user"
+// @Security ApiKeyAuth
+// @Router /users/{id} [put]
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -114,6 +161,16 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// DeleteUserHandler deletes a user
+// @Summary Delete a user
+// @Description Delete a user by their ID. Requires authentication.
+// @Tags users
+// @Param id path int true "User ID"
+// @Success 204 "No Content"
+// @Failure 404 {string} string "User not found"
+// @Failure 500 {string} string "Failed to delete user"
+// @Security ApiKeyAuth
+// @Router /users/{id} [delete]
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

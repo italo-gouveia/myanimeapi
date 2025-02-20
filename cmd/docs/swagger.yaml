@@ -107,6 +107,17 @@ definitions:
         example: john_doe
         type: string
     type: object
+  models.UserCredentials:
+    properties:
+      password:
+        description: Password
+        example: password123
+        type: string
+      username:
+        description: Username
+        example: john_doe
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -120,6 +131,252 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
+  /animes:
+    get:
+      description: Retrieve a list of all anime entries
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Anime'
+            type: array
+        "500":
+          description: Failed to retrieve animes
+          schema:
+            type: string
+      summary: Get all anime entries
+      tags:
+      - anime
+    post:
+      consumes:
+      - application/json
+      description: Create a new anime entry with the provided data
+      parameters:
+      - description: Anime data
+        in: body
+        name: anime
+        required: true
+        schema:
+          $ref: '#/definitions/models.Anime'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Anime'
+        "400":
+          description: Invalid input or missing required fields
+          schema:
+            type: string
+        "500":
+          description: Failed to create anime
+          schema:
+            type: string
+      summary: Create a new anime
+      tags:
+      - anime
+  /animes/{id}:
+    delete:
+      description: Delete an anime entry by its ID
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            type: string
+        "404":
+          description: Anime not found
+          schema:
+            type: string
+        "500":
+          description: Failed to delete anime
+          schema:
+            type: string
+      summary: Delete an anime
+      tags:
+      - anime
+    get:
+      description: Retrieve an anime by its ID
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Anime'
+        "400":
+          description: Invalid ID format
+          schema:
+            type: string
+        "404":
+          description: Anime not found
+          schema:
+            type: string
+      summary: Get an anime by ID
+      tags:
+      - anime
+    put:
+      consumes:
+      - application/json
+      description: Update an existing anime entry with the provided data
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated anime data
+        in: body
+        name: anime
+        required: true
+        schema:
+          $ref: '#/definitions/models.Anime'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Anime'
+        "400":
+          description: Invalid input or ID format
+          schema:
+            type: string
+        "404":
+          description: Anime not found
+          schema:
+            type: string
+        "500":
+          description: Failed to update anime
+          schema:
+            type: string
+      summary: Update an anime
+      tags:
+      - anime
+  /animes/{id}/reviews:
+    get:
+      description: Retrieve paginated reviews for an anime by its ID
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Review'
+            type: array
+        "400":
+          description: Invalid ID format or pagination parameters
+          schema:
+            type: string
+        "500":
+          description: Failed to retrieve reviews
+          schema:
+            type: string
+      summary: Get paginated reviews for an anime
+      tags:
+      - anime
+  /auth/authenticate:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token.
+      parameters:
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns a JWT token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+        "401":
+          description: User not found or invalid credentials
+          schema:
+            type: string
+        "500":
+          description: Failed to generate token
+          schema:
+            type: string
+      summary: Authenticate a user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with the provided data.
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid input or missing required fields
+          schema:
+            type: string
+        "409":
+          description: User with this username or email already exists
+          schema:
+            type: string
+        "500":
+          description: Failed to hash password or create user
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - auth
   /reviews:
     post:
       consumes:
@@ -161,6 +418,42 @@ paths:
       tags:
       - reviews
   /reviews/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a review by its ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a review by ID
+      tags:
+      - reviews
     get:
       consumes:
       - application/json
@@ -193,4 +486,204 @@ paths:
       summary: Get a review by ID
       tags:
       - reviews
+    put:
+      consumes:
+      - application/json
+      description: Update a review with the input payload
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Review object
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a review by ID
+      tags:
+      - reviews
+  /users:
+    get:
+      description: Retrieve a paginated list of all users. Requires admin privileges.
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            type: string
+        "403":
+          description: Access denied
+          schema:
+            type: string
+        "500":
+          description: Failed to retrieve users
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get all users (admin only)
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the provided data.
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+        "500":
+          description: Failed to create user
+          schema:
+            type: string
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Delete a user by their ID. Requires authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Failed to delete user
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      description: Retrieve a user by their ID. Requires authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: User not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user with the provided data. Requires authentication.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid input
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Failed to update user
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a user
+      tags:
+      - users
 swagger: "2.0"

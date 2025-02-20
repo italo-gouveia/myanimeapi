@@ -57,9 +57,7 @@ func TestGetAnimeHandler(t *testing.T) {
 	// Define the anime data to return from the mock
 	animeID := "1"
 	expectedAnime := &models.Anime{
-		Model: gorm.Model{
-			ID: 1, // Ensure the ID matches what you expect
-		},
+		ID:          1, // Ensure the ID matches what you expect
 		Title:       "Naruto",
 		Description: "A story about a ninja.",
 		Rating:      8.5,
