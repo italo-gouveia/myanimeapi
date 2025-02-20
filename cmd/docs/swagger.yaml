@@ -1,0 +1,196 @@
+basePath: /
+definitions:
+  models.Anime:
+    properties:
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      description:
+        description: Description
+        example: A story about ninjas.
+        type: string
+      id:
+        description: Review ID
+        example: 1
+        type: integer
+      rating:
+        description: Rating
+        example: 8.5
+        type: number
+      reviews:
+        description: Relationship with Review
+        items:
+          $ref: '#/definitions/models.Review'
+        type: array
+      title:
+        description: Title
+        example: Naruto
+        type: string
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+    type: object
+  models.Review:
+    properties:
+      anime:
+        allOf:
+        - $ref: '#/definitions/models.Anime'
+        description: Relationship with Anime
+      anime_id:
+        description: Anime ID
+        example: 1
+        type: integer
+      content:
+        description: Review content
+        example: This anime is amazing!
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Review ID
+        example: 1
+        type: integer
+      rating:
+        description: Rating (0-10)
+        example: 9
+        type: integer
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: Relationship with User
+      user_id:
+        description: User ID
+        example: 1
+        type: integer
+    type: object
+  models.User:
+    properties:
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      email:
+        description: Email
+        example: john@example.com
+        type: string
+      id:
+        description: Review ID
+        example: 1
+        type: integer
+      is_admin:
+        description: IsAdmin
+        example: false
+        type: boolean
+      password:
+        description: Password
+        example: password123
+        type: string
+      reviews:
+        description: Relationship with Review
+        items:
+          $ref: '#/definitions/models.Review'
+        type: array
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      username:
+        description: Username
+        example: john_doe
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@myanimeapi.com
+    name: API Support
+  description: This is a sample API for managing anime and reviews.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: MyAnimeAPI
+  version: "1.0"
+paths:
+  /reviews:
+    post:
+      consumes:
+      - application/json
+      description: Create a new review with the input payload
+      parameters:
+      - description: Review object
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new review
+      tags:
+      - reviews
+  /reviews/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a review by its ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a review by ID
+      tags:
+      - reviews
+swagger: "2.0"
