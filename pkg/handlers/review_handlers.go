@@ -12,6 +12,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// GetReviewHandler godoc
+// @Summary Get a review by ID
+// @Description Get a review by its ID
+// @Tags reviews
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Review ID"
+// @Success 200 {object} models.Review
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /reviews/{id} [get]
 func GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -34,6 +45,18 @@ func GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(review)
 }
 
+// CreateReviewHandler godoc
+// @Summary Create a new review
+// @Description Create a new review with the input payload
+// @Tags reviews
+// @Accept  json
+// @Produce  json
+// @Param review body models.Review true "Review object"
+// @Success 201 {object} models.Review
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews [post]
 func CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	var review models.Review
 	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
@@ -77,6 +100,19 @@ func CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(review)
 }
 
+// UpdateReviewHandler godoc
+// @Summary Update a review by ID
+// @Description Update a review with the input payload
+// @Tags reviews
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Review ID"
+// @Param review body models.Review true "Review object"
+// @Success 200 {object} models.Review
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [put]
 func UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -121,6 +157,18 @@ func UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(review)
 }
 
+// DeleteReviewHandler godoc
+// @Summary Delete a review by ID
+// @Description Delete a review by its ID
+// @Tags reviews
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Review ID"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /reviews/{id} [delete]
 func DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
