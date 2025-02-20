@@ -51,6 +51,15 @@ go run cmd/main.go
 
 The API will be available at `http://localhost:8080`.
 
+-------
+Generate the swagger documentation:
+
+```bash
+swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
+```
+
+This command it will generate the swagger docs. And then, after you run the application locally, you will be abble to go to `http://localhost:8080/swagger/index.html`.
+
 ### Docker Setup
 
 Build and run the Docker containers:
@@ -63,6 +72,7 @@ This will start both the PostgreSQL database and the Go API server.
 
 **Access the API:**  
 The API will be available at `http://localhost:8080`.
+The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ## API Endpoints
 
