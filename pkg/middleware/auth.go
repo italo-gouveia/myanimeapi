@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Define a global secret key for JWT
@@ -18,7 +18,7 @@ var jwtKey = []byte("your_secret_key_here") // Ensure this is consistent
 type CustomClaims struct {
 	IsAdmin bool `json:"is_admin"`
 	UserID  uint `json:"user_id"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // Authenticate is a middleware function that checks for a valid JWT token
@@ -72,8 +72,8 @@ func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	claims := CustomClaims{
 		UserID:  userID,
 		IsAdmin: isAdmin,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			Issuer:    "myanimeapi",
 		},
 	}
