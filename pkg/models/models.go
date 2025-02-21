@@ -4,7 +4,7 @@ package models
 import (
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // UserCredentials for authentication
@@ -17,7 +17,7 @@ type UserCredentials struct {
 type Claims struct {
 	UserID    uint  `json:"user_id"`
 	ExpiresAt int64 `json:"exp"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // User represents a user in the system
