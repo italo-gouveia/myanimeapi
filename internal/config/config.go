@@ -39,11 +39,24 @@ type Config struct {
 func LoadConfig() *Config {
 	var cfg Config
 
+	// Load server configuration
+	cfg.Server.Host = getEnv("SERVER_HOST", "localhost")
+	cfg.Server.Port = getEnvAsInt("SERVER_PORT", 8080)
+
+	// Load database configuration
+	cfg.Database.Type = getEnv("DB_TYPE", "postgres")
+	cfg.Database.Host = getEnv("DB_HOST", "localhost")
+	cfg.Database.Port = getEnvAsInt("DB_PORT", 5432)
 	cfg.Database.User = getEnv("DB_USER", "user")
 	cfg.Database.Password = getEnv("DB_PASSWORD", "password")
 	cfg.Database.Name = getEnv("DB_NAME", "myanimeapi")
-	cfg.Database.Host = getEnv("DB_HOST", "localhost")
-	cfg.Database.Port = getEnvAsInt("DB_PORT", 5432)
+
+	// Load logging configuration
+	cfg.Logging.Level = getEnv("LOG_LEVEL", "info")
+	cfg.Logging.File = getEnv("LOG_FILE", "/var/log/myapp.log")
+
+	// Load API configuration
+	cfg.API.Key = getEnv("API_KEY", "your_api_key")
 
 	return &cfg
 }

@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy go mod and sum files
 COPY go.mod go.sum ./
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+# Download all dependencies
 RUN go mod download
 
 # Copy the source code into the container
@@ -30,6 +30,9 @@ WORKDIR /root/
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
+
+# Copy the .env file
+COPY .env .
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
