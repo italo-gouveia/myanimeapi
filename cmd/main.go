@@ -16,6 +16,16 @@ import (
 	"gorm.io/gorm"
 )
 
+// @title MyAnimeAPI
+// @version 1.0
+// @description This is a sample API for managing anime and reviews.
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email support@myanimeapi.com
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+// @host localhost:8080
+// @BasePath /
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig() // Expecting one return value of type *Config

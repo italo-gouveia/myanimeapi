@@ -13,6 +13,12 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
+# Install swag CLI
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Generate Swagger documentation
+RUN swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
+
 # Build the Go binary
 RUN go build -o main ./cmd
 
