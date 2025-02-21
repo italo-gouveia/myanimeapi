@@ -1,18 +1,15 @@
-// pkg/middleware/auth.go
 package middleware
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// Define a global secret key for JWT
-var jwtKey = []byte("your_secret_key_here") // Ensure this is consistent
 
 // CustomClaims defines the JWT claims structure
 type CustomClaims struct {
@@ -33,7 +30,7 @@ func Authenticate(next http.Handler) http.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
+			return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -47,9 +44,9 @@ func Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		// Store claims in context
-		ctx := context.WithValue(r.Context(), "user", claims.UserID)
-		ctx = context.WithValue(ctx, "is_admin", claims.IsAdmin)
+		// Store claims in context using the existing contextKey type
+		ctx := context.WithValue(r.Context(), userContextKey, claims.UserID)
+		ctx = context.WithValue(ctx, isAdminContextKey, claims.IsAdmin)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -57,7 +54,7 @@ func Authenticate(next http.Handler) http.Handler {
 // CheckAdmin checks if the user has admin privileges
 func CheckAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		isAdmin, ok := r.Context().Value("is_admin").(bool)
+		isAdmin, ok := r.Context().Value(isAdminContextKey).(bool)
 		if !ok || !isAdmin {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
@@ -79,5 +76,5 @@ func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 }

@@ -59,5 +59,5 @@ func main() {
 	routes.RegisterRoutes(router)
 
 	// Start the server
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Server.Port), router))
 }
