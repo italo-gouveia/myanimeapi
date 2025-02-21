@@ -14,6 +14,15 @@ import (
 )
 
 // GetAnimeHandler retrieves an anime by ID
+// @Summary Get an anime by ID
+// @Description Retrieve an anime by its ID
+// @Tags anime
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Success 200 {object} models.Anime
+// @Failure 400 {string} string "Invalid ID format"
+// @Failure 404 {string} string "Anime not found"
+// @Router /animes/{id} [get]
 func GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -36,6 +45,13 @@ func GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllAnimesHandler retrieves all anime entries
+// @Summary Get all anime entries
+// @Description Retrieve a list of all anime entries
+// @Tags anime
+// @Produce json
+// @Success 200 {array} models.Anime
+// @Failure 500 {string} string "Failed to retrieve animes"
+// @Router /animes [get]
 func GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	var animes []models.Anime
 	if err := database.Find(&animes).Error; err != nil {
@@ -48,6 +64,17 @@ func GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by ID
+// @Summary Get paginated reviews for an anime
+// @Description Retrieve paginated reviews for an anime by its ID
+// @Tags anime
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of items per page (default: 10)"
+// @Success 200 {array} models.Review
+// @Failure 400 {string} string "Invalid ID format or pagination parameters"
+// @Failure 500 {string} string "Failed to retrieve reviews"
+// @Router /animes/{id}/reviews [get]
 func GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -95,6 +122,16 @@ func GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 // CreateAnimeHandler creates a new anime entry
+// @Summary Create a new anime
+// @Description Create a new anime entry with the provided data
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param anime body models.Anime true "Anime data"
+// @Success 201 {object} models.Anime
+// @Failure 400 {string} string "Invalid input or missing required fields"
+// @Failure 500 {string} string "Failed to create anime"
+// @Router /animes [post]
 func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	var anime models.Anime
 	if err := json.NewDecoder(r.Body).Decode(&anime); err != nil {
@@ -118,6 +155,18 @@ func CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateAnimeHandler updates an existing anime entry
+// @Summary Update an anime
+// @Description Update an existing anime entry with the provided data
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param anime body models.Anime true "Updated anime data"
+// @Success 200 {object} models.Anime
+// @Failure 400 {string} string "Invalid input or ID format"
+// @Failure 404 {string} string "Anime not found"
+// @Failure 500 {string} string "Failed to update anime"
+// @Router /animes/{id} [put]
 func UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -151,6 +200,15 @@ func UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteAnimeHandler deletes an anime entry
+// @Summary Delete an anime
+// @Description Delete an anime entry by its ID
+// @Tags anime
+// @Param id path int true "Anime ID"
+// @Success 204 "No Content"
+// @Failure 400 {string} string "Invalid ID format"
+// @Failure 404 {string} string "Anime not found"
+// @Failure 500 {string} string "Failed to delete anime"
+// @Router /animes/{id} [delete]
 func DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]

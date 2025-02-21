@@ -2,14 +2,15 @@
 package models
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
-	"gorm.io/gorm"
 )
 
 // UserCredentials for authentication
 type UserCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" example:"john_doe"`    // Username
+	Password string `json:"password" example:"password123"` // Password
 }
 
 // Claims for JWT
@@ -19,31 +20,40 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+// User represents a user in the system
 type User struct {
-	gorm.Model
-	Username string `gorm:"unique;not null"` // Username is required and unique
-	Email    string `gorm:"unique"`          // Email is unique but nullable
-	Password string `gorm:"not null"`        // Password is required
-	IsAdmin  bool   `gorm:"default:false"`   // Default value for IsAdmin
+	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                   // Review ID
+	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`          // Creation timestamp
+	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`          // Update timestamp
+	Username  string    `json:"username" gorm:"unique;not null" example:"john_doe"` // Username
+	Email     string    `json:"email" gorm:"unique" example:"john@example.com"`     // Email
+	Password  string    `json:"password" gorm:"not null" example:"password123"`     // Password
+	IsAdmin   bool      `json:"is_admin" gorm:"default:false" example:"false"`      // IsAdmin
 
 	Reviews []Review // Relationship with Review
 }
 
+// Anime represents an anime entry
 type Anime struct {
-	gorm.Model
-	Title       string `gorm:"not null"`
-	Description string
-	Rating      float32
+	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`            // Review ID
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Creation timestamp
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Update timestamp
+	Title       string    `json:"title" gorm:"not null" example:"Naruto"`      // Title
+	Description string    `json:"description" example:"A story about ninjas."` // Description
+	Rating      float32   `json:"rating" example:"8.5"`                        // Rating
 
 	Reviews []Review // Relationship with Review
 }
 
+// Review represents a review for an anime
 type Review struct {
-	gorm.Model
-	UserID  uint   `gorm:"not null"`
-	AnimeID uint   `gorm:"not null"`
-	Content string `gorm:"not null"`
-	Rating  int    `gorm:"not null"`
+	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                         // Review ID
+	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                // Creation timestamp
+	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                // Update timestamp
+	UserID    uint      `json:"user_id" gorm:"not null" example:"1"`                      // User ID
+	AnimeID   uint      `json:"anime_id" gorm:"not null" example:"1"`                     // Anime ID
+	Content   string    `json:"content" gorm:"not null" example:"This anime is amazing!"` // Review content
+	Rating    int       `json:"rating" gorm:"not null" example:"9"`                       // Rating (0-10)
 
 	User  User  `gorm:"foreignKey:UserID"`  // Relationship with User
 	Anime Anime `gorm:"foreignKey:AnimeID"` // Relationship with Anime
