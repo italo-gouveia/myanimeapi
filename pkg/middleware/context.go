@@ -1,4 +1,3 @@
-// pkg/middleware/context.go
 package middleware
 
 import "context"
@@ -7,7 +6,8 @@ import "context"
 type contextKey string
 
 const (
-	userContextKey contextKey = "user"
+	userContextKey    contextKey = "user"
+	isAdminContextKey contextKey = "is_admin"
 )
 
 // GetUserFromContext retrieves the user ID from the context
@@ -16,4 +16,12 @@ func GetUserFromContext(ctx context.Context) uint {
 		return userID
 	}
 	return 0
+}
+
+// GetIsAdminFromContext retrieves the admin status from the context
+func GetIsAdminFromContext(ctx context.Context) bool {
+	if isAdmin, ok := ctx.Value(isAdminContextKey).(bool); ok {
+		return isAdmin
+	}
+	return false
 }
