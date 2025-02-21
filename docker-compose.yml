@@ -18,6 +18,13 @@ services:
     container_name: myanimeapi-api
     ports:
       - "8080:8080"
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=myanimeapi
     depends_on:
       - db
 volumes:
