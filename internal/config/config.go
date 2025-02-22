@@ -1,9 +1,10 @@
-// internal/config/config.go
 package config
 
 import (
-	"os"
+	"fmt"
 	"strconv"
+
+	"github.com/hashicorp/vault/api"
 )
 
 type ServerConfig struct {
@@ -34,43 +35,73 @@ type Config struct {
 	Database DatabaseConfig
 	Logging  LoggingConfig
 	API      APIConfig
+	JWTKey   string
 }
 
 func LoadConfig() *Config {
+	// Initialize Vault client
+	client, err := api.NewClient(&api.Config{
+		Address: "http://vault:8200", // Use the service name "vault" in Docker
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to create Vault client: %v", err))
+	}
+
+	// Set the Vault token (use the root token for development)
+	client.SetToken("root")
+
+	// Read the secrets from Vault
+	secret, err := client.Logical().Read("secret/data/myapp")
+	if err != nil {
+		panic(fmt.Errorf("failed to read secret from Vault: %v", err))
+	}
+
+	// Extract the secret values
 	var cfg Config
+	if secret != nil && secret.Data != nil {
+		data, ok := secret.Data["data"].(map[string]interface{})
+		if !ok {
+			panic("invalid secret data format")
+		}
 
-	// Load server configuration
-	cfg.Server.Host = getEnv("SERVER_HOST", "localhost")
-	cfg.Server.Port = getEnvAsInt("SERVER_PORT", 8080)
+		// Server configuration
+		cfg.Server.Host = getString(data, "SERVER_HOST", "localhost")
+		cfg.Server.Port = getInt(data, "SERVER_PORT", 8080)
 
-	// Load database configuration
-	cfg.Database.Type = getEnv("DB_TYPE", "postgres")
-	cfg.Database.Host = getEnv("DB_HOST", "localhost")
-	cfg.Database.Port = getEnvAsInt("DB_PORT", 5432)
-	cfg.Database.User = getEnv("DB_USER", "user")
-	cfg.Database.Password = getEnv("DB_PASSWORD", "password")
-	cfg.Database.Name = getEnv("DB_NAME", "myanimeapi")
+		// Database configuration
+		cfg.Database.Type = getString(data, "DB_TYPE", "postgres")
+		cfg.Database.Host = getString(data, "DB_HOST", "db")
+		cfg.Database.Port = getInt(data, "DB_PORT", 5432)
+		cfg.Database.User = getString(data, "DB_USER", "user")
+		cfg.Database.Password = getString(data, "DB_PASSWORD", "password")
+		cfg.Database.Name = getString(data, "DB_NAME", "myanimeapi")
 
-	// Load logging configuration
-	cfg.Logging.Level = getEnv("LOG_LEVEL", "info")
-	cfg.Logging.File = getEnv("LOG_FILE", "/var/log/myapp.log")
+		// Logging configuration
+		cfg.Logging.Level = getString(data, "LOG_LEVEL", "info")
+		cfg.Logging.File = getString(data, "LOG_FILE", "/var/log/myapp.log")
 
-	// Load API configuration
-	cfg.API.Key = getEnv("API_KEY", "your_api_key")
+		// API configuration
+		cfg.API.Key = getString(data, "API_KEY", "odagenius")
+
+		// JWT secret key
+		cfg.JWTKey = getString(data, "JWT_SECRET_KEY", "betweenearthandheaveniamthechosenone")
+	} else {
+		panic("secret not found")
+	}
 
 	return &cfg
 }
 
-func getEnv(key string, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+func getString(data map[string]interface{}, key string, defaultValue string) string {
+	if value, exists := data[key]; exists {
+		return value.(string)
 	}
 	return defaultValue
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
-	if value, exists := os.LookupEnv(key); exists {
-		intValue, err := strconv.Atoi(value)
+func getInt(data map[string]interface{}, key string, defaultValue int) int {
+	if value, exists := data[key]; exists {
+		intValue, err := strconv.Atoi(value.(string))
 		if err == nil {
 			return intValue
 		}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/hashicorp/vault/api"
 )
 
 // CustomClaims defines the JWT claims structure
@@ -16,6 +17,48 @@ type CustomClaims struct {
 	IsAdmin bool `json:"is_admin"`
 	UserID  uint `json:"user_id"`
 	jwt.RegisteredClaims
+}
+
+var jwtKey []byte
+
+func init() {
+	// Read the Vault address from the environment, or use a default value
+	vaultAddr := os.Getenv("VAULT_ADDR")
+	if vaultAddr == "" {
+		vaultAddr = "http://vault:8200" // Default value
+	}
+
+	// Initialize Vault client
+	client, err := api.NewClient(&api.Config{
+		Address: vaultAddr, // Use the VAULT_ADDR environment variable or default value
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to create Vault client: %v", err))
+	}
+
+	// Set the Vault token (use the root token for development)
+	client.SetToken("root")
+
+	// Read the JWT secret from Vault
+	secret, err := client.Logical().Read("secret/data/myapp")
+	if err != nil {
+		panic(fmt.Errorf("failed to read secret from Vault: %v", err))
+	}
+
+	// Extract the secret value
+	if secret != nil && secret.Data != nil {
+		data, ok := secret.Data["data"].(map[string]interface{})
+		if !ok {
+			panic("invalid secret data format")
+		}
+		key, ok := data["JWT_SECRET_KEY"].(string)
+		if !ok {
+			panic("invalid JWT secret key format")
+		}
+		jwtKey = []byte(key)
+	} else {
+		panic("secret not found")
+	}
 }
 
 // Authenticate is a middleware function that checks for a valid JWT token
@@ -30,7 +73,7 @@ func Authenticate(next http.Handler) http.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+			return jwtKey, nil
 		})
 
 		if err != nil || !token.Valid {
@@ -76,5 +119,5 @@ func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	return token.SignedString(jwtKey)
 }

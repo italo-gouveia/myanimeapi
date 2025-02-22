@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 services:
   db:
     image: postgres:14
@@ -19,13 +19,29 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USER=user
       - DB_PASSWORD=password
       - DB_NAME=myanimeapi
+      - VAULT_ADDR=http://vault:8200 # Pass the Vault address
     depends_on:
       - db
+      - vault
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root" # Root token for development
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    command: server -dev
+    volumes:
+      - vault_data:/vault/file # Persist Vault data
+
 volumes:
   db_data:
+  vault_data:
