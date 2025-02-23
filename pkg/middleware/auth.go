@@ -1,8 +1,12 @@
+// pkg/middleware/auth.go
+// Middleware functions for authentication and authorization
+// This package defines middleware functions for authenticating users using JWT tokens and checking if the user has admin privileges.
+// It also contains a function to generate JWT tokens with custom claims.
 package middleware
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -21,9 +25,10 @@ type CustomClaims struct {
 // Authenticate is a middleware function that checks for a valid JWT token
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Authenticate middleware triggered for:", r.URL.Path)
+		log.Printf("Authenticate middleware triggered for: %s", r.URL.Path)
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
+			log.Println("Missing authorization header")
 			http.Error(w, "Missing authorization header", http.StatusUnauthorized)
 			return
 		}
@@ -34,19 +39,22 @@ func Authenticate(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
+			log.Printf("Invalid token: %v", err)
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
 		claims, ok := token.Claims.(*CustomClaims)
 		if !ok {
+			log.Println("Invalid token claims")
 			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 			return
 		}
 
 		// Store claims in context using the existing contextKey type
-		ctx := context.WithValue(r.Context(), userContextKey, claims.UserID)
-		ctx = context.WithValue(ctx, isAdminContextKey, claims.IsAdmin)
+		ctx := context.WithValue(r.Context(), UserContextKey, claims.UserID)
+		ctx = context.WithValue(ctx, IsAdminContextKey, claims.IsAdmin)
+		log.Printf("User %d authenticated, isAdmin: %v", claims.UserID, claims.IsAdmin)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -54,12 +62,14 @@ func Authenticate(next http.Handler) http.Handler {
 // CheckAdmin checks if the user has admin privileges
 func CheckAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		isAdmin, ok := r.Context().Value(isAdminContextKey).(bool)
+		isAdmin, ok := r.Context().Value(IsAdminContextKey).(bool)
 		if !ok || !isAdmin {
+			log.Println("Access denied: user is not an admin")
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
 
+		log.Println("User is an admin, granting access")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -76,5 +86,12 @@ func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil {
+		log.Printf("Error generating token: %v", err)
+		return "", err
+	}
+
+	log.Printf("Token generated for user %d, isAdmin: %v", userID, isAdmin)
+	return tokenString, nil
 }

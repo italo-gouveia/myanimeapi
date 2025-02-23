@@ -3,13 +3,26 @@ package handlers
 
 import (
 	"encoding/json"
-	"myanimeapi/pkg/middleware"
-	"myanimeapi/pkg/models"
+	"log"
 	"net/http"
 	"strconv"
 
+	"myanimeapi/internal/db"
+	"myanimeapi/pkg/middleware"
+	"myanimeapi/pkg/models"
+
 	"github.com/gorilla/mux"
 )
+
+// UserHandler defines the handlers for user-related routes
+type UserHandler struct {
+	DB db.DBInterface
+}
+
+// NewUserHandler creates a new UserHandler instance
+func NewUserHandler(db db.DBInterface) *UserHandler {
+	return &UserHandler{DB: db}
+}
 
 // GetAllUsersHandler retrieves paginated user entries (admin access required)
 // @Summary Get all users (admin only)
@@ -24,9 +37,10 @@ import (
 // @Failure 500 {string} string "Failed to retrieve users"
 // @Security ApiKeyAuth
 // @Router /users [get]
-func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
-	isAdmin, ok := r.Context().Value("is_admin").(bool)
+func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	isAdmin, ok := r.Context().Value(middleware.IsAdminContextKey).(bool)
 	if !ok || !isAdmin {
+		log.Println("Access denied: user is not an admin")
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
@@ -44,6 +58,7 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
+			log.Printf("Invalid page number: %v", err)
 			http.Error(w, "Invalid page number", http.StatusBadRequest)
 			return
 		}
@@ -53,6 +68,7 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
+			log.Printf("Invalid limit number: %v", err)
 			http.Error(w, "Invalid limit number", http.StatusBadRequest)
 			return
 		}
@@ -62,7 +78,8 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * limit
 
 	var users []models.User
-	if err := database.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+	if err := h.DB.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+		log.Printf("Failed to retrieve users: %v", err)
 		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
 		return
 	}
@@ -82,12 +99,21 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "User not found"
 // @Security ApiKeyAuth
 // @Router /users/{id} [get]
-func GetUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		log.Printf("Invalid ID format: %v", err)
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
 
 	var user models.User
-	if err := database.First(&user, id).Error; err != nil {
+	if err := h.DB.First(r.Context(), &user, id).Error; err != nil {
+		log.Printf("User not found: %v", err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -107,18 +133,21 @@ func GetUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid input"
 // @Failure 500 {string} string "Failed to create user"
 // @Router /users [post]
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Printf("Invalid input: %v", err)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	if err := database.Create(&user).Error; err != nil {
+	if err := h.DB.Create(r.Context(), &user).Error; err != nil {
+		log.Printf("Failed to create user: %v", err)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("User %s created successfully", user.Username)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
 }
@@ -137,26 +166,38 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Failed to update user"
 // @Security ApiKeyAuth
 // @Router /users/{id} [put]
-func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
+
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		log.Printf("Invalid ID format: %v", err)
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
 
 	var user models.User
-	if err := database.First(&user, id).Error; err != nil {
+	if err := h.DB.First(r.Context(), &user, id).Error; err != nil {
+		log.Printf("User not found: %v", err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Printf("Invalid input: %v", err)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	if err := database.Save(&user).Error; err != nil {
+	if err := h.DB.Save(r.Context(), &user).Error; err != nil {
+		log.Printf("Failed to update user: %v", err)
 		http.Error(w, "Failed to update user", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("User %s updated successfully", user.Username)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
@@ -171,35 +212,46 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Failed to delete user"
 // @Security ApiKeyAuth
 // @Router /users/{id} [delete]
-func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	idStr := vars["id"]
 
-	if err := database.Delete(&models.User{}, id).Error; err != nil {
+	// Convert the ID from string to uint
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		log.Printf("Invalid ID format: %v", err)
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.DB.Delete(r.Context(), &models.User{}, id).Error; err != nil {
+		log.Printf("Failed to delete user: %v", err)
 		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("User with ID %d deleted successfully", id)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func RegisterUserRoutes(router *mux.Router) {
+// RegisterUserRoutes registers all user-related routes
+func (h *UserHandler) RegisterUserRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
-	router.HandleFunc("/users", CreateUserHandler).Methods("POST")
+	router.HandleFunc("/users", h.CreateUserHandler).Methods("POST")
 
 	// Create a subrouter for protected routes
 	protectedRouter := router.PathPrefix("/users").Subrouter()
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
 	// Protected routes (require authentication)
-	protectedRouter.HandleFunc("/{id:[0-9]+}", GetUserHandler).Methods("GET")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", UpdateUserHandler).Methods("PUT")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", DeleteUserHandler).Methods("DELETE")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", h.GetUserHandler).Methods("GET")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", h.UpdateUserHandler).Methods("PUT")
+	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteUserHandler).Methods("DELETE")
 
 	// Create a subrouter for admin-only routes
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
 	adminRouter.Use(middleware.CheckAdmin) // Apply admin check middleware
 
 	// Admin-only routes (require authentication and admin privileges)
-	adminRouter.HandleFunc("", GetAllUsersHandler).Methods("GET")
+	adminRouter.HandleFunc("", h.GetAllUsersHandler).Methods("GET")
 }
