@@ -62,7 +62,8 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 
 	// Check if a user with the same username already exists
 	var existingUser models.User
-	if err := h.DB.Where(r.Context(), "username = ?", user.Username).First(&existingUser).Error; err == nil {
+	result := h.DB.Where(r.Context(), "username = ?", user.Username).First(&existingUser)
+	if result.Error == nil {
 		log.Printf("User with username %s already exists", user.Username)
 		http.Error(w, "User with this username already exists", http.StatusConflict)
 		return
@@ -70,7 +71,8 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 
 	// Check if a user with the same email already exists (only if email is provided)
 	if user.Email != "" {
-		if err := h.DB.Where(r.Context(), "email = ?", user.Email).First(&existingUser).Error; err == nil {
+		result = h.DB.Where(r.Context(), "email = ?", user.Email).First(&existingUser)
+		if result.Error == nil {
 			log.Printf("User with email %s already exists", user.Email)
 			http.Error(w, "User with this email already exists", http.StatusConflict)
 			return
@@ -87,8 +89,9 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	user.Password = hashedPassword
 
 	// Create the user
-	if err := h.DB.Create(r.Context(), &user).Error; err != nil {
-		log.Printf("Error creating user: %v", err)
+	result = h.DB.Create(r.Context(), &user)
+	if result.Error != nil {
+		log.Printf("Error creating user: %v", result.Error)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
@@ -119,7 +122,8 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var user models.User
-	if err := h.DB.Where(r.Context(), "username = ?", loginRequest.Username).First(&user).Error; err != nil {
+	result := h.DB.Where(r.Context(), "username = ?", loginRequest.Username).First(&user)
+	if result.Error != nil {
 		log.Printf("User %s not found", loginRequest.Username)
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
