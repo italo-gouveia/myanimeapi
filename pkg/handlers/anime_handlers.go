@@ -58,8 +58,9 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var anime models.Anime
-	if err := h.DB.First(r.Context(), &anime, id).Error; err != nil {
-		log.Printf("Anime not found: %v", err)
+	result := h.DB.First(r.Context(), &anime, id)
+	if result.Error != nil {
+		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
@@ -78,8 +79,9 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /animes [get]
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	var animes []models.Anime
-	if err := h.DB.Find(r.Context(), &animes).Error; err != nil {
-		log.Printf("Failed to retrieve animes: %v", err)
+	result := h.DB.Find(r.Context(), &animes)
+	if result.Error != nil {
+		log.Printf("Failed to retrieve animes: %v", result.Error)
 		http.Error(w, "Failed to retrieve animes", http.StatusInternalServerError)
 		return
 	}
@@ -140,8 +142,9 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	var reviews []models.Review
 	offset := (page - 1) * limit
 
-	if err := h.DB.Where(r.Context(), "anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews).Error; err != nil {
-		log.Printf("Failed to retrieve reviews: %v", err)
+	result := h.DB.Where(r.Context(), "anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews)
+	if result.Error != nil {
+		log.Printf("Failed to retrieve reviews: %v", result.Error)
 		http.Error(w, "Failed to retrieve reviews", http.StatusInternalServerError)
 		return
 	}
@@ -176,8 +179,9 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h.DB.Create(r.Context(), &anime).Error; err != nil {
-		log.Printf("Failed to create anime: %v", err)
+	result := h.DB.Create(r.Context(), &anime)
+	if result.Error != nil {
+		log.Printf("Failed to create anime: %v", result.Error)
 		http.Error(w, "Failed to create anime", http.StatusInternalServerError)
 		return
 	}
@@ -213,8 +217,9 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var anime models.Anime
-	if err := h.DB.First(r.Context(), &anime, uint(id)).Error; err != nil {
-		log.Printf("Anime not found: %v", err)
+	result := h.DB.First(r.Context(), &anime, uint(id))
+	if result.Error != nil {
+		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
@@ -226,8 +231,9 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	anime.ID = uint(id) // Ensure the ID is preserved during update
-	if err := h.DB.Save(r.Context(), &anime).Error; err != nil {
-		log.Printf("Failed to update anime: %v", err)
+	result = h.DB.Save(r.Context(), &anime)
+	if result.Error != nil {
+		log.Printf("Failed to update anime: %v", result.Error)
 		http.Error(w, "Failed to update anime", http.StatusInternalServerError)
 		return
 	}
@@ -260,14 +266,16 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var anime models.Anime
-	if err := h.DB.First(r.Context(), &anime, uint(id)).Error; err != nil {
-		log.Printf("Anime not found: %v", err)
+	result := h.DB.First(r.Context(), &anime, uint(id))
+	if result.Error != nil {
+		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
 
-	if err := h.DB.Delete(r.Context(), &models.Anime{}, id).Error; err != nil {
-		log.Printf("Failed to delete anime: %v", err)
+	result = h.DB.Delete(r.Context(), &models.Anime{}, id)
+	if result.Error != nil {
+		log.Printf("Failed to delete anime: %v", result.Error)
 		http.Error(w, "Failed to delete anime", http.StatusInternalServerError)
 		return
 	}
