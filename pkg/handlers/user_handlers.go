@@ -78,8 +78,9 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 	offset := (page - 1) * limit
 
 	var users []models.User
-	if err := h.DB.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
-		log.Printf("Failed to retrieve users: %v", err)
+	result := h.DB.Offset(offset).Limit(limit).Find(&users)
+	if result.Error != nil {
+		log.Printf("Failed to retrieve users: %v", result.Error)
 		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
 		return
 	}
@@ -112,8 +113,9 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := h.DB.First(r.Context(), &user, id).Error; err != nil {
-		log.Printf("User not found: %v", err)
+	result := h.DB.First(r.Context(), &user, id)
+	if result.Error != nil {
+		log.Printf("User not found: %v", result.Error)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -141,8 +143,9 @@ func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.DB.Create(r.Context(), &user).Error; err != nil {
-		log.Printf("Failed to create user: %v", err)
+	result := h.DB.Create(r.Context(), &user)
+	if result.Error != nil {
+		log.Printf("Failed to create user: %v", result.Error)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
@@ -179,8 +182,9 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var user models.User
-	if err := h.DB.First(r.Context(), &user, id).Error; err != nil {
-		log.Printf("User not found: %v", err)
+	result := h.DB.First(r.Context(), &user, id)
+	if result.Error != nil {
+		log.Printf("User not found: %v", result.Error)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -191,8 +195,9 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.DB.Save(r.Context(), &user).Error; err != nil {
-		log.Printf("Failed to update user: %v", err)
+	result = h.DB.Save(r.Context(), &user)
+	if result.Error != nil {
+		log.Printf("Failed to update user: %v", result.Error)
 		http.Error(w, "Failed to update user", http.StatusInternalServerError)
 		return
 	}
@@ -224,8 +229,9 @@ func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.DB.Delete(r.Context(), &models.User{}, id).Error; err != nil {
-		log.Printf("Failed to delete user: %v", err)
+	result := h.DB.Delete(r.Context(), &models.User{}, id)
+	if result.Error != nil {
+		log.Printf("Failed to delete user: %v", result.Error)
 		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		return
 	}
