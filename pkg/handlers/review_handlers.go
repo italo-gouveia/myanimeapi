@@ -65,8 +65,9 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	var review models.Review
-	if err := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id)).Error; err != nil {
-		log.Printf("Error fetching review: %v", err)
+	result := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	if result.Error != nil {
+		log.Printf("Error fetching review: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
@@ -97,16 +98,18 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Check if the user exists
 	var user models.User
-	if err := h.DB.First(r.Context(), &user, review.UserID).Error; err != nil {
-		log.Printf("User not found: %v", err)
+	result := h.DB.First(r.Context(), &user, review.UserID)
+	if result.Error != nil {
+		log.Printf("User not found: %v", result.Error)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
 	// Check if the anime exists
 	var anime models.Anime
-	if err := h.DB.First(r.Context(), &anime, review.AnimeID).Error; err != nil {
-		log.Printf("Anime not found: %v", err)
+	result = h.DB.First(r.Context(), &anime, review.AnimeID)
+	if result.Error != nil {
+		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
@@ -126,8 +129,9 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Create the review
-	if err := h.DB.Create(r.Context(), &review).Error; err != nil {
-		log.Printf("Failed to create review: %v", err)
+	result = h.DB.Create(r.Context(), &review)
+	if result.Error != nil {
+		log.Printf("Failed to create review: %v", result.Error)
 		http.Error(w, "Failed to create review", http.StatusInternalServerError)
 		return
 	}
@@ -164,8 +168,9 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	var review models.Review
-	if err := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id)).Error; err != nil {
-		log.Printf("Review not found: %v", err)
+	result := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	if result.Error != nil {
+		log.Printf("Review not found: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
@@ -178,21 +183,24 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Ensure the user and anime still exist
 	var user models.User
-	if err := h.DB.First(r.Context(), &user, review.UserID).Error; err != nil {
-		log.Printf("User not found: %v", err)
+	result = h.DB.First(r.Context(), &user, review.UserID)
+	if result.Error != nil {
+		log.Printf("User not found: %v", result.Error)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
 	var anime models.Anime
-	if err := h.DB.First(r.Context(), &anime, review.AnimeID).Error; err != nil {
-		log.Printf("Anime not found: %v", err)
+	result = h.DB.First(r.Context(), &anime, review.AnimeID)
+	if result.Error != nil {
+		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
 
-	if err := h.DB.Save(r.Context(), &review).Error; err != nil {
-		log.Printf("Failed to update review: %v", err)
+	result = h.DB.Save(r.Context(), &review)
+	if result.Error != nil {
+		log.Printf("Failed to update review: %v", result.Error)
 		http.Error(w, "Failed to update review", http.StatusInternalServerError)
 		return
 	}
@@ -228,15 +236,17 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	var review models.Review
 	// Use Unscoped to include soft-deleted records
-	if err := h.DB.Unscoped(r.Context()).Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id)).Error; err != nil {
-		log.Printf("Review not found: %v", err)
+	result := h.DB.Unscoped(r.Context()).Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	if result.Error != nil {
+		log.Printf("Review not found: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
 
 	// Delete the review
-	if err := h.DB.Delete(r.Context(), &models.Review{}, id).Error; err != nil {
-		log.Printf("Error deleting review: %v", err)
+	result = h.DB.Delete(r.Context(), &models.Review{}, id)
+	if result.Error != nil {
+		log.Printf("Error deleting review: %v", result.Error)
 		http.Error(w, "Failed to delete review", http.StatusInternalServerError)
 		return
 	}
