@@ -60,6 +60,27 @@ swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
 
 This command it will generate the swagger docs. And then, after you run the application locally, you will be abble to go to `http://localhost:8080/swagger/index.html`.
 
+----------
+Generate Mocks for DBInterface:
+Run the following command to generate a mock for the DBInterface:
+
+```bash
+mockgen -source=internal/db/db_interface.go -destination=internal/mocks/mock_db_interface.go -package=mocks
+```
+This will create a mock_db_interface.go file in the internal/db package.
+If you are on the powershell, try this:
+```shell
+mockgen -source="$PWD\internal\db\db_interface.go" -destination="$PWD\internal\mocks\mock_db_interface.go" -package=mocks
+```
+
+----------
+Run the Tests
+Run the tests using the following command:
+
+```bash
+go test -v ./pkg/handlers
+```
+
 ### Docker Setup
 
 Build and run the Docker containers:
