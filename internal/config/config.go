@@ -13,7 +13,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 )
 
 type ServerConfig struct {
@@ -103,7 +102,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-func getEnvAsBool(key string, defaultValue bool) bool {
+/*func getEnvAsBool(key string, defaultValue bool) bool {
 	if value, exists := os.LookupEnv(key); exists {
 		boolValue, err := strconv.ParseBool(value)
 		if err == nil {
@@ -121,4 +120,4 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		}
 	}
 	return defaultValue
-}
+}*/

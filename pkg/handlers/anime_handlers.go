@@ -66,7 +66,11 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(anime)
+	if err := json.NewEncoder(w).Encode(anime); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetAllAnimesHandler retrieves all anime entries
@@ -87,7 +91,11 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(animes)
+	if err := json.NewEncoder(w).Encode(animes); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by ID
@@ -150,7 +158,11 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(reviews)
+	if err := json.NewEncoder(w).Encode(reviews); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // CreateAnimeHandler creates a new anime entry
@@ -188,7 +200,11 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 
 	log.Printf("Anime %s created successfully", anime.Title)
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(anime)
+	if err := json.NewEncoder(w).Encode(anime); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // UpdateAnimeHandler updates an existing anime entry
@@ -240,7 +256,11 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 
 	log.Printf("Anime %s updated successfully", anime.Title)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(anime)
+	if err := json.NewEncoder(w).Encode(anime); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // DeleteAnimeHandler deletes an anime entry
