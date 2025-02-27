@@ -98,7 +98,11 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 
 	log.Printf("User %s registered successfully", user.Username)
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // AuthenticateHandler authenticates a user and returns a JWT token
@@ -145,7 +149,11 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 
 	log.Printf("User %s authenticated successfully", loginRequest.Username)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // RegisterAuthRoutes registers all authentication-related routes
