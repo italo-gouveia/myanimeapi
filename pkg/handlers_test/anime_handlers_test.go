@@ -72,6 +72,126 @@ func TestGetAnimeHandler_Success(t *testing.T) {
 	}
 }
 
+func TestGetAllAnimesHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	testAnimes := []models.Anime{
+		{ID: 1, Title: "Naruto"},
+		{ID: 2, Title: "One Piece"},
+	}
+
+	// Mock the DB call to return a list of animes
+	mockDB.EXPECT().
+		Find(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+			*dest.(*[]models.Anime) = testAnimes
+			return &gorm.DB{Error: nil}
+		})
+
+	req := httptest.NewRequest("GET", "/anime", nil)
+	rec := httptest.NewRecorder()
+	handler.GetAllAnimesHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected HTTP status 200 OK, got %d", resp.StatusCode)
+	}
+
+	var responseAnimes []models.Anime
+	if err := json.NewDecoder(resp.Body).Decode(&responseAnimes); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if len(responseAnimes) != len(testAnimes) {
+		t.Errorf("Expected %d animes, got %d", len(testAnimes), len(responseAnimes))
+	}
+}
+
+/*func TestGetPaginatedReviewsForAnimeHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	testReviews := []models.Review{
+		{ID: 1, AnimeID: 1, Content: "Great anime!"},
+		{ID: 2, AnimeID: 1, Content: "Awesome!"},
+	}
+
+	// Mock the DB call to return paginated reviews
+	mockDB.EXPECT().
+		Where(gomock.Any(), "anime_id = ?", uint64(1)).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Offset(0).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Limit(10).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Find(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+			*dest.(*[]models.Review) = testReviews
+			return &gorm.DB{Error: nil}
+		})
+
+	req := httptest.NewRequest("GET", "/anime/1/reviews?page=1&limit=10", nil)
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.GetPaginatedReviewsForAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected HTTP status 200 OK, got %d", resp.StatusCode)
+	}
+
+	var responseReviews []models.Review
+	if err := json.NewDecoder(resp.Body).Decode(&responseReviews); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if len(responseReviews) != len(testReviews) {
+		t.Errorf("Expected %d reviews, got %d", len(testReviews), len(responseReviews))
+	}
+}*/
+
+func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	req := httptest.NewRequest("GET", "/anime/1/reviews?page=invalid&limit=invalid", nil)
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.GetPaginatedReviewsForAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
+	}
+}
+
 func TestGetAnimeHandler_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -159,6 +279,47 @@ func TestGetAllAnimesHandler_Empty(t *testing.T) {
 
 	if len(responseAnimes) != 0 {
 		t.Errorf("Expected empty slice, got %d items", len(responseAnimes))
+	}
+}
+
+func TestCreateAnimeHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	testAnime := models.Anime{
+		Title: "Naruto",
+	}
+
+	// Mock the DB call to create a new anime
+	mockDB.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, dest interface{}) *gorm.DB {
+			*dest.(*models.Anime) = testAnime
+			return &gorm.DB{Error: nil}
+		})
+
+	reqBody, _ := json.Marshal(testAnime)
+	req := httptest.NewRequest("POST", "/anime", bytes.NewBuffer(reqBody))
+	rec := httptest.NewRecorder()
+	handler.CreateAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		t.Errorf("Expected HTTP status 201 Created, got %d", resp.StatusCode)
+	}
+
+	var responseAnime models.Anime
+	if err := json.NewDecoder(resp.Body).Decode(&responseAnime); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if responseAnime.Title != testAnime.Title {
+		t.Errorf("Expected title %s, got %s", testAnime.Title, responseAnime.Title)
 	}
 }
 
