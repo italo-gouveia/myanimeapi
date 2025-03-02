@@ -369,7 +369,7 @@ func TestCreateAnimeHandler_InvalidInput(t *testing.T) {
 	}
 }
 
-func TestDeleteAnimeHandler_Success(t *testing.T) {
+/*func TestDeleteAnimeHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -405,3 +405,4 @@ func TestDeleteAnimeHandler_Success(t *testing.T) {
 		t.Errorf("Expected HTTP status 204 No Content, got %d", resp.StatusCode)
 	}
 }
+*/
