@@ -348,3 +348,61 @@ func TestCreateAnimeHandler_MissingTitle(t *testing.T) {
 		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
 	}
 }
+
+func TestCreateAnimeHandler_InvalidInput(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	reqBody := []byte(`{"title": 123}`) // Invalid JSON
+	req := httptest.NewRequest("POST", "/anime", bytes.NewBuffer(reqBody))
+	rec := httptest.NewRecorder()
+	handler.CreateAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
+	}
+}
+
+/*func TestDeleteAnimeHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	// Mock the DB call to find the anime
+	mockDB.EXPECT().
+		First(gomock.Any(), gomock.Any(), uint64(1)).
+		DoAndReturn(func(ctx context.Context, dest interface{}, id uint64) *gorm.DB {
+			*dest.(*models.Anime) = models.Anime{ID: 1, Title: "Naruto"}
+			return &gorm.DB{Error: nil}
+		})
+
+	// Mock the DB call to delete the anime
+	mockDB.EXPECT().
+		Delete(gomock.Any(), gomock.Any(), uint64(1)).
+		Return(&gorm.DB{Error: nil})
+
+	req := httptest.NewRequest("DELETE", "/anime/1", nil)
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.DeleteAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		t.Errorf("Expected HTTP status 204 No Content, got %d", resp.StatusCode)
+	}
+}
+*/
