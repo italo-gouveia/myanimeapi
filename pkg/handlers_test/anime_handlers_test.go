@@ -528,6 +528,49 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 	}
 }*/
 
+/*func TestUpdateAnimeHandler_DBError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	testAnime := models.Anime{
+		ID:    1,
+		Title: "Naruto Shippuden",
+	}
+
+	// Mock the DB call to find the anime
+	mockDB.EXPECT().
+		First(gomock.Any(), gomock.Any(), uint64(1)).
+		DoAndReturn(func(ctx context.Context, dest interface{}, id uint64) *gorm.DB {
+			*dest.(*models.Anime) = models.Anime{ID: 1, Title: "Naruto"}
+			return &gorm.DB{Error: nil}
+		})
+
+	// Mock the DB call to save the updated anime, returning an error
+	mockDB.EXPECT().
+		Save(gomock.Any(), gomock.Any()).
+		Return(&gorm.DB{Error: errors.New("database error")})
+
+	reqBody, _ := json.Marshal(testAnime)
+	req := httptest.NewRequest("PUT", "/anime/1", bytes.NewBuffer(reqBody))
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.UpdateAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
+	}
+}*/
+
 /*
 	func TestDeleteAnimeHandler_Success(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -592,6 +635,43 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("Expected HTTP status 404 Not Found, got %d", resp.StatusCode)
+	}
+}
+*/
+/*func TestDeleteAnimeHandler_DBError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	// Mock the DB call to find the anime
+	mockDB.EXPECT().
+		First(gomock.Any(), gomock.Any(), uint64(1)).
+		DoAndReturn(func(ctx context.Context, dest interface{}, id uint64) *gorm.DB {
+			*dest.(*models.Anime) = models.Anime{ID: 1, Title: "Naruto"}
+			return &gorm.DB{Error: nil}
+		})
+
+	// Mock the DB call to delete the anime, returning an error
+	mockDB.EXPECT().
+		Delete(gomock.Any(), gomock.Any(), uint64(1)).
+		Return(&gorm.DB{Error: errors.New("database error")})
+
+	req := httptest.NewRequest("DELETE", "/anime/1", nil)
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.DeleteAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
 	}
 }
 */
