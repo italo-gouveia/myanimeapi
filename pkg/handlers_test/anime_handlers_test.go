@@ -241,6 +241,44 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 		t.Errorf("Expected empty slice, got %d items", len(responseReviews))
 	}
 }*/
+/*
+func TestGetPaginatedReviewsForAnimeHandler_DBError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	// Mock the DB call to return an error
+	mockDB.EXPECT().
+		Where(gomock.Any(), "anime_id = ?", uint64(1)).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Offset(0).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Limit(10).
+		Return(mockDB)
+	mockDB.EXPECT().
+		Find(gomock.Any(), gomock.Any()).
+		Return(&gorm.DB{Error: errors.New("database error")})
+
+	req := httptest.NewRequest("GET", "/anime/1/reviews?page=1&limit=10", nil)
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.GetPaginatedReviewsForAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
+	}
+}*/
 
 func TestGetAnimeHandler_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
