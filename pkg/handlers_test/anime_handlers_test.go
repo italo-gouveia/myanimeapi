@@ -280,6 +280,30 @@ func TestGetPaginatedReviewsForAnimeHandler_DBError(t *testing.T) {
 	}
 }*/
 
+func TestGetPaginatedReviewsForAnimeHandler_InvalidAnimeID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	req := httptest.NewRequest("GET", "/anime/invalid/reviews?page=1&limit=10", nil)
+	vars := map[string]string{
+		"id": "invalid",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.GetPaginatedReviewsForAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
+	}
+}
+
 func TestGetAnimeHandler_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -333,6 +357,36 @@ func TestGetAnimeHandler_InvalidID(t *testing.T) {
 	}
 }
 
+/*
+	func TestGetAnimeHandler_DBError(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockDB := mocks.NewMockDBInterface(ctrl)
+		handler := handlers.AnimeHandler{DB: mockDB}
+
+		// Mock the DB call to return an error
+		mockDB.EXPECT().
+			First(gomock.Any(), gomock.Any(), uint64(1)).
+			Return(&gorm.DB{Error: errors.New("database error")})
+
+		req := httptest.NewRequest("GET", "/anime/1", nil)
+		vars := map[string]string{
+			"id": "1",
+		}
+		req = mux.SetURLVars(req, vars)
+
+		rec := httptest.NewRecorder()
+		handler.GetAnimeHandler(rec, req)
+
+		resp := rec.Result()
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
+		}
+	}
+*/
 func TestGetAllAnimesHandler_Empty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -510,6 +564,26 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 	}
 }
 
+func TestCreateAnimeHandler_InvalidJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	reqBody := []byte(`{"title": "Naruto", "description":}`) // Invalid JSON
+	req := httptest.NewRequest("POST", "/anime", bytes.NewBuffer(reqBody))
+	rec := httptest.NewRecorder()
+	handler.CreateAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
+	}
+}
+
 /*func TestUpdateAnimeHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -630,6 +704,31 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 
 	if resp.StatusCode != http.StatusInternalServerError {
 		t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
+	}
+}*/
+
+/*func TestUpdateAnimeHandler_InvalidJSON(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	reqBody := []byte(`{"title": "Naruto Shippuden", "description":}`) // Invalid JSON
+	req := httptest.NewRequest("PUT", "/anime/1", bytes.NewBuffer(reqBody))
+	vars := map[string]string{
+		"id": "1",
+	}
+	req = mux.SetURLVars(req, vars)
+
+	rec := httptest.NewRecorder()
+	handler.UpdateAnimeHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
 	}
 }*/
 
