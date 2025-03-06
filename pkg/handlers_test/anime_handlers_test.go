@@ -370,6 +370,30 @@ func TestGetAllAnimesHandler_Empty(t *testing.T) {
 	}
 }
 
+func TestGetAllAnimesHandler_DBError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDBInterface(ctrl)
+	handler := handlers.AnimeHandler{DB: mockDB}
+
+	// Mock the DB call to return an error
+	mockDB.EXPECT().
+		Find(gomock.Any(), gomock.Any()).
+		Return(&gorm.DB{Error: errors.New("database error")})
+
+	req := httptest.NewRequest("GET", "/anime", nil)
+	rec := httptest.NewRecorder()
+	handler.GetAllAnimesHandler(rec, req)
+
+	resp := rec.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("Expected HTTP status 500 Internal Server Error, got %d", resp.StatusCode)
+	}
+}
+
 func TestCreateAnimeHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
