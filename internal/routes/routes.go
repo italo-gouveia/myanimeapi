@@ -23,6 +23,12 @@ import (
 
 // RegisterRoutes registers all routes for the application
 func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler) {
+	// Create a new rate limiter with a limit of 100 requests per minute
+	rateLimiter := middleware.NewRateLimiter()
+
+	// Apply rate limiting middleware
+	router.Use(rateLimiter.RateLimitMiddleware)
+
 	// Apply global middleware
 	router.Use(middleware.LoggingMiddleware)
 	log.Println("Global middleware registered")
