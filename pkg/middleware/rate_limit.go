@@ -1,3 +1,4 @@
+// pkg/middleware/rate_limit.go
 package middleware
 
 import (
@@ -66,7 +67,10 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		if rl.clients[ip].count >= limit {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error": "Rate limit exceeded. Please try again later."}`))
+			_, err := w.Write([]byte(`{"error": "Rate limit exceeded. Please try again later."}`))
+			if err != nil {
+				log.Printf("Failed to write response: %v", err)
+			}
 			return
 		}
 
