@@ -192,7 +192,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	}
 }
 
-/*func TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit(t *testing.T) {
+func TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -214,9 +214,9 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
 	}
-}*/
+}
 
-/*func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
+func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -238,7 +238,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected HTTP status 400 Bad Request, got %d", resp.StatusCode)
 	}
-}*/
+}
 
 /*func TestGetPaginatedReviewsForAnimeHandler_LargeLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
