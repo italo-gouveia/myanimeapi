@@ -57,9 +57,9 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 	// Parse page number
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
-		if err != nil {
+		if err != nil || page < 1 {
 			log.Printf("Invalid page number: %v", err)
-			http.Error(w, "Invalid page number", http.StatusBadRequest)
+			http.Error(w, "Invalid page number. Must be a positive integer.", http.StatusBadRequest)
 			return
 		}
 	}
@@ -67,9 +67,9 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 	// Parse limit number
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
-		if err != nil {
+		if err != nil || limit < 1 || limit > 100 {
 			log.Printf("Invalid limit number: %v", err)
-			http.Error(w, "Invalid limit number", http.StatusBadRequest)
+			http.Error(w, "Invalid limit number. Must be a positive integer between 1 and 100.", http.StatusBadRequest)
 			return
 		}
 	}
