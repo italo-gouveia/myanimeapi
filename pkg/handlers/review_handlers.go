@@ -22,11 +22,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/internal/db"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
+	"myanimeapi/pkg/validation"
 
 	"github.com/gorilla/mux"
 )
@@ -56,11 +56,11 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -153,11 +153,11 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -231,11 +231,11 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
