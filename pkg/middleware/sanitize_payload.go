@@ -4,6 +4,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"reflect"
 
@@ -23,14 +24,22 @@ const ValidatedPayloadKey contextKeyValidation = "validatedPayload"
 // Generic middleware for validation and sanitization
 func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Log the start of the middleware
+		log.Println("Middleware: ValidateAndSanitizePayload started")
+
 		// Create a new instance of the payload type
 		payload := reflect.New(reflect.TypeOf(payloadType)).Interface()
 
 		// Decode the request body into the payload
 		if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
+			// Log the error
+			log.Printf("Middleware: Invalid input - %v", err)
 			http.Error(w, "Invalid input", http.StatusBadRequest)
 			return
 		}
+
+		// Log the decoded payload
+		log.Printf("Middleware: Decoded payload - %+v", payload)
 
 		// Validate the payload
 		if err := validate.Struct(payload); err != nil {
@@ -55,15 +64,26 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 				}
 			}
 
+			// Log the validation errors
+			log.Printf("Middleware: Validation errors - %+v", errorMessages)
+
 			// Return the custom error messages as JSON
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages})
+			if err := json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages}); err != nil {
+				// Log the error
+				log.Printf("Middleware: Failed to encode error response - %v", err)
+				http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 
 		// Sanitize string fields in the payload
 		sanitizePayload(payload)
+
+		// Log the sanitized payload
+		log.Printf("Middleware: Sanitized payload - %+v", payload)
 
 		// Store the validated and sanitized payload in the context using the custom key
 		ctx := context.WithValue(r.Context(), ValidatedPayloadKey, payload)
