@@ -16,11 +16,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/internal/db"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
+	"myanimeapi/pkg/validation"
 
 	"github.com/gorilla/mux"
 )
@@ -49,11 +49,11 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -114,37 +114,22 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	// Validate pagination
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-
-	// Set default values if not provided
-	page := 1
-	limit := 10
-
-	if pageStr != "" {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			log.Printf("Invalid page number: %v", err)
-			http.Error(w, "Invalid page number. Must be a positive integer.", http.StatusBadRequest)
-			return
-		}
-	}
-
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil || limit < 1 || limit > 100 {
-			log.Printf("Invalid limit number: %v", err)
-			http.Error(w, "Invalid limit number. Must be a positive integer between 1 and 100.", http.StatusBadRequest)
-			return
-		}
+	page, limit, err := validation.ValidatePagination(pageStr, limitStr, 1, 10)
+	if err != nil {
+		log.Printf("Invalid pagination parameters: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	var reviews []models.Review
@@ -177,30 +162,24 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 // @Failure 500 {string} string "Failed to create anime"
 // @Router /animes [post]
 func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	var anime models.Anime
-	if err := json.NewDecoder(r.Body).Decode(&anime); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Anime)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if title is provided
-	if anime.Title == "" {
-		log.Println("Title is required")
-		http.Error(w, "Title is required", http.StatusBadRequest)
-		return
-	}
-
-	result := h.DB.Create(r.Context(), &anime)
+	// Proceed with creating the anime
+	result := h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to create anime: %v", result.Error)
 		http.Error(w, "Failed to create anime", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Anime %s created successfully", anime.Title)
+	log.Printf("Anime %s created successfully", payload.Title)
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(anime); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -224,39 +203,42 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var anime models.Anime
-	result := h.DB.First(r.Context(), &anime, uint(id))
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Anime)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		return
+	}
+
+	result := h.DB.First(r.Context(), &payload, uint(id))
 	if result.Error != nil {
 		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&anime); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+	// Ensure the ID is preserved during update
+	payload.ID = uint(id)
 
-	anime.ID = uint(id) // Ensure the ID is preserved during update
-	result = h.DB.Save(r.Context(), &anime)
+	// Save the updated anime
+	result = h.DB.Save(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to update anime: %v", result.Error)
 		http.Error(w, "Failed to update anime", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Anime %s updated successfully", anime.Title)
+	log.Printf("Anime %s updated successfully", payload.Title)
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(anime); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -277,11 +259,11 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -316,7 +298,7 @@ func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
 	// Protected routes (require authentication)
-	protectedRouter.HandleFunc("", h.CreateAnimeHandler).Methods("POST")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", h.UpdateAnimeHandler).Methods("PUT")
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateAnimeHandler), models.Anime{})).Methods("POST")
+	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateAnimeHandler), models.Anime{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteAnimeHandler).Methods("DELETE")
 }

@@ -46,59 +46,50 @@ func NewAuthHandler(db db.DBInterface) *AuthHandler {
 // @Failure 500 {string} string "Failed to hash password or create user"
 // @Router /auth/register [post]
 func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		log.Printf("Error decoding request body: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-
-	// Check if username and password are provided
-	if user.Username == "" || user.Password == "" {
-		log.Println("Username and password are required")
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if a user with the same username already exists
 	var existingUser models.User
-	result := h.DB.Where(r.Context(), "username = ?", user.Username).First(&existingUser)
+	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&existingUser)
 	if result.Error == nil {
-		log.Printf("User with username %s already exists", user.Username)
+		log.Printf("User with username %s already exists", payload.Username)
 		http.Error(w, "User with this username already exists", http.StatusConflict)
 		return
 	}
 
-	// Check if a user with the same email already exists (only if email is provided)
-	if user.Email != "" {
-		result = h.DB.Where(r.Context(), "email = ?", user.Email).First(&existingUser)
-		if result.Error == nil {
-			log.Printf("User with email %s already exists", user.Email)
-			http.Error(w, "User with this email already exists", http.StatusConflict)
-			return
-		}
+	// Check if a user with the same email already exists
+	result = h.DB.Where(r.Context(), "email = ?", payload.Email).First(&existingUser)
+	if result.Error == nil {
+		log.Printf("User with email %s already exists", payload.Email)
+		http.Error(w, "User with this email already exists", http.StatusConflict)
+		return
 	}
 
 	// Hash the user's password
-	hashedPassword, err := auth.HashPassword(user.Password)
+	hashedPassword, err := auth.HashPassword(payload.Password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
-	user.Password = hashedPassword
+	payload.Password = hashedPassword
 
 	// Create the user
-	result = h.DB.Create(r.Context(), &user)
+	result = h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Error creating user: %v", result.Error)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("User %s registered successfully", user.Username)
+	log.Printf("User %s registered successfully", payload.Username)
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -118,23 +109,23 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 // @Failure 500 {string} string "Failed to generate token"
 // @Router /auth/authenticate [post]
 func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
-	var loginRequest models.UserCredentials
-	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-		log.Printf("Error decoding request body: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.UserCredentials)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
 
 	var user models.User
-	result := h.DB.Where(r.Context(), "username = ?", loginRequest.Username).First(&user)
+	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&user)
 	if result.Error != nil {
-		log.Printf("User %s not found", loginRequest.Username)
+		log.Printf("User %s not found", payload.Username)
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
 
-	if !auth.CheckPasswordHash(loginRequest.Password, user.Password) {
-		log.Printf("Invalid credentials for user %s", loginRequest.Username)
+	if !auth.CheckPasswordHash(payload.Password, user.Password) {
+		log.Printf("Invalid credentials for user %s", payload.Username)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
@@ -147,7 +138,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Printf("User %s authenticated successfully", loginRequest.Username)
+	log.Printf("User %s authenticated successfully", payload.Username)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
 		log.Printf("Failed to encode response: %v", err)
@@ -159,6 +150,6 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 // RegisterAuthRoutes registers all authentication-related routes
 func (h *AuthHandler) RegisterAuthRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
-	router.HandleFunc("/auth/authenticate", h.AuthenticateHandler).Methods("POST")
-	router.HandleFunc("/auth/register", h.RegisterUserHandler).Methods("POST")
+	router.Handle("/auth/authenticate", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AuthenticateHandler), models.UserCredentials{})).Methods("POST")
+	router.Handle("/auth/register", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.RegisterUserHandler), models.User{})).Methods("POST")
 }
