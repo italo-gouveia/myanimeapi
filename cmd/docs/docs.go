@@ -875,6 +875,9 @@ const docTemplate = `{
     "definitions": {
         "models.Anime": {
             "type": "object",
+            "required": [
+                "title"
+            ],
             "properties": {
                 "created_at": {
                     "description": "Creation timestamp",
@@ -884,6 +887,7 @@ const docTemplate = `{
                 "description": {
                     "description": "Description",
                     "type": "string",
+                    "maxLength": 500,
                     "example": "A story about ninjas."
                 },
                 "id": {
@@ -892,8 +896,10 @@ const docTemplate = `{
                     "example": 1
                 },
                 "rating": {
-                    "description": "Rating",
+                    "description": "Rating                          // Rating",
                     "type": "number",
+                    "maximum": 10,
+                    "minimum": 0,
                     "example": 8.5
                 },
                 "reviews": {
@@ -906,6 +912,8 @@ const docTemplate = `{
                 "title": {
                     "description": "Title",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
                     "example": "Naruto"
                 },
                 "updated_at": {
@@ -917,6 +925,9 @@ const docTemplate = `{
         },
         "models.Review": {
             "type": "object",
+            "required": [
+                "content"
+            ],
             "properties": {
                 "anime": {
                     "description": "Relationship with Anime",
@@ -934,6 +945,7 @@ const docTemplate = `{
                 "content": {
                     "description": "Review content",
                     "type": "string",
+                    "maxLength": 500,
                     "example": "This anime is amazing!"
                 },
                 "created_at": {
@@ -949,6 +961,8 @@ const docTemplate = `{
                 "rating": {
                     "description": "Rating (0-10)",
                     "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
                     "example": 9
                 },
                 "updated_at": {
@@ -973,6 +987,11 @@ const docTemplate = `{
         },
         "models.User": {
             "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
             "properties": {
                 "created_at": {
                     "description": "Creation timestamp",
@@ -982,6 +1001,8 @@ const docTemplate = `{
                 "email": {
                     "description": "Email",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
                     "example": "john@example.com"
                 },
                 "id": {
@@ -995,8 +1016,10 @@ const docTemplate = `{
                     "example": false
                 },
                 "password": {
-                    "description": "Password",
+                    "description": "Password // Password",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 8,
                     "example": "password123"
                 },
                 "reviews": {
@@ -1014,21 +1037,31 @@ const docTemplate = `{
                 "username": {
                     "description": "Username",
                     "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
                     "example": "john_doe"
                 }
             }
         },
         "models.UserCredentials": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
                     "description": "Password",
                     "type": "string",
+                    "maxLength": 100,
+                    "minLength": 8,
                     "example": "password123"
                 },
                 "username": {
                     "description": "Username",
                     "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
                     "example": "john_doe"
                 }
             }
