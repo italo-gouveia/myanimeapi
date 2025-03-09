@@ -93,16 +93,16 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} map[string]string
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
-	var review models.Review
-	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if the user exists
 	var user models.User
-	result := h.DB.First(r.Context(), &user, review.UserID)
+	result := h.DB.First(r.Context(), &user, payload.UserID)
 	if result.Error != nil {
 		log.Printf("User not found: %v", result.Error)
 		http.Error(w, "User not found", http.StatusNotFound)
@@ -111,39 +111,25 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Check if the anime exists
 	var anime models.Anime
-	result = h.DB.First(r.Context(), &anime, review.AnimeID)
+	result = h.DB.First(r.Context(), &anime, payload.AnimeID)
 	if result.Error != nil {
 		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
 		return
 	}
 
-	// Validate if the content is provided
-	if review.Content == "" {
-		log.Println("Content is required")
-		http.Error(w, "Content is required", http.StatusBadRequest)
-		return
-	}
-
-	// Validate if the rating is between 0 to 10
-	if review.Rating < 0 || review.Rating > 10 {
-		log.Println("Rating should be between 0 to 10")
-		http.Error(w, "Rating should be between 0 to 10", http.StatusBadRequest)
-		return
-	}
-
 	// Create the review
-	result = h.DB.Create(r.Context(), &review)
+	result = h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to create review: %v", result.Error)
 		http.Error(w, "Failed to create review", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Review created successfully: ID %d", review.ID)
+	log.Printf("Review created successfully: ID %d", payload.ID)
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(review); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -168,24 +154,26 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 
 	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32) // Convert to uint32
+	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, "Invalid ID format", http.StatusBadRequest)
 		return
 	}
 
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch the existing review
 	var review models.Review
 	result := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
 	if result.Error != nil {
 		log.Printf("Review not found: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
-		return
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
@@ -206,6 +194,11 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Update the review fields
+	review.Content = payload.Content
+	review.Rating = payload.Rating
+
+	// Save the updated review
 	result = h.DB.Save(r.Context(), &review)
 	if result.Error != nil {
 		log.Printf("Failed to update review: %v", result.Error)
@@ -277,7 +270,7 @@ func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
 	// Protected routes (require authentication)
-	protectedRouter.HandleFunc("", h.CreateReviewHandler).Methods("POST")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", h.UpdateReviewHandler).Methods("PUT")
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateReviewHandler), models.Review{})).Methods("POST")
+	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateReviewHandler), models.Review{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteReviewHandler).Methods("DELETE")
 }

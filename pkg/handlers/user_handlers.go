@@ -144,23 +144,41 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Failed to create user"
 // @Router /users [post]
 func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
 		return
 	}
 
-	result := h.DB.Create(r.Context(), &user)
+	// Check if a user with the same username already exists
+	var existingUser models.User
+	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&existingUser)
+	if result.Error == nil {
+		log.Printf("User with username %s already exists", payload.Username)
+		http.Error(w, "User with this username already exists", http.StatusConflict)
+		return
+	}
+
+	// Check if a user with the same email already exists
+	result = h.DB.Where(r.Context(), "email = ?", payload.Email).First(&existingUser)
+	if result.Error == nil {
+		log.Printf("User with email %s already exists", payload.Email)
+		http.Error(w, "User with this email already exists", http.StatusConflict)
+		return
+	}
+
+	// Create the user
+	result = h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to create user: %v", result.Error)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("User %s created successfully", user.Username)
+	log.Printf("User %s created successfully", payload.Username)
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -193,6 +211,14 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
+	if !ok {
+		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch the existing user
 	var user models.User
 	result := h.DB.First(r.Context(), &user, id)
 	if result.Error != nil {
@@ -201,12 +227,13 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		log.Printf("Invalid input: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+	// Update the user fields
+	user.Username = payload.Username
+	user.Email = payload.Email
+	user.Password = payload.Password
+	user.IsAdmin = payload.IsAdmin
 
+	// Save the updated user
 	result = h.DB.Save(r.Context(), &user)
 	if result.Error != nil {
 		log.Printf("Failed to update user: %v", result.Error)
@@ -267,7 +294,7 @@ func (h *UserHandler) RegisterUserRoutes(router *mux.Router) {
 
 	// Protected routes (require authentication)
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.GetUserHandler).Methods("GET")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", h.UpdateUserHandler).Methods("PUT")
+	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateUserHandler), models.User{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteUserHandler).Methods("DELETE")
 
 	// Create a subrouter for admin-only routes
