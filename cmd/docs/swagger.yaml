@@ -9,14 +9,17 @@ definitions:
       description:
         description: Description
         example: A story about ninjas.
+        maxLength: 500
         type: string
       id:
         description: Review ID
         example: 1
         type: integer
       rating:
-        description: Rating
+        description: Rating                          // Rating
         example: 8.5
+        maximum: 10
+        minimum: 0
         type: number
       reviews:
         description: Relationship with Review
@@ -26,11 +29,15 @@ definitions:
       title:
         description: Title
         example: Naruto
+        maxLength: 100
+        minLength: 3
         type: string
       updated_at:
         description: Update timestamp
         example: "2025-02-20T19:27:00Z"
         type: string
+    required:
+    - title
     type: object
   models.Review:
     properties:
@@ -45,6 +52,7 @@ definitions:
       content:
         description: Review content
         example: This anime is amazing!
+        maxLength: 500
         type: string
       created_at:
         description: Creation timestamp
@@ -57,6 +65,8 @@ definitions:
       rating:
         description: Rating (0-10)
         example: 9
+        maximum: 10
+        minimum: 0
         type: integer
       updated_at:
         description: Update timestamp
@@ -70,6 +80,8 @@ definitions:
         description: User ID
         example: 1
         type: integer
+    required:
+    - content
     type: object
   models.User:
     properties:
@@ -80,6 +92,8 @@ definitions:
       email:
         description: Email
         example: john@example.com
+        maxLength: 100
+        minLength: 5
         type: string
       id:
         description: Review ID
@@ -90,8 +104,10 @@ definitions:
         example: false
         type: boolean
       password:
-        description: Password
+        description: Password // Password
         example: password123
+        maxLength: 100
+        minLength: 8
         type: string
       reviews:
         description: Relationship with Review
@@ -105,18 +121,31 @@ definitions:
       username:
         description: Username
         example: john_doe
+        maxLength: 50
+        minLength: 3
         type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   models.UserCredentials:
     properties:
       password:
         description: Password
         example: password123
+        maxLength: 100
+        minLength: 8
         type: string
       username:
         description: Username
         example: john_doe
+        maxLength: 50
+        minLength: 3
         type: string
+    required:
+    - password
+    - username
     type: object
 host: localhost:8080
 info:
