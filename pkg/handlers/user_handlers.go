@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/internal/db"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
+	"myanimeapi/pkg/validation"
 
 	"github.com/gorilla/mux"
 )
@@ -45,33 +45,14 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Extract pagination parameters
+	// Validate pagination
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-
-	// Default values
-	page := 1
-	limit := 10
-	var err error
-
-	// Parse page number
-	if pageStr != "" {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			log.Printf("Invalid page number: %v", err)
-			http.Error(w, "Invalid page number. Must be a positive integer.", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Parse limit number
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil || limit < 1 || limit > 100 {
-			log.Printf("Invalid limit number: %v", err)
-			http.Error(w, "Invalid limit number. Must be a positive integer between 1 and 100.", http.StatusBadRequest)
-			return
-		}
+	page, limit, err := validation.ValidatePagination(pageStr, limitStr, 1, 10)
+	if err != nil {
+		log.Printf("Invalid pagination parameters: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	// Calculate offset
@@ -108,11 +89,11 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -203,11 +184,11 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -264,11 +245,11 @@ func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Convert the ID from string to uint
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	// Validate ID
+	id, err := validation.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
