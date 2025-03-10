@@ -124,11 +124,30 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if !auth.CheckPasswordHash(payload.Password, user.Password) {
+	// Migrate the hash if necessary
+	newHash, err := auth.MigrateHash(payload.Password, user.Password)
+	if err != nil {
 		log.Printf("Invalid credentials for user %s", payload.Username)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
+
+	// Update the database with the new hash if it was migrated
+	if newHash != user.Password {
+		user.Password = newHash
+		result = h.DB.Save(r.Context(), &user)
+		if result.Error != nil {
+			log.Printf("Failed to update user hash: %v", result.Error)
+			http.Error(w, "Failed to update user hash", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	/*	if !auth.CheckPasswordHash(payload.Password, user.Password) {
+		log.Printf("Invalid credentials for user %s", payload.Username)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}*/
 
 	// Generate JWT token
 	token, err := middleware.GenerateToken(user.ID, user.IsAdmin)
