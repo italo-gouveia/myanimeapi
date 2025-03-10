@@ -10,7 +10,7 @@ import (
 // UserCredentials for authentication
 type UserCredentials struct {
 	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`     // Username
-	Password string `json:"password" validate:"required,min=8,max=100" example:"password123"` // Password
+	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"` // Password
 }
 
 // Claims for JWT
@@ -27,7 +27,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                              // Update timestamp
 	Username  string    `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`    // Username
 	Email     string    `json:"email" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email
-	Password  string    `json:"password" gorm:"not null" validate:"required,min=8,max=100" example:"password123"`       // Password // Password
+	Password  string    `json:"password" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`       // Password // Password
 	IsAdmin   bool      `json:"is_admin" gorm:"default:false" example:"false"`                                          // IsAdmin
 
 	Reviews []Review // Relationship with Review
