@@ -1019,7 +1019,7 @@ const docTemplate = `{
                     "description": "Password // Password",
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 8,
+                    "minLength": 5,
                     "example": "password123"
                 },
                 "reviews": {
@@ -1054,7 +1054,7 @@ const docTemplate = `{
                     "description": "Password",
                     "type": "string",
                     "maxLength": 100,
-                    "minLength": 8,
+                    "minLength": 5,
                     "example": "password123"
                 },
                 "username": {

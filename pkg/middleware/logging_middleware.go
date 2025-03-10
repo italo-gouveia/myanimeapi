@@ -1,4 +1,4 @@
-// pkg/middleware/middleware.go
+// pkg/middleware/logging_middleware.go
 // This package defines a logging middleware that logs incoming requests.
 // It is used by the server to log incoming requests.
 // It is a simple middleware that logs the incoming request and passes it to the next handler.
