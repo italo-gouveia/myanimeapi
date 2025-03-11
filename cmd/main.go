@@ -38,8 +38,9 @@ import (
 	"myanimeapi/internal/db"
 	"myanimeapi/internal/routes"
 	"myanimeapi/pkg/database"
-	"myanimeapi/pkg/handlers" // Ensure you import the handlers package
+	myhandlers "myanimeapi/pkg/handlers" // Alias for your custom handlers package
 
+	gorillahandlers "github.com/gorilla/handlers" // Alias for Gorilla's handlers package
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -85,10 +86,10 @@ func main() {
 	log.Println("Database schema migrated successfully")
 
 	// Initialize handlers with the database instance
-	animeHandler := handlers.NewAnimeHandler(dbWrapper)
-	userHandler := handlers.NewUserHandler(dbWrapper)
-	reviewHandler := handlers.NewReviewHandler(dbWrapper)
-	authHandler := handlers.NewAuthHandler(dbWrapper)
+	animeHandler := myhandlers.NewAnimeHandler(dbWrapper)
+	userHandler := myhandlers.NewUserHandler(dbWrapper)
+	reviewHandler := myhandlers.NewReviewHandler(dbWrapper)
+	authHandler := myhandlers.NewAuthHandler(dbWrapper)
 	log.Println("Handlers initialized successfully")
 
 	// Create a new router
@@ -99,10 +100,17 @@ func main() {
 	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler)
 	log.Println("Routes registered successfully")
 
+	// Configure CORS
+	corsHandler := gorillahandlers.CORS(
+		gorillahandlers.AllowedOrigins([]string{"*"}), // Allow all origins
+		gorillahandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}),
+		gorillahandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
+
 	// Start the server with graceful shutdown
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler: router,
+		Handler: corsHandler(router),
 	}
 
 	// Channel to listen for interrupt signals
