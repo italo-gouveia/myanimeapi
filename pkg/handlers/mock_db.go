@@ -3,11 +3,11 @@ package handlers
 
 import (
 	"context"
+
 	"myanimeapi/pkg/models"
 
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // MockDB is a mock implementation of DBInterface
@@ -15,139 +15,101 @@ type MockDB struct {
 	mock.Mock
 }
 
-// First is a mock method for querying the database
-/*func (m *MockDB) First(out interface{}, where ...interface{}) *gorm.DB {
-	args := m.Called(out, where)
-	if len(args) > 0 {
-		return args.Get(0).(*gorm.DB)
-	}
-	return nil
-}*/
-
-/*func (m *MockDB) Find(dest interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(dest, conds)
-	return args.Get(0).(*gorm.DB)
-}*/
-
-/*
-	func (m *MockDB) Where(query interface{}, args ...interface{}) *gorm.DB {
-		args = append([]interface{}{query}, args...)
-		result := m.Called(args...)
-		return result.Get(0).(*gorm.DB)
-	}
-*/
-
-func (m *MockDB) Create(value interface{}) *gorm.DB {
-	args := m.Called(value)
+// WithContext mocks the WithContext method
+func (m *MockDB) WithContext(ctx context.Context) *gorm.DB {
+	args := m.Called(ctx)
 	return args.Get(0).(*gorm.DB)
 }
 
-func (m *MockDB) Save(value interface{}) *gorm.DB {
-	args := m.Called(value)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Delete(value interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(value, conds)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Preload(column string, conditions ...interface{}) *gorm.DB {
-	args := m.Called(column, conditions)
-	return args.Get(0).(*gorm.DB)
-}
-
-/*
-	func (m *MockDB) Offset(offset int) *gorm.DB {
-		args := m.Called(offset)
-		return args.Get(0).(*gorm.DB)
+// First mocks the First method
+func (m *MockDB) First(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+	args := m.Called(ctx, dest, conds) // args is used
+	if destPtr, ok := dest.(**models.Anime); ok {
+		*destPtr = &models.Anime{ID: 1, Title: "Naruto"}
 	}
-*/
-func (m *MockDB) Where(ctx context.Context, query interface{}, args ...interface{}) *gorm.DB {
-	// Call the mock's Called method with the arguments
-	m.Called(ctx, query, args)
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
+	return args.Get(0).(*gorm.DB) // Use args to return the mocked *gorm.DB
 }
 
-func (m *MockDB) Offset(offset int) *gorm.DB {
-	// Call the mock's Called method with the argument
-	m.Called(offset)
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
-}
-
-func (m *MockDB) Limit(limit int) *gorm.DB {
-	// Call the mock's Called method with the argument
-	m.Called(limit)
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
-}
-
-/*func (m *MockDB) Find(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
-	// Call the mock's Called method with the arguments
-	m.Called(ctx, dest, conds)
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
-}*/
-
+// Find mocks the Find method
 func (m *MockDB) Find(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
-	// Call the mock's Called method with the arguments
-	m.Called(ctx, dest, conds)
-	// Set the destination value (if applicable)
+	args := m.Called(ctx, dest, conds) // args is used
 	if destPtr, ok := dest.(*[]models.Review); ok {
 		*destPtr = []models.Review{
 			{ID: 1, AnimeID: 1, Content: "Great anime!"},
 			{ID: 2, AnimeID: 1, Content: "Awesome!"},
 		}
 	}
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
+	return args.Get(0).(*gorm.DB) // Use args to return the mocked *gorm.DB
 }
 
-func (m *MockDB) First(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
-	// Call the mock's Called method with the arguments
-	m.Called(ctx, dest, conds)
-	// Set the destination value
-	if destPtr, ok := dest.(**models.Anime); ok {
-		*destPtr = &models.Anime{ID: 1, Title: "Naruto"} // Set the destination to a test anime
-	}
-	// Return a properly initialized *gorm.DB object
-	return &gorm.DB{
-		Statement: &gorm.Statement{
-			DB:      &gorm.DB{},
-			Clauses: make(map[string]clause.Clause), // Initialize the Clauses map
-		},
-		Config: &gorm.Config{}, // Initialize the Config field
-	}
+// Where mocks the Where method
+func (m *MockDB) Where(ctx context.Context, query interface{}, args ...interface{}) *gorm.DB {
+	mockArgs := m.Called(ctx, query, args) // mockArgs is used
+	return mockArgs.Get(0).(*gorm.DB)
+}
+
+// Create mocks the Create method
+func (m *MockDB) Create(ctx context.Context, value interface{}) *gorm.DB {
+	args := m.Called(ctx, value) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Save mocks the Save method
+func (m *MockDB) Save(ctx context.Context, value interface{}) *gorm.DB {
+	args := m.Called(ctx, value) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Delete mocks the Delete method
+func (m *MockDB) Delete(ctx context.Context, value interface{}, conds ...interface{}) *gorm.DB {
+	args := m.Called(ctx, value, conds) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Preload mocks the Preload method
+func (m *MockDB) Preload(column string, ctx context.Context, conditions ...interface{}) *gorm.DB {
+	args := m.Called(column, ctx, conditions) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Offset mocks the Offset method
+func (m *MockDB) Offset(offset int) *gorm.DB {
+	args := m.Called(offset) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Limit mocks the Limit method
+func (m *MockDB) Limit(limit int) *gorm.DB {
+	args := m.Called(limit) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Unscoped mocks the Unscoped method
+func (m *MockDB) Unscoped(ctx context.Context) *gorm.DB {
+	args := m.Called(ctx) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Begin mocks the Begin method
+func (m *MockDB) Begin(ctx context.Context) *gorm.DB {
+	args := m.Called(ctx) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Commit mocks the Commit method
+func (m *MockDB) Commit(ctx context.Context) *gorm.DB {
+	args := m.Called(ctx) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// Rollback mocks the Rollback method
+func (m *MockDB) Rollback(ctx context.Context) *gorm.DB {
+	args := m.Called(ctx) // args is used
+	return args.Get(0).(*gorm.DB)
+}
+
+// GetError mocks the GetError method
+func (m *MockDB) GetError() error {
+	args := m.Called() // args is used
+	return args.Error(0)
 }
