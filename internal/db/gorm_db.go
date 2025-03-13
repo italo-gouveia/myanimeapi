@@ -23,6 +23,11 @@ func NewGormDB(db *gorm.DB) *GormDB {
 	return &GormDB{db: db}
 }
 
+// WithContext returns a new *gorm.DB instance with the given context
+func (g *GormDB) WithContext(ctx context.Context) *gorm.DB {
+	return g.db.WithContext(ctx)
+}
+
 func (g *GormDB) First(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
 	return g.db.WithContext(ctx).First(dest, conds...)
 }
