@@ -58,7 +58,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var anime models.Anime
-	result := h.DB.First(r.Context(), &anime, id)
+	result := h.DB.WithContext(r.Context()).First(&anime, id)
 	if result.Error != nil {
 		log.Printf("Anime not found: %v", result.Error)
 		http.Error(w, "Anime not found", http.StatusNotFound)
@@ -114,6 +114,9 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
+	// Debug: Log the raw ID string
+	log.Printf("Raw ID string: %s", idStr)
+
 	// Validate ID
 	id, err := validation.ValidateID(idStr)
 	if err != nil {
@@ -121,6 +124,9 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Debug: Log the parsed ID
+	log.Printf("Parsed ID: %d", id)
 
 	// Validate pagination
 	pageStr := r.URL.Query().Get("page")
@@ -132,15 +138,24 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 		return
 	}
 
+	// Debug: Log pagination parameters
+	log.Printf("Page: %d, Limit: %d", page, limit)
+
 	var reviews []models.Review
 	offset := (page - 1) * limit
 
-	result := h.DB.Where(r.Context(), "anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews)
+	// Debug: Log the query being executed
+	log.Printf("Executing query: SELECT * FROM reviews WHERE anime_id = %d OFFSET %d LIMIT %d", id, offset, limit)
+
+	result := h.DB.WithContext(r.Context()).Where("anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews)
 	if result.Error != nil {
 		log.Printf("Failed to retrieve reviews: %v", result.Error)
 		http.Error(w, "Failed to retrieve reviews", http.StatusInternalServerError)
 		return
 	}
+
+	// Debug: Log the number of reviews found
+	log.Printf("Found %d reviews for anime ID %d", len(reviews), id)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(reviews); err != nil {
@@ -267,22 +282,23 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var anime models.Anime
-	result := h.DB.First(r.Context(), &anime, uint(id))
+	// Delete all reviews associated with the anime
+	result := h.DB.WithContext(r.Context()).Where("anime_id = ?", id).Delete(&models.Review{})
 	if result.Error != nil {
-		log.Printf("Anime not found: %v", result.Error)
-		http.Error(w, "Anime not found", http.StatusNotFound)
+		log.Printf("Failed to delete reviews: %v", result.Error)
+		http.Error(w, "Failed to delete reviews", http.StatusInternalServerError)
 		return
 	}
 
-	result = h.DB.Delete(r.Context(), &models.Anime{}, id)
+	// Delete the anime
+	result = h.DB.WithContext(r.Context()).Delete(&models.Anime{}, id)
 	if result.Error != nil {
 		log.Printf("Failed to delete anime: %v", result.Error)
 		http.Error(w, "Failed to delete anime", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Anime %s deleted successfully", anime.Title)
+	log.Printf("Anime %d deleted successfully", id)
 	w.WriteHeader(http.StatusNoContent)
 }
 

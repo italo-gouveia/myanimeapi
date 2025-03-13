@@ -26,6 +26,9 @@ type DBInterface interface {
 	Commit(ctx context.Context) *gorm.DB
 	Rollback(ctx context.Context) *gorm.DB
 
+	// Context support
+	WithContext(ctx context.Context) *gorm.DB // Add this method
+
 	// Error handling
 	GetError() error
 }
