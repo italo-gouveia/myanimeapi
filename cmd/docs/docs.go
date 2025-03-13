@@ -903,7 +903,7 @@ const docTemplate = `{
                     "example": 8.5
                 },
                 "reviews": {
-                    "description": "Relationship with Review",
+                    "description": "Relationship with Review (omitted unless necessary)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Review"
@@ -926,19 +926,12 @@ const docTemplate = `{
         "models.Review": {
             "type": "object",
             "required": [
-                "content"
+                "content",
+                "rating"
             ],
             "properties": {
-                "anime": {
-                    "description": "Relationship with Anime",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.Anime"
-                        }
-                    ]
-                },
-                "anime_id": {
-                    "description": "Anime ID",
+                "animeId": {
+                    "description": "Add cascade delete constraint",
                     "type": "integer",
                     "example": 1
                 },
@@ -970,15 +963,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
-                "user": {
-                    "description": "Relationship with User",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    ]
-                },
-                "user_id": {
+                "userId": {
                     "description": "User ID",
                     "type": "integer",
                     "example": 1
@@ -989,7 +974,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "password",
                 "username"
             ],
             "properties": {
@@ -999,7 +983,7 @@ const docTemplate = `{
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "email": {
-                    "description": "Email",
+                    "description": "Email (omitted unless necessary)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
@@ -1015,15 +999,8 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
-                "password": {
-                    "description": "Password // Password",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 5,
-                    "example": "password123"
-                },
                 "reviews": {
-                    "description": "Relationship with Review",
+                    "description": "Relationship with Review (omitted unless necessary)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Review"
