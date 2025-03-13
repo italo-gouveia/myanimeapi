@@ -13,6 +13,7 @@ import (
 type RateLimiter struct {
 	mu      sync.Mutex
 	clients map[string]*clientInfo
+	clock   func() time.Time // Custom clock for testing
 }
 
 type clientInfo struct {
@@ -24,7 +25,15 @@ type clientInfo struct {
 func NewRateLimiter() *RateLimiter {
 	return &RateLimiter{
 		clients: make(map[string]*clientInfo),
+		clock:   time.Now, // Default to real time
 	}
+}
+
+// SetClock sets a custom clock for testing
+func (rl *RateLimiter) SetClock(clock func() time.Time) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	rl.clock = clock
 }
 
 // RateLimitMiddleware is a middleware that limits the number of requests per IP
@@ -40,8 +49,6 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		if _, exists := rl.clients[ip]; !exists {
 			rl.clients[ip] = &clientInfo{}
 		}
-
-		log.Printf("IP: %s, Path: %s, Count: %d, LastSeen: %v", ip, r.URL.Path, rl.clients[ip].count, rl.clients[ip].lastSeen)
 
 		// Determine the rate limit based on the request path
 		var limit int
@@ -59,7 +66,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Reset the count if the time window has passed
-		if time.Since(rl.clients[ip].lastSeen) > window {
+		if rl.clock().Sub(rl.clients[ip].lastSeen) > window {
 			rl.clients[ip].count = 0
 		}
 
@@ -76,7 +83,10 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 
 		// Increment the request count and update the last seen time
 		rl.clients[ip].count++
-		rl.clients[ip].lastSeen = time.Now()
+		rl.clients[ip].lastSeen = rl.clock()
+
+		// Log the current state for debugging
+		log.Printf("IP: %s, Path: %s, Count: %d, LastSeen: %v", ip, r.URL.Path, rl.clients[ip].count, rl.clients[ip].lastSeen)
 
 		// Call the next handler
 		next.ServeHTTP(w, r)
