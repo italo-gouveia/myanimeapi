@@ -56,6 +56,9 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
+	// Debug: Log the raw ID string
+	log.Printf("Raw ID string: %s", idStr)
+
 	// Validate ID
 	id, err := validation.ValidateID(idStr)
 	if err != nil {
@@ -64,16 +67,42 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Debug: Log the parsed ID
+	log.Printf("Parsed ID: %d", id)
+
 	var review models.Review
-	result := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	// Use the correct context for the database query
+	result := h.DB.WithContext(r.Context()).Preload("User").Preload("Anime").First(&review, id)
 	if result.Error != nil {
 		log.Printf("Error fetching review: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
 
+	// Create a custom response to exclude sensitive data
+	response := models.ReviewResponse{
+		ID:        review.ID,
+		CreatedAt: review.CreatedAt,
+		UpdatedAt: review.UpdatedAt,
+		UserID:    review.UserID,
+		AnimeID:   review.AnimeID,
+		Content:   review.Content,
+		Rating:    review.Rating,
+		User: models.UserResponse{
+			ID:       review.User.ID,
+			Username: review.User.Username,
+			IsAdmin:  review.User.IsAdmin,
+		},
+		Anime: models.AnimeResponse{
+			ID:          review.Anime.ID,
+			Title:       review.Anime.Title,
+			Description: review.Anime.Description,
+			Rating:      review.Anime.Rating,
+		},
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(review); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -126,6 +155,10 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Remove sensitive data before returning the response
+	payload.User = models.User{}   // Clear User field
+	payload.Anime = models.Anime{} // Clear Anime field
+
 	log.Printf("Review created successfully: ID %d", payload.ID)
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
@@ -170,45 +203,49 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Fetch the existing review
 	var review models.Review
-	result := h.DB.Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	result := h.DB.WithContext(r.Context()).First(&review, id)
 	if result.Error != nil {
 		log.Printf("Review not found: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
 		return
 	}
 
-	// Ensure the user and anime still exist
-	var user models.User
-	result = h.DB.First(r.Context(), &user, review.UserID)
-	if result.Error != nil {
-		log.Printf("User not found: %v", result.Error)
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	var anime models.Anime
-	result = h.DB.First(r.Context(), &anime, review.AnimeID)
-	if result.Error != nil {
-		log.Printf("Anime not found: %v", result.Error)
-		http.Error(w, "Anime not found", http.StatusNotFound)
-		return
-	}
-
-	// Update the review fields
+	// Update only the allowed fields
 	review.Content = payload.Content
 	review.Rating = payload.Rating
 
 	// Save the updated review
-	result = h.DB.Save(r.Context(), &review)
+	result = h.DB.WithContext(r.Context()).Save(&review)
 	if result.Error != nil {
 		log.Printf("Failed to update review: %v", result.Error)
 		http.Error(w, "Failed to update review", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Review updated successfully: ID %d", review.ID)
+	// Create a custom response to exclude sensitive data
+	response := models.ReviewResponse{
+		ID:        review.ID,
+		CreatedAt: review.CreatedAt,
+		UpdatedAt: review.UpdatedAt,
+		UserID:    review.UserID,
+		AnimeID:   review.AnimeID,
+		Content:   review.Content,
+		Rating:    review.Rating,
+		User: models.UserResponse{
+			ID:       review.User.ID,
+			Username: review.User.Username,
+			IsAdmin:  review.User.IsAdmin,
+		},
+		Anime: models.AnimeResponse{
+			ID:          review.Anime.ID,
+			Title:       review.Anime.Title,
+			Description: review.Anime.Description,
+			Rating:      review.Anime.Rating,
+		},
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(review); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
@@ -239,9 +276,9 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Fetch the existing review (including soft-deleted records)
 	var review models.Review
-	// Use Unscoped to include soft-deleted records
-	result := h.DB.Unscoped(r.Context()).Preload("User", r.Context()).Preload("Anime", r.Context()).First(&review, uint(id))
+	result := h.DB.WithContext(r.Context()).Unscoped().First(&review, id)
 	if result.Error != nil {
 		log.Printf("Review not found: %v", result.Error)
 		http.Error(w, "Review not found", http.StatusNotFound)
@@ -249,7 +286,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Delete the review
-	result = h.DB.Delete(r.Context(), &models.Review{}, id)
+	result = h.DB.WithContext(r.Context()).Delete(&models.Review{}, id)
 	if result.Error != nil {
 		log.Printf("Error deleting review: %v", result.Error)
 		http.Error(w, "Failed to delete review", http.StatusInternalServerError)

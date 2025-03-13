@@ -22,7 +22,7 @@ definitions:
         minimum: 0
         type: number
       reviews:
-        description: Relationship with Review
+        description: Relationship with Review (omitted unless necessary)
         items:
           $ref: '#/definitions/models.Review'
         type: array
@@ -41,12 +41,8 @@ definitions:
     type: object
   models.Review:
     properties:
-      anime:
-        allOf:
-        - $ref: '#/definitions/models.Anime'
-        description: Relationship with Anime
-      anime_id:
-        description: Anime ID
+      animeId:
+        description: Add cascade delete constraint
         example: 1
         type: integer
       content:
@@ -72,16 +68,13 @@ definitions:
         description: Update timestamp
         example: "2025-02-20T19:27:00Z"
         type: string
-      user:
-        allOf:
-        - $ref: '#/definitions/models.User'
-        description: Relationship with User
-      user_id:
+      userId:
         description: User ID
         example: 1
         type: integer
     required:
     - content
+    - rating
     type: object
   models.User:
     properties:
@@ -90,7 +83,7 @@ definitions:
         example: "2025-02-20T19:27:00Z"
         type: string
       email:
-        description: Email
+        description: Email (omitted unless necessary)
         example: john@example.com
         maxLength: 100
         minLength: 5
@@ -103,14 +96,8 @@ definitions:
         description: IsAdmin
         example: false
         type: boolean
-      password:
-        description: Password // Password
-        example: password123
-        maxLength: 100
-        minLength: 5
-        type: string
       reviews:
-        description: Relationship with Review
+        description: Relationship with Review (omitted unless necessary)
         items:
           $ref: '#/definitions/models.Review'
         type: array
@@ -126,7 +113,6 @@ definitions:
         type: string
     required:
     - email
-    - password
     - username
     type: object
   models.UserCredentials:
