@@ -55,7 +55,8 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 // @host localhost:8080
-// @BasePath /
+// @BasePath /v1
+// @schemes http
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
