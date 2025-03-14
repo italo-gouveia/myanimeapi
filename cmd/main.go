@@ -1,27 +1,17 @@
 // cmd/main.go
-// This file is the entry point for the application. It loads the configuration, initializes the database connection, and starts the server.
-// It imports the necessary packages and registers the routes.
-// It uses the gorilla/mux package to create a new router.
-// It uses the gorm package to open a connection to the database.
-// It uses the database package to setup the database schema.
-// It uses the handlers package to initialize the global DB variable.
-// It uses the routes package to register the routes.
-// It uses the config package to load the configuration.
-// It uses the log package to log messages.
-// It uses the fmt package to format strings.
-// It uses the net/http package to start the server.
-// It uses the gorm.io/driver/postgres package to open a connection to the PostgreSQL database.
-// It uses the gorm.io/gorm package to interact with the database.
-// It uses the myanimeapi/internal/config package to load the configuration.
-// It uses the myanimeapi/internal/routes package to register the routes.
-// It uses the myanimeapi/pkg/database package to setup the database schema.
-// It uses the myanimeapi/pkg/handlers package to initialize the global DB variable.
-// It uses the myanimeapi/pkg/handlers package to handle the requests.
-// It uses the os package to listen for interrupt signals.
-// It uses the os/signal package to listen for interrupt signals.
-// It uses the syscall package to listen for interrupt signals.
-// It uses the time package to create a context with a timeout for graceful shutdown.
-// It uses the context package to create a context with a timeout for graceful shutdown.
+// Package main is the entry point for the MyAnimeAPI application.
+// It loads the configuration, initializes the database connection, and starts the server.
+// The application uses the Gorilla Mux router, GORM for database interactions, and supports graceful shutdown.
+// It also sets up CORS, registers routes, and initializes handlers for managing anime, users, reviews, and authentication.
+//
+// The application is designed to be configurable via environment variables or a configuration file.
+// It supports PostgreSQL as the database and provides a RESTful API for managing anime and reviews.
+//
+// Example usage:
+//   go run cmd/main.go
+//
+// The server listens on the port specified in the configuration and can be accessed via HTTP.
+
 package main
 
 import (

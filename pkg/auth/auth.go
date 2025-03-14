@@ -1,6 +1,29 @@
 // pkg/auth/auth.go
-// This package defines functions to hash and compare passwords using Argon2.
-// Argon2 is a modern and secure password hashing algorithm that is resistant to GPU-based attacks.
+// Package auth provides functions for securely hashing and comparing passwords using the Argon2 algorithm.
+// Argon2 is a modern, memory-hard password hashing algorithm designed to resist GPU-based attacks.
+// This package also includes a utility function to migrate legacy bcrypt hashes to Argon2.
+//
+// The package defines default parameters for Argon2, including memory usage, iterations, and parallelism.
+// These parameters can be adjusted to meet specific security requirements.
+//
+// Example usage:
+//
+//	hashedPassword, err := auth.HashPassword("mysecurepassword")
+//	if err != nil {
+//	    log.Fatalf("Error hashing password: %v", err)
+//	}
+//
+//	isValid := auth.CheckPasswordHash("mysecurepassword", hashedPassword)
+//	if isValid {
+//	    log.Println("Password is valid")
+//	} else {
+//	    log.Println("Password is invalid")
+//	}
+//
+//	migratedHash, err := auth.MigrateHash("mysecurepassword", oldBcryptHash)
+//	if err != nil {
+//	    log.Fatalf("Error migrating hash: %v", err)
+//	}
 package auth
 
 import (
@@ -15,7 +38,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Define the parameters for Argon2
+// Default Argon2 parameters for password hashing.
 var (
 	argon2Time    uint32 = 1         // Number of iterations
 	argon2Memory  uint32 = 64 * 1024 // 64 MB of memory
@@ -23,7 +46,16 @@ var (
 	argon2KeyLen  uint32 = 32        // Length of the generated hash
 )
 
-// HashPassword hashes the given password using Argon2
+// HashPassword hashes the given password using the Argon2 algorithm.
+// It generates a random salt, hashes the password with the salt, and returns the encoded hash string.
+// The encoded hash includes the Argon2 parameters, salt, and hash for later verification.
+//
+// Example:
+//
+//	hashedPassword, err := HashPassword("mysecurepassword")
+//	if err != nil {
+//	    log.Fatalf("Error hashing password: %v", err)
+//	}
 func HashPassword(password string) (string, error) {
 	// Generate a random salt
 	salt := make([]byte, 16)
@@ -44,7 +76,18 @@ func HashPassword(password string) (string, error) {
 	return encodedHash, nil
 }
 
-// CheckPasswordHash compares the hashed password with the plain text password
+// CheckPasswordHash compares a plain-text password with an encoded Argon2 hash.
+// It extracts the parameters, salt, and hash from the encoded string, rehashes the password,
+// and performs a constant-time comparison to verify the password.
+//
+// Example:
+//
+//	isValid := CheckPasswordHash("mysecurepassword", encodedHash)
+//	if isValid {
+//	    log.Println("Password is valid")
+//	} else {
+//	    log.Println("Password is invalid")
+//	}
 func CheckPasswordHash(password, encodedHash string) bool {
 	// Split the encoded hash into its components
 	parts := strings.Split(encodedHash, "$")
@@ -99,6 +142,16 @@ func CheckPasswordHash(password, encodedHash string) bool {
 	return false
 }
 
+// MigrateHash migrates a legacy bcrypt hash to an Argon2 hash.
+// It verifies the password against the existing bcrypt hash and rehashes it using Argon2.
+// If the existing hash is already an Argon2 hash, it is returned as-is.
+//
+// Example:
+//
+//	migratedHash, err := MigrateHash("mysecurepassword", oldBcryptHash)
+//	if err != nil {
+//	    log.Fatalf("Error migrating hash: %v", err)
+//	}
 func MigrateHash(password, existingHash string) (string, error) {
 	// Check if the existing hash is bcrypt
 	if strings.HasPrefix(existingHash, "$2a$") || strings.HasPrefix(existingHash, "$2b$") || strings.HasPrefix(existingHash, "$2y$") {
