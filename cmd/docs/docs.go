@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.AnimeCreateRequest"
                         }
                     }
                 ],
@@ -93,7 +93,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.AnimeResponse"
                         }
                     },
                     "400": {
@@ -537,7 +537,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewCreateRequest"
                         }
                     }
                 ],
@@ -545,7 +545,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewResponse"
                         }
                     },
                     "400": {
@@ -671,7 +671,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewCreateRequest"
                         }
                     }
                 ],
@@ -862,7 +862,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserCreateRequest"
                         }
                     }
                 ],
@@ -870,7 +870,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserResponse"
                         }
                     },
                     "400": {
@@ -1000,7 +1000,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserCreateRequest"
                         }
                     }
                 ],
@@ -1008,7 +1008,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserResponse"
                         }
                     },
                     "400": {
@@ -1149,6 +1149,69 @@ const docTemplate = `{
                 }
             }
         },
+        "models.AnimeCreateRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Description of the anime",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "A story about ninjas."
+                },
+                "rating": {
+                    "description": "Rating of the anime",
+                    "type": "number",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 8.5
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Naruto"
+                }
+            }
+        },
+        "models.AnimeResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the anime was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "description": {
+                    "description": "Description of the anime",
+                    "type": "string",
+                    "example": "A story about ninjas."
+                },
+                "id": {
+                    "description": "Unique identifier for the anime",
+                    "type": "integer",
+                    "example": 1
+                },
+                "rating": {
+                    "description": "Average rating of the anime",
+                    "type": "number",
+                    "example": 8.5
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
+                    "example": "Naruto"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the anime was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
         "models.Review": {
             "type": "object",
             "required": [
@@ -1188,6 +1251,96 @@ const docTemplate = `{
                     "description": "Timestamp when the review was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
+                },
+                "userId": {
+                    "description": "ID of the user who created the review",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.ReviewCreateRequest": {
+            "type": "object",
+            "required": [
+                "animeId",
+                "content",
+                "rating",
+                "userId"
+            ],
+            "properties": {
+                "animeId": {
+                    "description": "ID of the anime being reviewed",
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "description": "Content of the review",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "This anime is amazing!"
+                },
+                "rating": {
+                    "description": "Rating given in the review (0-10)",
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 9
+                },
+                "userId": {
+                    "description": "ID of the user creating the review",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.ReviewResponse": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Anime details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AnimeResponse"
+                        }
+                    ]
+                },
+                "animeId": {
+                    "description": "ID of the anime being reviewed",
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "description": "Content of the review",
+                    "type": "string",
+                    "example": "This anime is amazing!"
+                },
+                "created_at": {
+                    "description": "Timestamp when the review was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier for the review",
+                    "type": "integer",
+                    "example": 1
+                },
+                "rating": {
+                    "description": "Rating given in the review (0-10)",
+                    "type": "integer",
+                    "example": 9
+                },
+                "updated_at": {
+                    "description": "Timestamp when the review was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "user": {
+                    "description": "User details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.UserResponse"
+                        }
+                    ]
                 },
                 "userId": {
                     "description": "ID of the user who created the review",
@@ -1246,6 +1399,37 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UserCreateRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Email address for the new user",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "john@example.com"
+                },
+                "password": {
+                    "description": "Password for the new user",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "password123"
+                },
+                "username": {
+                    "description": "Username for the new user",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "john_doe"
+                }
+            }
+        },
         "models.UserCredentials": {
             "type": "object",
             "required": [
@@ -1265,6 +1449,26 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
+                    "example": "john_doe"
+                }
+            }
+        },
+        "models.UserResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Unique identifier for the user",
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_admin": {
+                    "description": "Indicates if the user has admin privileges",
+                    "type": "boolean",
+                    "example": false
+                },
+                "username": {
+                    "description": "Username of the user",
+                    "type": "string",
                     "example": "john_doe"
                 }
             }

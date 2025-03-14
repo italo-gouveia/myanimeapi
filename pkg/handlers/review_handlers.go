@@ -128,8 +128,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 // @Tags reviews
 // @Accept json
 // @Produce json
-// @Param review body models.Review true "Review data"
-// @Success 201 {object} models.Review
+// @Param review body models.ReviewCreateRequest true "Review data"
+// @Success 201 {object} models.ReviewResponse
 // @Failure 400 {object} map[string]string "Invalid input or missing required fields"
 // @Failure 404 {object} map[string]string "Anime or user not found"
 // @Failure 500 {object} map[string]string "Failed to create review"
@@ -211,7 +211,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param id path int true "Review ID"
-// @Param review body models.Review true "Updated review data"
+// @Param review body models.ReviewCreateRequest true "Updated review data"
 // @Success 200 {object} models.Review
 // @Failure 400 {object} map[string]string "Invalid input or ID format"
 // @Failure 404 {object} map[string]string "Review not found"

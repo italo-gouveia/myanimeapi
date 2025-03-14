@@ -145,8 +145,8 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body models.User true "User data"
-// @Success 201 {object} models.User
+// @Param user body models.UserCreateRequest true "User data"
+// @Success 201 {object} models.UserResponse
 // @Failure 400 {object} map[string]string "Invalid input or missing required fields"
 // @Failure 409 {object} map[string]string "User with this username or email already exists"
 // @Failure 500 {object} map[string]string "Failed to create user"
@@ -219,8 +219,8 @@ func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Param user body models.User true "Updated user data"
-// @Success 200 {object} models.User
+// @Param user body models.UserCreateRequest true "Updated user data"
+// @Success 200 {object} models.UserResponse
 // @Failure 400 {object} map[string]string "Invalid input or ID format"
 // @Failure 404 {object} map[string]string "User not found"
 // @Failure 500 {object} map[string]string "Failed to update user"

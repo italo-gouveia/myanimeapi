@@ -214,8 +214,8 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 // @Tags anime
 // @Accept json
 // @Produce json
-// @Param anime body models.Anime true "Anime data"
-// @Success 201 {object} models.Anime
+// @Param anime body models.AnimeCreateRequest true "Anime data"
+// @Success 201 {object} models.AnimeResponse
 // @Failure 400 {object} map[string]string "Invalid input or missing required fields"
 // @Failure 500 {object} map[string]string "Failed to create anime"
 // @Router /v1/anime [post]
