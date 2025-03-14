@@ -275,6 +275,10 @@ definitions:
     type: object
   models.UserResponse:
     properties:
+      created_at:
+        description: Timestamp when the user was created
+        example: "2025-02-20T19:27:00Z"
+        type: string
       id:
         description: Unique identifier for the user
         example: 1
@@ -283,6 +287,10 @@ definitions:
         description: Indicates if the user has admin privileges
         example: false
         type: boolean
+      updated_at:
+        description: Timestamp when the user was last updated
+        example: "2025-02-20T19:27:00Z"
+        type: string
       username:
         description: Username of the user
         example: john_doe
