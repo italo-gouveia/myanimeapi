@@ -7,37 +7,11 @@
 	},
 	"item": [
 		{
-			"name": "Login",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/auth/authenticate",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"auth",
-						"authenticate"
-					]
-				}
-			},
-			"response": [
+			"name": "Auth",
+			"item": [
 				{
-					"name": "401 INVALID CREDENTIALS",
-					"originalRequest": {
+					"name": "Login",
+					"request": {
 						"method": "POST",
 						"header": [
 							{
@@ -60,115 +34,188 @@
 							"path": [
 								"auth",
 								"authenticate"
-							]
-						}
-					},
-					"status": "Unauthorized",
-					"code": 401,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						},
-						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 18:32:02 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "20"
-						}
-					],
-					"cookie": [],
-					"body": "Invalid credentials\n"
-				},
-				{
-					"name": "200 OK",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
+								]
 							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 						},
-						"url": {
-							"raw": "http://localhost:8080/auth/authenticate",
-							"protocol": "http",
-							"host": [
-								"localhost"
+					"response": [
+						{
+							"name": "401 INVALID CREDENTIALS",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/authenticate",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"authenticate"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 18:32:02 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "20"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"auth",
-								"authenticate"
-							]
-						}
-					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "application/json"
+							"cookie": [],
+							"body": "Invalid credentials\n"
 						},
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 18:32:57 GMT"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/authenticate",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"authenticate"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 18:32:57 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "182"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgxNzE3NywiaXNzIjoibXlhbmltZWFwaSJ9.DE5j-F28Y887sPKZRuR781f49AJswAW664um76tUcJk\"\n}"
 						},
 						{
-							"key": "Content-Length",
-							"value": "182"
+							"name": "429 TOO MANY REQUESTS",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/authenticate",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"authenticate"
+									]
+								}
+							},
+							"status": "Too Many Requests",
+							"code": 429,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 08 Mar 2025 03:52:53 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "57"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": \"Rate limit exceeded. Please try again later.\"\n}"
 						}
 					],
-					"cookie": [],
-					"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgxNzE3NywiaXNzIjoibXlhbmltZWFwaSJ9.DE5j-F28Y887sPKZRuR781f49AJswAW664um76tUcJk\"\n}"
-				}
-			]
-		},
-		{
-			"name": "Register",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/auth/register",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"auth",
-						"register"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Login",
+									"pm.test(\"Status code is 200 for valid credentials\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"JWT token is present in the response\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.token).to.be.a('string');",
+									"});",
+									"",
+									"pm.test(\"Status code is 401 for invalid credentials\", function () {",
+									"    if (pm.response.code === 401) {",
+									"        pm.response.to.have.status(401);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
 					]
-				}
-			},
-			"response": [
+				},
 				{
-					"name": "201 CREATED",
-					"originalRequest": {
+					"name": "Register",
+					"request": {
 						"method": "POST",
 						"header": [
 							{
@@ -194,152 +241,698 @@
 							]
 						}
 					},
-					"status": "Created",
-					"code": 201,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 17:00:04 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "259"
-						},
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						}
-					],
-					"cookie": [],
-					"body": "{\"ID\":3,\"CreatedAt\":\"2025-02-16T14:00:04.3441672-03:00\",\"UpdatedAt\":\"2025-02-16T14:00:04.3441672-03:00\",\"DeletedAt\":null,\"Username\":\"bruna\",\"Email\":\"bruna@outlook.com\",\"Password\":\"$2a$10$0fhopRIvxX6guTt5JWrRe.RJUJUsmVXiGvyC8AbwMnt1s991XSgIS\",\"IsAdmin\":false}\n"
-				},
-				{
-					"name": "209 CONFLICT",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8080/auth/register",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"name": "201 CREATED",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 17:00:04 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "259"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"auth",
-								"register"
-							]
-						}
-					},
-					"status": "Conflict",
-					"code": 409,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "{\"ID\":3,\"CreatedAt\":\"2025-02-16T14:00:04.3441672-03:00\",\"UpdatedAt\":\"2025-02-16T14:00:04.3441672-03:00\",\"DeletedAt\":null,\"Username\":\"bruna\",\"Email\":\"bruna@outlook.com\",\"Password\":\"$2a$10$0fhopRIvxX6guTt5JWrRe.RJUJUsmVXiGvyC8AbwMnt1s991XSgIS\",\"IsAdmin\":false}\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 17:00:29 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "36"
-						}
-					],
-					"cookie": [],
-					"body": "User with this email already exists\n"
-				},
-				{
-					"name": "400 BAD REQUEST",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"password\": \"bruna\"\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8080/auth/register",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"name": "209 CONFLICT",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 17:00:29 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "36"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"auth",
-								"register"
-							]
-						}
-					},
-					"status": "Bad Request",
-					"code": 400,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "User with this email already exists\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 18:31:30 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "35"
+							"name": "400 BAD REQUEST",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"password\": \"bruna\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/auth/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 18:31:30 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "35"
+								}
+							],
+							"cookie": [],
+							"body": "Username and password are required\n"
 						}
 					],
-					"cookie": [],
-					"body": "Username and password are required\n"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Register",
+									"pm.test(\"Status code is 201 for successful registration\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('Username');",
+									"    pm.expect(response).to.have.property('Email');",
+									"});",
+									"",
+									"pm.test(\"Status code is 409 for conflict (user already exists)\", function () {",
+									"    if (pm.response.code === 409) {",
+									"        pm.response.to.have.status(409);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "Get All Animes",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:8080/anime",
-					"host": [
-						"localhost"
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get User By Id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6dHJ1ZSwidXNlcl9pZCI6MSwiaXNzIjoibXlhbmltZWFwaSIsImV4cCI6MTc0MTk3MzUzNH0.gia0iiuOFtP1cow77d9murnMbRMwoK5vPgWZPhry9Vk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/users/1",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"1"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/users/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"users",
+										"1"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:42:41 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "140"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 1,\n    \"created_at\": \"2025-02-15T11:40:02.228852-03:00\",\n    \"updated_at\": \"2025-03-10T09:37:59.277299-03:00\",\n    \"username\": \"italo\",\n    \"is_admin\": true\n}"
+						},
+						{
+							"name": "404 NOT FOUND",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/users/5",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"users",
+										"5"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:43:06 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "15"
+								}
+							],
+							"cookie": [],
+							"body": "User not found\n"
+						}
 					],
-					"port": "8080",
-					"path": [
-						"anime"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get User By Id",
+									"pm.test(\"Status code is 200 for valid user\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('username');",
+									"    pm.expect(response).to.have.property('is_admin');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent user\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6dHJ1ZSwidXNlcl9pZCI6MSwiaXNzIjoibXlhbmltZWFwaSIsImV4cCI6MTc0MTk3MzUzNH0.gia0iiuOFtP1cow77d9murnMbRMwoK5vPgWZPhry9Vk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/users",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200  OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/users",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:32:29 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "311"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 3,\n        \"created_at\": \"2025-02-16T14:00:04.344167-03:00\",\n        \"updated_at\": \"2025-02-16T14:00:04.344167-03:00\",\n        \"username\": \"bruna\",\n        \"email\": \"bruna@outlook.com\",\n        \"is_admin\": false\n    },\n    {\n        \"id\": 1,\n        \"created_at\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"updated_at\": \"2025-03-10T09:37:59.277299-03:00\",\n        \"username\": \"italo\",\n        \"is_admin\": true\n    }\n]"
+						}
+					],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get Users",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array of users\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
 					]
 				}
-			},
-			"response": [
+			]
+		},
+		{
+			"name": "Animes",
+			"item": [
 				{
-					"name": "200 OK",
-					"originalRequest": {
+					"name": "Get Paginated Reviews for Anime",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": [
+						{
+							"name": "200 Without Pagination",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/6/reviews",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"6",
+										"reviews"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:21:18 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1220"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 7,\n        \"created_at\": \"2025-03-13T14:20:59.81301-03:00\",\n        \"updated_at\": \"2025-03-13T14:20:59.81301-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 8,\n        \"created_at\": \"2025-03-13T14:21:08.304853-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:08.304853-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 9,\n        \"created_at\": \"2025-03-13T14:21:09.539457-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:09.539457-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 10,\n        \"created_at\": \"2025-03-13T14:21:10.36638-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:10.36638-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 11,\n        \"created_at\": \"2025-03-13T14:21:11.631306-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:11.631306-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 12,\n        \"created_at\": \"2025-03-13T14:21:12.711422-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:12.711422-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 13,\n        \"created_at\": \"2025-03-13T14:21:13.876337-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:13.876337-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    }\n]"
+						},
+						{
+							"name": "200 With Limit 2 and Page 1",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"6",
+										"reviews"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "2"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:26:17 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "348"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 7,\n        \"created_at\": \"2025-03-13T14:20:59.81301-03:00\",\n        \"updated_at\": \"2025-03-13T14:20:59.81301-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 8,\n        \"created_at\": \"2025-03-13T14:21:08.304853-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:08.304853-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    }\n]"
+						},
+						{
+							"name": "200 With Limit 2 and Page 2",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=2",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"6",
+										"reviews"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "2"
+										},
+										{
+											"key": "page",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:26:42 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "349"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 9,\n        \"created_at\": \"2025-03-13T14:21:09.539457-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:09.539457-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    },\n    {\n        \"id\": 10,\n        \"created_at\": \"2025-03-13T14:21:10.36638-03:00\",\n        \"updated_at\": \"2025-03-13T14:21:10.36638-03:00\",\n        \"userId\": 3,\n        \"animeId\": 6,\n        \"content\": \"This anime is amazing!\",\n        \"rating\": 9\n    }\n]"
+						},
+						{
+							"name": "400 BAD REQUEST (Invalid limit)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/6/reviews?limit=-2&page=2",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"6",
+										"reviews"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "-2"
+										},
+										{
+											"key": "page",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:27:50 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "67"
+								}
+							],
+							"cookie": [],
+							"body": "invalid limit number. Must be a positive integer between 1 and 100\n"
+						},
+						{
+							"name": "400 BAD REQUEST (Invalid Page)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=-2",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"6",
+										"reviews"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "2"
+										},
+										{
+											"key": "page",
+											"value": "-2"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 17:28:25 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "48"
+								}
+							],
+							"cookie": [],
+							"body": "invalid page number. Must be a positive integer\n"
+						}
+					],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get Paginated Reviews for Anime",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array of reviews\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for invalid limit or page\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get All Animes",
+					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -353,49 +946,103 @@
 							]
 						}
 					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
+					"response": [
 						{
-							"key": "Content-Type",
-							"value": "application/json"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:08:21 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "249"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 2,\n        \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"DeletedAt\": null,\n        \"Title\": \"Fire Force\",\n        \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n        \"Rating\": 0\n    }\n]"
 						},
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:08:21 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "249"
+							"name": "429 TOO MANY REQUESTS",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime"
+									]
+								}
+							},
+							"status": "Too Many Requests",
+							"code": 429,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 08 Mar 2025 03:47:36 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "57"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": \"Rate limit exceeded. Please try again later.\"\n}"
 						}
 					],
-					"cookie": [],
-					"body": "[\n    {\n        \"ID\": 2,\n        \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"DeletedAt\": null,\n        \"Title\": \"Fire Force\",\n        \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n        \"Rating\": 0\n    }\n]"
-				}
-			]
-		},
-		{
-			"name": "Get Anime by ID",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:8080/anime/1",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"anime",
-						"1"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get All Animes",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array of animes\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
 					]
-				}
-			},
-			"response": [
+				},
 				{
-					"name": "404 Not Found",
-					"originalRequest": {
+					"name": "Get Anime by ID",
+					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -410,109 +1057,127 @@
 							]
 						}
 					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						},
-						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:07:41 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "16"
-						}
-					],
-					"cookie": [],
-					"body": "Anime not found\n"
-				},
-				{
-					"name": "200 OK",
-					"originalRequest": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "localhost:8080/anime/2",
-							"host": [
-								"localhost"
+							"name": "404 Not Found",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"1"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:07:41 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "16"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"anime",
-								"2"
-							]
-						}
-					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "application/json"
+							"cookie": [],
+							"body": "Anime not found\n"
 						},
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:08:39 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "247"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/2",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:08:39 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "247"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"ID\": 2,\n    \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"DeletedAt\": null,\n    \"Title\": \"Fire Force\",\n    \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"Rating\": 0\n}"
 						}
 					],
-					"cookie": [],
-					"body": "{\n    \"ID\": 2,\n    \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"DeletedAt\": null,\n    \"Title\": \"Fire Force\",\n    \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"Rating\": 0\n}"
-				}
-			]
-		},
-		{
-			"name": "Create Anime",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+					"event": [
 						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
-							"type": "string"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get Anime by ID",
+									"pm.test(\"Status code is 200 for valid anime\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('Title');",
+									"    pm.expect(response).to.have.property('Description');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
-				},
-				"url": {
-					"raw": "localhost:8080/anime",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"anime"
-					]
-				}
-			},
-			"response": [
 				{
-					"name": "201 CREATED",
-					"originalRequest": {
+					"name": "Create Anime",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -536,69 +1201,141 @@
 							]
 						}
 					},
-					"status": "Created",
-					"code": 201,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:03:36 GMT"
+							"name": "201 CREATED",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
+								},
+								"url": {
+									"raw": "localhost:8080/anime",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:03:36 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "245"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\"ID\":1,\"CreatedAt\":\"2025-02-16T12:03:36.90465-03:00\",\"UpdatedAt\":\"2025-02-16T12:03:36.90465-03:00\",\"DeletedAt\":null,\"Title\":\"Fire Force\",\"Description\":\"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\"Rating\":0}\n"
 						},
 						{
-							"key": "Content-Length",
-							"value": "245"
-						},
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"name": "400 BAD REQUEST",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"<script>alert('XSS')</script>Naruto\",\n    \"description\": \"<img src='x' onerror='alert(1)'>A story about ninjas.\",\n    \"rating\": 8.5\n}"
+								},
+								"url": {
+									"raw": "localhost:8080/anime",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 09 Mar 2025 15:57:06 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "104"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"errors\": {\n        \"Rating\": \"Rating must be greater than or equal to 0.\",\n        \"Title\": \"Title is a required field.\"\n    }\n}"
 						}
 					],
-					"cookie": [],
-					"body": "{\"ID\":1,\"CreatedAt\":\"2025-02-16T12:03:36.90465-03:00\",\"UpdatedAt\":\"2025-02-16T12:03:36.90465-03:00\",\"DeletedAt\":null,\"Title\":\"Fire Force\",\"Description\":\"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\"Rating\":0}\n"
-				}
-			]
-		},
-		{
-			"name": "Update Anime",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
+					"event": [
 						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
-							"type": "string"
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Create Anime",
+									"pm.test(\"Status code is 201 for successful creation\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('Title');",
+									"    pm.expect(response).to.have.property('Description');",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
 						}
 					]
 				},
-				"method": "PUT",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
-				},
-				"url": {
-					"raw": "localhost:8080/anime/1",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"anime",
-						"1"
-					]
-				}
-			},
-			"response": [
 				{
-					"name": "200 OK",
-					"originalRequest": {
+					"name": "Update Anime",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
+									"type": "string"
+								}
+							]
+						},
 						"method": "PUT",
 						"header": [
 							{
@@ -623,110 +1360,146 @@
 							]
 						}
 					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
+					"response": [
 						{
-							"key": "Content-Type",
-							"value": "application/json"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
+								},
+								"url": {
+									"raw": "localhost:8080/anime/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"1"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:06:41 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "248"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"ID\": 1,\n    \"CreatedAt\": \"2025-02-16T12:03:36.90465-03:00\",\n    \"UpdatedAt\": \"2025-02-16T12:06:41.5265409-03:00\",\n    \"DeletedAt\": null,\n    \"Title\": \"Fire Force\",\n    \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\",\n    \"Rating\": 0\n}"
 						},
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:06:41 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "248"
+							"name": "404 NOT FOUND",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
+								},
+								"url": {
+									"raw": "localhost:8080/anime/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"1"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 18:33:12 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "16"
+								}
+							],
+							"cookie": [],
+							"body": "Anime not found\n"
 						}
 					],
-					"cookie": [],
-					"body": "{\n    \"ID\": 1,\n    \"CreatedAt\": \"2025-02-16T12:03:36.90465-03:00\",\n    \"UpdatedAt\": \"2025-02-16T12:06:41.5265409-03:00\",\n    \"DeletedAt\": null,\n    \"Title\": \"Fire Force\",\n    \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\",\n    \"Rating\": 0\n}"
-				},
-				{
-					"name": "404 NOT FOUND",
-					"originalRequest": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Update Anime",
+									"pm.test(\"Status code is 200 for successful update\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains updated fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('Title');",
+									"    pm.expect(response).to.have.property('Description');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
 							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
-						},
-						"url": {
-							"raw": "localhost:8080/anime/1",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"anime",
-								"1"
-							]
-						}
-					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						},
-						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 18:33:12 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "16"
-						}
-					],
-					"cookie": [],
-					"body": "Anime not found\n"
-				}
-			]
-		},
-		{
-			"name": "Delete Anime",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
-							"type": "string"
 						}
 					]
 				},
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "localhost:8080/anime/1",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"anime",
-						"1"
-					]
-				}
-			},
-			"response": [
 				{
-					"name": "204 NO CONTENT",
-					"originalRequest": {
+					"name": "Delete Anime",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc19hZG1pbiI6ZmFsc2UsInVzZXJfaWQiOjEsImV4cCI6MTczOTgwNDIwOCwiaXNzIjoibXlhbmltZWFwaSJ9.jii7S0EWo5NVO3uuss3ZFF4nFVo5TaqzZJC72TgF_0A",
+									"type": "string"
+								}
+							]
+						},
 						"method": "DELETE",
 						"header": [],
 						"url": {
@@ -741,95 +1514,107 @@
 							]
 						}
 					},
-					"status": "No Content",
-					"code": 204,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 15:07:13 GMT"
-						}
-					],
-					"cookie": [],
-					"body": null
-				},
-				{
-					"name": "404 NOT FOUND",
-					"originalRequest": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "localhost:8080/anime/1",
-							"host": [
-								"localhost"
+							"name": "204 NO CONTENT",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"1"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 15:07:13 GMT"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"anime",
-								"1"
-							]
-						}
-					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": null
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Sun, 16 Feb 2025 18:33:29 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "16"
+							"name": "404 NOT FOUND",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/anime/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"anime",
+										"1"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 16 Feb 2025 18:33:29 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "16"
+								}
+							],
+							"cookie": [],
+							"body": "Anime not found\n"
 						}
 					],
-					"cookie": [],
-					"body": "Anime not found\n"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Delete Anime",
+									"pm.test(\"Status code is 204 for successful deletion\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "Create Review",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer {{jwt_token}}"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/reviews",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"reviews"
-					]
-				}
-			},
-			"response": [
+			"name": "Reviews",
+			"item": [
 				{
-					"name": "201 CREATED",
-					"originalRequest": {
+					"name": "Create Review",
+					"request": {
 						"method": "POST",
 						"header": [
 							{
@@ -857,212 +1642,259 @@
 							]
 						}
 					},
-					"status": "Created",
-					"code": 201,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:31:02 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "191"
-						},
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						}
-					],
-					"cookie": [],
-					"body": "{\"ID\":1,\"CreatedAt\":\"2025-02-18T20:31:02.2476114-03:00\",\"UpdatedAt\":\"2025-02-18T20:31:02.2476114-03:00\",\"DeletedAt\":null,\"UserID\":1,\"AnimeID\":2,\"Content\":\"This anime is amazing!\",\"Rating\":9}\n"
-				},
-				{
-					"name": "400 BAD REQUEST (Invalid input)",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
+							"name": "201 CREATED",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/reviews",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews"
+									]
+								}
 							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwt_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": -1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8080/reviews",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:31:02 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "191"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews"
-							]
-						}
-					},
-					"status": "Bad Request",
-					"code": 400,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "{\"ID\":1,\"CreatedAt\":\"2025-02-18T20:31:02.2476114-03:00\",\"UpdatedAt\":\"2025-02-18T20:31:02.2476114-03:00\",\"DeletedAt\":null,\"UserID\":1,\"AnimeID\":2,\"Content\":\"This anime is amazing!\",\"Rating\":9}\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:31:48 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "14"
-						}
-					],
-					"cookie": [],
-					"body": "Invalid input\n"
-				},
-				{
-					"name": "404 NOT FOUND (User)",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
+							"name": "400 BAD REQUEST (Invalid input)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userId\": -1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/reviews",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews"
+									]
+								}
 							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwt_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 200000,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8080/reviews",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:31:48 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "14"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews"
-							]
-						}
-					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "Invalid input\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:32:19 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "15"
-						}
-					],
-					"cookie": [],
-					"body": "User not found\n"
-				},
-				{
-					"name": "404 NOT FOUND (Anime)",
-					"originalRequest": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
+							"name": "404 NOT FOUND (User)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userId\": 200000,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/reviews",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews"
+									]
+								}
 							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwt_token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": 1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8080/reviews",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:32:19 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "15"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews"
-							]
-						}
-					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "User not found\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:32:49 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "16"
+							"name": "404 NOT FOUND (Anime)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/reviews",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:32:49 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "16"
+									}
+								],
+							"cookie": [],
+							"body": "Anime not found\n"
 						}
 					],
-					"cookie": [],
-					"body": "Anime not found\n"
-				}
-			]
-		},
-		{
-			"name": "Get Review by ID",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/reviews/1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"reviews",
-						"1"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Create Review",
+									"pm.test(\"Status code is 201 for successful creation\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('UserID');",
+									"    pm.expect(response).to.have.property('AnimeID');",
+									"    pm.expect(response).to.have.property('Content');",
+									"    pm.expect(response).to.have.property('Rating');",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent user or anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
 					]
-				}
-			},
-			"response": [
+				},
 				{
-					"name": "200 OK",
-					"originalRequest": {
+					"name": "Get Review by ID",
+					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -1078,147 +1910,169 @@
 							]
 						}
 					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
+					"response": [
 						{
-							"key": "Content-Type",
-							"value": "application/json"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:48:52 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "721"
-						}
-					],
-					"cookie": [],
-					"body": "{\n    \"ID\": 1,\n    \"CreatedAt\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"UpdatedAt\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"DeletedAt\": null,\n    \"UserID\": 1,\n    \"AnimeID\": 2,\n    \"Content\": \"This anime is amazing!\",\n    \"Rating\": 9,\n    \"User\": {\n        \"ID\": 1,\n        \"CreatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"UpdatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"DeletedAt\": null,\n        \"Username\": \"italo\",\n        \"Email\": \"\",\n        \"Password\": \"$2a$10$ltI/xrbEpMeX2xe5lz7NT.iZGGS6Wtyy1JosIzfY4.BAWUqVtWgVe\",\n        \"IsAdmin\": false,\n        \"Reviews\": null\n    },\n    \"Anime\": {\n        \"ID\": 2,\n        \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"DeletedAt\": null,\n        \"Title\": \"Fire Force\",\n        \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n        \"Rating\": 0,\n        \"Reviews\": null\n    }\n}"
-				},
-				{
-					"name": "404 NOT FOUND",
-					"originalRequest": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/reviews/10000",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/reviews/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"1"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:48:52 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "721"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews",
-								"10000"
-							]
-						}
-					},
-					"status": "Not Found",
-					"code": 404,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "{\n    \"ID\": 1,\n    \"CreatedAt\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"UpdatedAt\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"DeletedAt\": null,\n    \"UserID\": 1,\n    \"AnimeID\": 2,\n    \"Content\": \"This anime is amazing!\",\n    \"Rating\": 9,\n    \"User\": {\n        \"ID\": 1,\n        \"CreatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"UpdatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"DeletedAt\": null,\n        \"Username\": \"italo\",\n        \"Email\": \"\",\n        \"Password\": \"$2a$10$ltI/xrbEpMeX2xe5lz7NT.iZGGS6Wtyy1JosIzfY4.BAWUqVtWgVe\",\n        \"IsAdmin\": false,\n        \"Reviews\": null\n    },\n    \"Anime\": {\n        \"ID\": 2,\n        \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"DeletedAt\": null,\n        \"Title\": \"Fire Force\",\n        \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n        \"Rating\": 0,\n        \"Reviews\": null\n    }\n}"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Wed, 19 Feb 2025 00:29:35 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "17"
-						}
-					],
-					"cookie": [],
-					"body": "Review not found\n"
-				},
-				{
-					"name": "400 BAD REQUEST (INVALID ID FORMAT)",
-					"originalRequest": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/reviews/200000000000",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"name": "404 NOT FOUND",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/reviews/10000",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"10000"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 19 Feb 2025 00:29:35 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "17"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews",
-								"200000000000"
-							]
-						}
-					},
-					"status": "Bad Request",
-					"code": 400,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
+							"cookie": [],
+							"body": "Review not found\n"
 						},
 						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Wed, 19 Feb 2025 00:30:16 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "18"
+							"name": "400 BAD REQUEST (INVALID ID FORMAT)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/reviews/200000000000",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"200000000000"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 19 Feb 2025 00:30:16 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "18"
+								}
+							],
+							"cookie": [],
+							"body": "Invalid ID format\n"
 						}
 					],
-					"cookie": [],
-					"body": "Invalid ID format\n"
-				}
-			]
-		},
-		{
-			"name": "Update Review",
-			"request": {
-				"method": "PUT",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer {{jwt_token}}"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"content\": \"Updated review content.\",\n  \"rating\": 8\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/reviews/1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"reviews",
-						"1"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Get Review by ID",
+									"pm.test(\"Status code is 200 for valid review\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('UserID');",
+									"    pm.expect(response).to.have.property('AnimeID');",
+									"    pm.expect(response).to.have.property('Content');",
+									"    pm.expect(response).to.have.property('Rating');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent review\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for invalid ID format\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
 					]
-				}
-			},
-			"response": [
+				},
 				{
-					"name": "200 OK",
-					"originalRequest": {
+					"name": "Update Review",
+					"request": {
 						"method": "PUT",
 						"header": [
 							{
@@ -1247,102 +2101,83 @@
 							]
 						}
 					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
+					"response": [
 						{
-							"key": "Content-Type",
-							"value": "application/json"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:49:23 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "723"
-						}
-					],
-					"cookie": [],
-					"body": "{\n    \"ID\": 1,\n    \"CreatedAt\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"UpdatedAt\": \"2025-02-18T20:49:23.5800625-03:00\",\n    \"DeletedAt\": null,\n    \"UserID\": 1,\n    \"AnimeID\": 2,\n    \"Content\": \"Updated review content.\",\n    \"Rating\": 8,\n    \"User\": {\n        \"ID\": 1,\n        \"CreatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"UpdatedAt\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"DeletedAt\": null,\n        \"Username\": \"italo\",\n        \"Email\": \"\",\n        \"Password\": \"$2a$10$ltI/xrbEpMeX2xe5lz7NT.iZGGS6Wtyy1JosIzfY4.BAWUqVtWgVe\",\n        \"IsAdmin\": false,\n        \"Reviews\": null\n    },\n    \"Anime\": {\n        \"ID\": 2,\n        \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n        \"DeletedAt\": null,\n        \"Title\": \"Fire Force\",\n        \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n        \"Rating\": 0,\n        \"Reviews\": null\n    }\n}"
-				}
-			]
-		},
-		{
-			"name": "Delete Review",
-			"request": {
-				"method": "DELETE",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{jwt_token}}"
-					}
-				],
-				"url": {
-					"raw": "http://localhost:8080/reviews/1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"reviews",
-						"1"
-					]
-				}
-			},
-			"response": [
-				{
-					"name": "401 UNAUTHORIZED",
-					"originalRequest": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwt_token}}"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8080/reviews/1",
-							"protocol": "http",
-							"host": [
-								"localhost"
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"content\": \"Re-Updated review content.\",\n  \"rating\": 8\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/reviews/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"1"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 13 Mar 2025 16:56:15 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "282"
+								}
 							],
-							"port": "8080",
-							"path": [
-								"reviews",
-								"1"
-							]
-						}
-					},
-					"status": "Unauthorized",
-					"code": 401,
-					"_postman_previewlanguage": "plain",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "text/plain; charset=utf-8"
-						},
-						{
-							"key": "X-Content-Type-Options",
-							"value": "nosniff"
-						},
-						{
-							"key": "Date",
-							"value": "Tue, 18 Feb 2025 23:49:38 GMT"
-						},
-						{
-							"key": "Content-Length",
-							"value": "14"
+							"cookie": [],
+							"body": "{\n    \"id\": 1,\n    \"created_at\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"updated_at\": \"2025-03-13T13:56:15.2782538-03:00\",\n    \"userId\": 1,\n    \"animeId\": 2,\n    \"content\": \"Re-Updated review content.\",\n    \"rating\": 8,\n    \"user\": {\n        \"id\": 0,\n        \"username\": \"\",\n        \"is_admin\": false\n    },\n    \"anime\": {\n        \"id\": 0,\n        \"title\": \"\",\n        \"description\": \"\",\n        \"rating\": 0\n    }\n}"
 						}
 					],
-					"cookie": [],
-					"body": "Invalid token\n"
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Update Review",
+									"pm.test(\"Status code is 200 for successful update\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains updated fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('rating');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				},
 				{
-					"name": "204 NO CONTENT",
-					"originalRequest": {
+					"name": "Delete Review",
+					"request": {
 						"method": "DELETE",
 						"header": [
 							{
@@ -1363,17 +2198,110 @@
 							]
 						}
 					},
-					"status": "No Content",
-					"code": 204,
-					"_postman_previewlanguage": "plain",
-					"header": [
+					"response": [
 						{
-							"key": "Date",
-							"value": "Wed, 19 Feb 2025 00:20:51 GMT"
+							"name": "401 UNAUTHORIZED",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/reviews/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"1"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 18 Feb 2025 23:49:38 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "14"
+								}
+							],
+							"cookie": [],
+							"body": "Invalid token\n"
+						},
+						{
+							"name": "204 NO CONTENT",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{jwt_token}}"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/reviews/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"reviews",
+										"1"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Wed, 19 Feb 2025 00:20:51 GMT"
+								}
+							],
+							"cookie": [],
+							"body": null
 						}
 					],
-					"cookie": [],
-					"body": null
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Tests for Delete Review",
+									"pm.test(\"Status code is 204 for successful deletion\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"pm.test(\"Status code is 401 for invalid token\", function () {",
+									"    if (pm.response.code === 401) {",
+									"        pm.response.to.have.status(401);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
 				}
 			]
 		}
