@@ -49,7 +49,7 @@ Run the application:
 go run cmd/main.go
 ```
 
-The API will be available at `http://localhost:8080`.
+The API will be available at `http://localhost:8080/v1`.
 
 -------
 Generate the swagger documentation:
@@ -92,38 +92,38 @@ docker-compose up --build
 This will start both the PostgreSQL database and the Go API server.
 
 **Access the API:**  
-The API will be available at `http://localhost:8080`.
+The API will be available at `http://localhost:8080/v1`.
 The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ## API Endpoints
 
 ### Authentication
 
-- **POST** `/auth/register`: Register a new user.
+- **POST** `/v1/auth/register`: Register a new user.
 - **POST** `/auth/authenticate`: Authenticate a user and receive a JWT token.
 
 ### Users
 
-- **GET** `/users`: Retrieve a paginated list of users (Admin only).
-- **GET** `/users/{id}`: Retrieve a specific user by ID.
-- **POST** `/users`: Create a new user.
-- **PUT** `/users/{id}`: Update an existing user.
-- **DELETE** `/users/{id}`: Delete a user.
+- **GET** `/v1/users`: Retrieve a paginated list of users (Admin only).
+- **GET** `/v1/users/{id}`: Retrieve a specific user by ID.
+- **POST** `/v1/users`: Create a new user.
+- **PUT** `/v1/users/{id}`: Update an existing user.
+- **DELETE** `/v1/users/{id}`: Delete a user.
 
 ### Anime
 
-- **GET** `/anime`: Retrieve all anime entries.
-- **GET** `/anime/{id}`: Retrieve a specific anime by ID.
-- **POST** `/anime`: Create a new anime entry (Authenticated users only).
-- **PUT** `/anime/{id}`: Update an existing anime entry (Authenticated users only).
-- **DELETE** `/anime/{id}`: Delete an anime entry (Authenticated users only).
+- **GET** `/v1/anime`: Retrieve all anime entries.
+- **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID.
+- **POST** `/v1/anime`: Create a new anime entry (Authenticated users only).
+- **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only).
+- **DELETE** `/v1/anime/{id}`: Delete an anime entry (Authenticated users only).
 
 ### Reviews
 
-- **GET** `/reviews/{id}`: Retrieve a specific review by ID.
-- **POST** `/reviews`: Create a new review (Authenticated users only).
-- **PUT** `/reviews/{id}`: Update an existing review (Authenticated users only).
-- **DELETE** `/reviews/{id}`: Delete a review (Authenticated users only).
+- **GET** `/v1/reviews/{id}`: Retrieve a specific review by ID.
+- **POST** `/v1/reviews`: Create a new review (Authenticated users only).
+- **PUT** `/v1/reviews/{id}`: Update an existing review (Authenticated users only).
+- **DELETE** `/v1/reviews/{id}`: Delete a review (Authenticated users only).
 
 ## Diagrams
 
@@ -153,19 +153,9 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 +-------------------+       +-------------------+       +-------------------+
 ```
 
-### Database Schema
+### Model Entity Relationship
 
-```
-+-------------------+       +-------------------+       +-------------------+
-|      Users        |       |      Anime        |       |      Reviews      |
-+-------------------+       +-------------------+       +-------------------+
-| - ID              |       | - ID              |       | - ID              |
-| - Username        |       | - Title           |       | - UserID          |
-| - Email           |       | - Description     |       | - AnimeID         |
-| - Password        |       | - Rating          |       | - Content         |
-| - IsAdmin         |       +-------------------+       | - Rating          |
-+-------------------+                                   +-------------------+
-```
+![Model Entity Relationship](/myanimeapi/resources/entity_model_relationship.png)
 
 ## Testing
 
