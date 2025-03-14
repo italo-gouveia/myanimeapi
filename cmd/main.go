@@ -55,7 +55,14 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 // @host localhost:8080
-// @BasePath /
+// @BasePath /v1
+// @schemes http
+//
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description Use the format "Bearer <JWT_TOKEN>". Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+// @security ApiKeyAuth
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
