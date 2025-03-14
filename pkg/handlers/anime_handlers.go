@@ -1,15 +1,16 @@
-// internal/handlers/anime_handlers.go
-// This file defines the handlers for anime-related routes.
-// It imports the necessary packages and defines the AnimeHandler struct.
+// pkg/handlers/anime_handlers.go
+// Package handlers provides HTTP handlers for anime-related routes in the MyAnimeAPI application.
 // It defines methods to handle requests for retrieving, creating, updating, and deleting anime entries.
-// It uses the db package to interact with the database.
-// It uses the models package to work with data models.
-// It uses the gorilla/mux package to handle HTTP requests.
-// It uses the log package to log messages.
-// It uses the encoding/json package to encode and decode JSON data.
-// It uses the net/http package to write HTTP responses.
-// It uses the strconv package to convert strings to other types.
-// It uses the middleware package to authenticate requests.
+// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
+//
+// Example usage:
+//
+//	db := // initialize your database connection
+//	animeHandler := handlers.NewAnimeHandler(db)
+//	router := mux.NewRouter()
+//	animeHandler.RegisterAnimeRoutes(router)
+//
+//	http.ListenAndServe(":8080", router)
 package handlers
 
 import (
@@ -25,17 +26,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// AnimeHandler defines the handlers for anime-related routes
+// AnimeHandler defines the handlers for anime-related routes.
+// It contains a database interface for interacting with the database.
 type AnimeHandler struct {
 	DB db.DBInterface
 }
 
-// NewAnimeHandler creates a new AnimeHandler instance
+// NewAnimeHandler creates a new instance of AnimeHandler.
+// It accepts a database interface and returns a pointer to an AnimeHandler.
+//
+// Example:
+//
+//	db := // initialize your database connection
+//	animeHandler := NewAnimeHandler(db)
 func NewAnimeHandler(db db.DBInterface) *AnimeHandler {
 	return &AnimeHandler{DB: db}
 }
 
-// GetAnimeHandler retrieves an anime by ID
+// GetAnimeHandler retrieves an anime by its ID.
+// It validates the ID, queries the database, and returns the anime as a JSON response.
+// If the ID is invalid or the anime is not found, it returns an appropriate error response.
+//
 // @Summary Get an anime by ID
 // @Description Retrieve an anime by its ID
 // @Tags anime
@@ -73,7 +84,10 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAllAnimesHandler retrieves all anime entries
+// GetAllAnimesHandler retrieves all anime entries from the database.
+// It returns a list of anime entries as a JSON response.
+// If the query fails, it returns an error response.
+//
 // @Summary Get all anime entries
 // @Description Retrieve a list of all anime entries
 // @Tags anime
@@ -98,7 +112,10 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by ID
+// GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by its ID.
+// It validates the ID and pagination parameters, queries the database, and returns the reviews as a JSON response.
+// If the ID or pagination parameters are invalid, or the query fails, it returns an error response.
+//
 // @Summary Get paginated reviews for an anime
 // @Description Retrieve paginated reviews for an anime by its ID
 // @Tags anime
@@ -114,9 +131,6 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Debug: Log the raw ID string
-	log.Printf("Raw ID string: %s", idStr)
-
 	// Validate ID
 	id, err := validation.ValidateID(idStr)
 	if err != nil {
@@ -124,9 +138,6 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Debug: Log the parsed ID
-	log.Printf("Parsed ID: %d", id)
 
 	// Validate pagination
 	pageStr := r.URL.Query().Get("page")
@@ -138,14 +149,8 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 		return
 	}
 
-	// Debug: Log pagination parameters
-	log.Printf("Page: %d, Limit: %d", page, limit)
-
 	var reviews []models.Review
 	offset := (page - 1) * limit
-
-	// Debug: Log the query being executed
-	log.Printf("Executing query: SELECT * FROM reviews WHERE anime_id = %d OFFSET %d LIMIT %d", id, offset, limit)
 
 	result := h.DB.WithContext(r.Context()).Where("anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews)
 	if result.Error != nil {
@@ -153,9 +158,6 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 		http.Error(w, "Failed to retrieve reviews", http.StatusInternalServerError)
 		return
 	}
-
-	// Debug: Log the number of reviews found
-	log.Printf("Found %d reviews for anime ID %d", len(reviews), id)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(reviews); err != nil {
@@ -165,7 +167,10 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	}
 }
 
-// CreateAnimeHandler creates a new anime entry
+// CreateAnimeHandler creates a new anime entry in the database.
+// It validates the input payload, creates the anime, and returns the created anime as a JSON response.
+// If the input is invalid or the creation fails, it returns an error response.
+//
 // @Summary Create a new anime
 // @Description Create a new anime entry with the provided data
 // @Tags anime
@@ -201,7 +206,10 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// UpdateAnimeHandler updates an existing anime entry
+// UpdateAnimeHandler updates an existing anime entry in the database.
+// It validates the ID and input payload, updates the anime, and returns the updated anime as a JSON response.
+// If the ID or input is invalid, or the update fails, it returns an error response.
+//
 // @Summary Update an anime
 // @Description Update an existing anime entry with the provided data
 // @Tags anime
@@ -260,7 +268,10 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// DeleteAnimeHandler deletes an anime entry
+// DeleteAnimeHandler deletes an anime entry from the database.
+// It validates the ID, deletes the anime, and returns a 204 No Content response.
+// If the ID is invalid or the deletion fails, it returns an error response.
+//
 // @Summary Delete an anime
 // @Description Delete an anime entry by its ID
 // @Tags anime
@@ -302,7 +313,13 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// RegisterAnimeRoutes registers all anime-related routes
+// RegisterAnimeRoutes registers all anime-related routes with the provided router.
+// It defines public routes (GET) and protected routes (POST, PUT, DELETE) that require authentication.
+//
+// Example:
+//
+//	router := mux.NewRouter()
+//	animeHandler.RegisterAnimeRoutes(router)
 func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/anime", h.GetAllAnimesHandler).Methods("GET")

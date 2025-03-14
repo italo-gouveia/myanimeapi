@@ -1,21 +1,16 @@
-// internal/handlers/review_handlers.go
-// Package handlers provides the handler functions for the different routes.
-// It defines the handlers for review-related routes.
-// It uses the db package to interact with the database.
-// It uses the models package to interact with the data models.
-// It uses the middleware package to authenticate users.
-// It uses the gorilla/mux package to handle HTTP requests.
-// It uses the encoding/json package to encode and decode JSON data.
-// It uses the log package to log messages.
-// It uses the net/http package to write HTTP responses.
-// It uses the strconv package to convert strings to integers.
-// It uses the fmt package to format strings.
-// It uses the myanimeapi/internal/db package to interact with the database.
-// It uses the myanimeapi/pkg/models package to interact with the data models.
-// It uses the myanimeapi/pkg/middleware package to authenticate users.
-// It uses the myanimeapi/pkg/db package to interact with the database.
-// It uses the myanimeapi/pkg/handlers package to handle the requests.
-// It uses the myanimeapi/pkg/models package to interact with the data models.
+// pkg/handlers/review_handlers.go
+// Package handlers provides HTTP handlers for review-related routes in the MyAnimeAPI application.
+// It defines methods to handle requests for retrieving, creating, updating, and deleting reviews.
+// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
+//
+// Example usage:
+//
+//	db := // initialize your database connection
+//	reviewHandler := handlers.NewReviewHandler(db)
+//	router := mux.NewRouter()
+//	reviewHandler.RegisterReviewRoutes(router)
+//
+//	http.ListenAndServe(":8080", router)
 package handlers
 
 import (
@@ -31,26 +26,36 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ReviewHandler defines the handlers for review-related routes
+// ReviewHandler defines the handlers for review-related routes.
+// It contains a database interface for interacting with the database.
 type ReviewHandler struct {
 	DB db.DBInterface
 }
 
-// NewReviewHandler creates a new ReviewHandler instance
+// NewReviewHandler creates a new instance of ReviewHandler.
+// It accepts a database interface and returns a pointer to a ReviewHandler.
+//
+// Example:
+//
+//	db := // initialize your database connection
+//	reviewHandler := NewReviewHandler(db)
 func NewReviewHandler(db db.DBInterface) *ReviewHandler {
 	return &ReviewHandler{DB: db}
 }
 
-// GetReviewHandler godoc
+// GetReviewHandler retrieves a review by its ID.
+// It validates the ID, queries the database, and returns the review as a JSON response.
+// If the ID is invalid or the review is not found, it returns an appropriate error response.
+//
 // @Summary Get a review by ID
 // @Description Get a review by its ID
 // @Tags reviews
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param id path int true "Review ID"
-// @Success 200 {object} models.Review
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
+// @Success 200 {object} models.ReviewResponse
+// @Failure 400 {string} string "Invalid ID format"
+// @Failure 404 {string} string "Review not found"
 // @Router /reviews/{id} [get]
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -109,17 +114,20 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// CreateReviewHandler godoc
+// CreateReviewHandler creates a new review in the database.
+// It validates the input payload, checks for the existence of the associated user and anime,
+// and creates the review. If successful, it returns the created review as a JSON response.
+//
 // @Summary Create a new review
 // @Description Create a new review with the input payload
 // @Tags reviews
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param review body models.Review true "Review object"
 // @Success 201 {object} models.Review
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {string} string "Invalid input"
+// @Failure 404 {string} string "User or anime not found"
+// @Failure 500 {string} string "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
@@ -169,18 +177,21 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// UpdateReviewHandler godoc
+// UpdateReviewHandler updates an existing review in the database.
+// It validates the ID and input payload, updates the review, and returns the updated review as a JSON response.
+// If the ID or input is invalid, or the update fails, it returns an error response.
+//
 // @Summary Update a review by ID
 // @Description Update a review with the input payload
 // @Tags reviews
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param id path int true "Review ID"
 // @Param review body models.Review true "Review object"
-// @Success 200 {object} models.Review
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Success 200 {object} models.ReviewResponse
+// @Failure 400 {string} string "Invalid input or ID format"
+// @Failure 404 {string} string "Review not found"
+// @Failure 500 {string} string "Failed to update review"
 // @Router /reviews/{id} [put]
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -252,17 +263,20 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// DeleteReviewHandler godoc
+// DeleteReviewHandler deletes a review from the database.
+// It validates the ID, deletes the review, and returns a 204 No Content response.
+// If the ID is invalid or the deletion fails, it returns an error response.
+//
 // @Summary Delete a review by ID
 // @Description Delete a review by its ID
 // @Tags reviews
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param id path int true "Review ID"
-// @Success 204
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Success 204 "No Content"
+// @Failure 400 {string} string "Invalid ID format"
+// @Failure 404 {string} string "Review not found"
+// @Failure 500 {string} string "Failed to delete review"
 // @Router /reviews/{id} [delete]
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -297,7 +311,13 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// RegisterReviewRoutes registers all review-related routes
+// RegisterReviewRoutes registers all review-related routes with the provided router.
+// It defines public routes (GET) and protected routes (POST, PUT, DELETE) that require authentication.
+//
+// Example:
+//
+//	router := mux.NewRouter()
+//	reviewHandler.RegisterReviewRoutes(router)
 func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/reviews/{id:[0-9]+}", h.GetReviewHandler).Methods("GET")
