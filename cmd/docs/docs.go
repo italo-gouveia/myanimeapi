@@ -1456,6 +1456,11 @@ const docTemplate = `{
         "models.UserResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "description": "Timestamp when the user was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
                 "id": {
                     "description": "Unique identifier for the user",
                     "type": "integer",
@@ -1465,6 +1470,11 @@ const docTemplate = `{
                     "description": "Indicates if the user has admin privileges",
                     "type": "boolean",
                     "example": false
+                },
+                "updated_at": {
+                    "description": "Timestamp when the user was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
                 },
                 "username": {
                     "description": "Username of the user",
