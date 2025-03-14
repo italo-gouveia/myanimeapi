@@ -1,112 +1,227 @@
-basePath: /
+basePath: /v1
 definitions:
   models.Anime:
     properties:
       created_at:
-        description: Creation timestamp
+        description: Timestamp when the anime was created
         example: "2025-02-20T19:27:00Z"
         type: string
       description:
-        description: Description
+        description: Description of the anime
         example: A story about ninjas.
         maxLength: 500
         type: string
       id:
-        description: Review ID
+        description: Unique identifier for the anime
         example: 1
         type: integer
       rating:
-        description: Rating                          // Rating
+        description: Average rating of the anime
         example: 8.5
         maximum: 10
         minimum: 0
         type: number
       reviews:
-        description: Relationship with Review (omitted unless necessary)
+        description: List of reviews for the anime (omitted unless necessary)
         items:
           $ref: '#/definitions/models.Review'
         type: array
       title:
-        description: Title
+        description: Title of the anime
         example: Naruto
         maxLength: 100
         minLength: 3
         type: string
       updated_at:
-        description: Update timestamp
+        description: Timestamp when the anime was last updated
         example: "2025-02-20T19:27:00Z"
         type: string
     required:
     - title
     type: object
+  models.AnimeCreateRequest:
+    properties:
+      description:
+        description: Description of the anime
+        example: A story about ninjas.
+        maxLength: 500
+        type: string
+      rating:
+        description: Rating of the anime
+        example: 8.5
+        maximum: 10
+        minimum: 0
+        type: number
+      title:
+        description: Title of the anime
+        example: Naruto
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - title
+    type: object
+  models.AnimeResponse:
+    properties:
+      created_at:
+        description: Timestamp when the anime was created
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      description:
+        description: Description of the anime
+        example: A story about ninjas.
+        type: string
+      id:
+        description: Unique identifier for the anime
+        example: 1
+        type: integer
+      rating:
+        description: Average rating of the anime
+        example: 8.5
+        type: number
+      title:
+        description: Title of the anime
+        example: Naruto
+        type: string
+      updated_at:
+        description: Timestamp when the anime was last updated
+        example: "2025-02-20T19:27:00Z"
+        type: string
+    type: object
   models.Review:
     properties:
       animeId:
-        description: Add cascade delete constraint
+        description: ID of the anime being reviewed
         example: 1
         type: integer
       content:
-        description: Review content
+        description: Content of the review
         example: This anime is amazing!
         maxLength: 500
         type: string
       created_at:
-        description: Creation timestamp
+        description: Timestamp when the review was created
         example: "2025-02-20T19:27:00Z"
         type: string
       id:
-        description: Review ID
+        description: Unique identifier for the review
         example: 1
         type: integer
       rating:
-        description: Rating (0-10)
+        description: Rating given in the review (0-10)
         example: 9
         maximum: 10
         minimum: 0
         type: integer
       updated_at:
-        description: Update timestamp
+        description: Timestamp when the review was last updated
         example: "2025-02-20T19:27:00Z"
         type: string
       userId:
-        description: User ID
+        description: ID of the user who created the review
         example: 1
         type: integer
     required:
     - content
     - rating
     type: object
+  models.ReviewCreateRequest:
+    properties:
+      animeId:
+        description: ID of the anime being reviewed
+        example: 1
+        type: integer
+      content:
+        description: Content of the review
+        example: This anime is amazing!
+        maxLength: 500
+        type: string
+      rating:
+        description: Rating given in the review (0-10)
+        example: 9
+        maximum: 10
+        minimum: 0
+        type: integer
+      userId:
+        description: ID of the user creating the review
+        example: 1
+        type: integer
+    required:
+    - animeId
+    - content
+    - rating
+    - userId
+    type: object
+  models.ReviewResponse:
+    properties:
+      anime:
+        allOf:
+        - $ref: '#/definitions/models.AnimeResponse'
+        description: Anime details
+      animeId:
+        description: ID of the anime being reviewed
+        example: 1
+        type: integer
+      content:
+        description: Content of the review
+        example: This anime is amazing!
+        type: string
+      created_at:
+        description: Timestamp when the review was created
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Unique identifier for the review
+        example: 1
+        type: integer
+      rating:
+        description: Rating given in the review (0-10)
+        example: 9
+        type: integer
+      updated_at:
+        description: Timestamp when the review was last updated
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.UserResponse'
+        description: User details
+      userId:
+        description: ID of the user who created the review
+        example: 1
+        type: integer
+    type: object
   models.User:
     properties:
       created_at:
-        description: Creation timestamp
+        description: Timestamp when the user was created
         example: "2025-02-20T19:27:00Z"
         type: string
       email:
-        description: Email (omitted unless necessary)
+        description: Email address of the user (omitted unless necessary)
         example: john@example.com
         maxLength: 100
         minLength: 5
         type: string
       id:
-        description: Review ID
+        description: Unique identifier for the user
         example: 1
         type: integer
       is_admin:
-        description: IsAdmin
+        description: Indicates if the user has admin privileges
         example: false
         type: boolean
       reviews:
-        description: Relationship with Review (omitted unless necessary)
+        description: List of reviews created by the user (omitted unless necessary)
         items:
           $ref: '#/definitions/models.Review'
         type: array
       updated_at:
-        description: Update timestamp
+        description: Timestamp when the user was last updated
         example: "2025-02-20T19:27:00Z"
         type: string
       username:
-        description: Username
+        description: Unique username for the user
         example: john_doe
         maxLength: 50
         minLength: 3
@@ -115,16 +230,41 @@ definitions:
     - email
     - username
     type: object
-  models.UserCredentials:
+  models.UserCreateRequest:
     properties:
+      email:
+        description: Email address for the new user
+        example: john@example.com
+        maxLength: 100
+        minLength: 5
+        type: string
       password:
-        description: Password
+        description: Password for the new user
         example: password123
         maxLength: 100
         minLength: 5
         type: string
       username:
-        description: Username
+        description: Username for the new user
+        example: john_doe
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  models.UserCredentials:
+    properties:
+      password:
+        description: Password for authentication
+        example: password123
+        maxLength: 100
+        minLength: 5
+        type: string
+      username:
+        description: Username for authentication
         example: john_doe
         maxLength: 50
         minLength: 3
@@ -132,6 +272,29 @@ definitions:
     required:
     - password
     - username
+    type: object
+  models.UserResponse:
+    properties:
+      created_at:
+        description: Timestamp when the user was created
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Unique identifier for the user
+        example: 1
+        type: integer
+      is_admin:
+        description: Indicates if the user has admin privileges
+        example: false
+        type: boolean
+      updated_at:
+        description: Timestamp when the user was last updated
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      username:
+        description: Username of the user
+        example: john_doe
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -146,7 +309,7 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
-  /animes:
+  /v1/anime:
     get:
       description: Retrieve a list of all anime entries
       produces:
@@ -159,9 +322,14 @@ paths:
               $ref: '#/definitions/models.Anime'
             type: array
         "500":
-          description: Failed to retrieve animes
+          description: Failed to retrieve anime
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Get all anime entries
       tags:
       - anime
@@ -175,26 +343,32 @@ paths:
         name: anime
         required: true
         schema:
-          $ref: '#/definitions/models.Anime'
+          $ref: '#/definitions/models.AnimeCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Anime'
+            $ref: '#/definitions/models.AnimeResponse'
         "400":
           description: Invalid input or missing required fields
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to create anime
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
       summary: Create a new anime
       tags:
       - anime
-  /animes/{id}:
+  /v1/anime/{id}:
     delete:
       description: Delete an anime entry by its ID
       parameters:
@@ -209,15 +383,23 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Anime not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to delete anime
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
       summary: Delete an anime
       tags:
       - anime
@@ -239,11 +421,24 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Anime not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to retrieve anime
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Get an anime by ID
       tags:
       - anime
@@ -273,19 +468,27 @@ paths:
         "400":
           description: Invalid input or ID format
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Anime not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to update anime
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
       summary: Update an anime
       tags:
       - anime
-  /animes/{id}/reviews:
+  /v1/anime/{id}/reviews:
     get:
       description: Retrieve paginated reviews for an anime by its ID
       parameters:
@@ -314,19 +517,26 @@ paths:
         "400":
           description: Invalid ID format or pagination parameters
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to retrieve reviews
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Get paginated reviews for an anime
       tags:
       - anime
-  /auth/authenticate:
+  /v1/auth/authenticate:
     post:
       consumes:
       - application/json
-      description: Authenticate a user and return a JWT token.
+      description: Authenticate a user and return a JWT token
       parameters:
       - description: User credentials
         in: body
@@ -346,23 +556,32 @@ paths:
         "400":
           description: Invalid input
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "401":
           description: User not found or invalid credentials
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to generate token
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Authenticate a user
       tags:
       - auth
-  /auth/register:
+  /v1/auth/register:
     post:
       consumes:
       - application/json
-      description: Register a new user with the provided data.
+      description: Register a new user with the provided data
       parameters:
       - description: User registration data
         in: body
@@ -380,62 +599,71 @@ paths:
         "400":
           description: Invalid input or missing required fields
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "409":
           description: User with this username or email already exists
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to hash password or create user
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Register a new user
       tags:
       - auth
-  /reviews:
+  /v1/reviews:
     post:
       consumes:
       - application/json
-      description: Create a new review with the input payload
+      description: Create a new review for an anime
       parameters:
-      - description: Review object
+      - description: Review data
         in: body
         name: review
         required: true
         schema:
-          $ref: '#/definitions/models.Review'
+          $ref: '#/definitions/models.ReviewCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Review'
+            $ref: '#/definitions/models.ReviewResponse'
         "400":
-          description: Bad Request
+          description: Invalid input or missing required fields
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Not Found
+          description: Anime or user not found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Failed to create review
           schema:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Create a new review
       tags:
       - reviews
-  /reviews/{id}:
+  /v1/reviews/{id}:
     delete:
-      consumes:
-      - application/json
       description: Delete a review by its ID
       parameters:
       - description: Review ID
@@ -443,36 +671,34 @@ paths:
         name: id
         required: true
         type: integer
-      produces:
-      - application/json
       responses:
         "204":
           description: No Content
         "400":
-          description: Bad Request
+          description: Invalid ID format
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Not Found
+          description: Review not found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Failed to delete review
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Delete a review by ID
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a review
       tags:
       - reviews
     get:
-      consumes:
-      - application/json
-      description: Get a review by its ID
+      description: Retrieve a review by its ID
       parameters:
       - description: Review ID
         in: path
@@ -487,36 +713,45 @@ paths:
           schema:
             $ref: '#/definitions/models.Review'
         "400":
-          description: Bad Request
+          description: Invalid ID format
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Not Found
+          description: Review not found
           schema:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Failed to retrieve review
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Get a review by ID
       tags:
       - reviews
     put:
       consumes:
       - application/json
-      description: Update a review with the input payload
+      description: Update an existing review with the provided data
       parameters:
       - description: Review ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Review object
+      - description: Updated review data
         in: body
         name: review
         required: true
         schema:
-          $ref: '#/definitions/models.Review'
+          $ref: '#/definitions/models.ReviewCreateRequest'
       produces:
       - application/json
       responses:
@@ -525,27 +760,29 @@ paths:
           schema:
             $ref: '#/definitions/models.Review'
         "400":
-          description: Bad Request
+          description: Invalid input or ID format
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Not Found
+          description: Review not found
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Failed to update review
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Update a review by ID
+      security:
+      - ApiKeyAuth: []
+      summary: Update a review
       tags:
       - reviews
-  /users:
+  /v1/users:
     get:
       description: Retrieve a paginated list of all users. Requires admin privileges.
       parameters:
@@ -569,16 +806,23 @@ paths:
         "400":
           description: Invalid pagination parameters
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "403":
           description: Access denied
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to retrieve users
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
       security:
+      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Get all users (admin only)
       tags:
@@ -593,26 +837,39 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.UserCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/models.UserResponse'
         "400":
-          description: Invalid input
+          description: Invalid input or missing required fields
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: User with this username or email already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to create user
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - "":
+        - ""
       summary: Create a new user
       tags:
       - users
-  /users/{id}:
+  /v1/users/{id}:
     delete:
       description: Delete a user by their ID. Requires authentication.
       parameters:
@@ -624,15 +881,26 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: User not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to delete user
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
       security:
+      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Delete a user
       tags:
@@ -652,11 +920,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid ID format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: User not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to retrieve user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
+      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Get a user by ID
       tags:
@@ -676,29 +959,44 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.UserCreateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/models.UserResponse'
         "400":
-          description: Invalid input
+          description: Invalid input or ID format
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: User not found
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to update user
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
       security:
+      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Update a user
       tags:
       - users
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    description: 'Use the format "Bearer <JWT_TOKEN>". Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

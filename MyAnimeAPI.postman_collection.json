@@ -25,7 +25,7 @@
 							"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/auth/authenticate",
+							"raw": "http://localhost:8080/v1/auth/authenticate",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -54,7 +54,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/authenticate",
+									"raw": "http://localhost:8080/v1/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -106,7 +106,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/authenticate",
+									"raw": "http://localhost:8080/v1/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -154,7 +154,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/authenticate",
+									"raw": "http://localhost:8080/v1/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -229,7 +229,7 @@
 							"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/auth/register",
+							"raw": "http://localhost:8080/v1/auth/register",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -258,7 +258,7 @@
 									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/register",
+									"raw": "http://localhost:8080/v1/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -306,7 +306,7 @@
 									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/register",
+									"raw": "http://localhost:8080/v1/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -358,7 +358,7 @@
 									"raw": "{\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/auth/register",
+									"raw": "http://localhost:8080/v1/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -450,7 +450,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/users/1",
+							"raw": "localhost:8080/v1/users/1",
 							"host": [
 								"localhost"
 							],
@@ -468,7 +468,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/users/1",
+									"raw": "localhost:8080/v1/users/1",
 									"host": [
 										"localhost"
 									],
@@ -505,7 +505,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/users/5",
+									"raw": "localhost:8080/v1/users/5",
 									"host": [
 										"localhost"
 									],
@@ -585,7 +585,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/users",
+							"raw": "localhost:8080/v1/users",
 							"host": [
 								"localhost"
 							],
@@ -602,7 +602,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/users",
+									"raw": "localhost:8080/v1/users",
 									"host": [
 										"localhost"
 									],
@@ -671,7 +671,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/6/reviews",
+									"raw": "localhost:8080/v1/anime/6/reviews",
 									"host": [
 										"localhost"
 									],
@@ -709,7 +709,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/6/reviews?limit=2&page=1",
+									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=1",
 									"host": [
 										"localhost"
 									],
@@ -757,7 +757,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/6/reviews?limit=2&page=2",
+									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=2",
 									"host": [
 										"localhost"
 									],
@@ -805,7 +805,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/6/reviews?limit=-2&page=2",
+									"raw": "localhost:8080/v1/anime/6/reviews?limit=-2&page=2",
 									"host": [
 										"localhost"
 									],
@@ -857,7 +857,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/6/reviews?limit=2&page=-2",
+									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=-2",
 									"host": [
 										"localhost"
 									],
@@ -936,7 +936,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/anime",
+							"raw": "localhost:8080/v1/anime",
 							"host": [
 								"localhost"
 							],
@@ -953,7 +953,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime",
+									"raw": "localhost:8080/v1/anime",
 									"host": [
 										"localhost"
 									],
@@ -989,7 +989,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime",
+									"raw": "localhost:8080/v1/anime",
 									"host": [
 										"localhost"
 									],
@@ -1046,7 +1046,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/anime/1",
+							"raw": "localhost:8080/v1/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1064,7 +1064,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/1",
+									"raw": "localhost:8080/v1/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1105,7 +1105,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/2",
+									"raw": "localhost:8080/v1/anime/2",
 									"host": [
 										"localhost"
 									],
@@ -1191,7 +1191,7 @@
 							"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8080/anime",
+							"raw": "localhost:8080/v1/anime",
 							"host": [
 								"localhost"
 							],
@@ -1218,7 +1218,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/anime",
+									"raw": "localhost:8080/v1/anime",
 									"host": [
 										"localhost"
 									],
@@ -1264,7 +1264,7 @@
 									"raw": "{\n    \"title\": \"<script>alert('XSS')</script>Naruto\",\n    \"description\": \"<img src='x' onerror='alert(1)'>A story about ninjas.\",\n    \"rating\": 8.5\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/anime",
+									"raw": "localhost:8080/v1/anime",
 									"host": [
 										"localhost"
 									],
@@ -1349,7 +1349,7 @@
 							"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8080/anime/1",
+							"raw": "localhost:8080/v1/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1377,7 +1377,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/anime/1",
+									"raw": "localhost:8080/v1/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1424,7 +1424,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/anime/1",
+									"raw": "localhost:8080/v1/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1503,7 +1503,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/anime/1",
+							"raw": "localhost:8080/v1/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1521,7 +1521,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/1",
+									"raw": "localhost:8080/v1/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1550,7 +1550,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/anime/1",
+									"raw": "localhost:8080/v1/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1631,7 +1631,7 @@
 							"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/reviews",
+							"raw": "http://localhost:8080/v1/reviews",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1662,7 +1662,7 @@
 									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/reviews",
+									"raw": "http://localhost:8080/v1/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1712,7 +1712,7 @@
 									"raw": "{\n  \"userId\": -1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/reviews",
+									"raw": "http://localhost:8080/v1/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1766,7 +1766,7 @@
 									"raw": "{\n  \"userId\": 200000,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/reviews",
+									"raw": "http://localhost:8080/v1/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1820,7 +1820,7 @@
 									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/reviews",
+									"raw": "http://localhost:8080/v1/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1898,7 +1898,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/reviews/1",
+							"raw": "http://localhost:8080/v1/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1917,7 +1917,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/reviews/1",
+									"raw": "http://localhost:8080/v1/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1955,7 +1955,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/reviews/10000",
+									"raw": "http://localhost:8080/v1/reviews/10000",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1997,7 +1997,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/reviews/200000000000",
+									"raw": "http://localhost:8080/v1/reviews/200000000000",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2089,7 +2089,7 @@
 							"raw": "{\n  \"content\": \"Updated review content.\",\n  \"rating\": 8\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/reviews/1",
+							"raw": "http://localhost:8080/v1/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2121,7 +2121,7 @@
 									"raw": "{\n  \"content\": \"Re-Updated review content.\",\n  \"rating\": 8\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/reviews/1",
+									"raw": "http://localhost:8080/v1/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2186,7 +2186,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8080/reviews/1",
+							"raw": "http://localhost:8080/v1/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2210,7 +2210,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8080/reviews/1",
+									"raw": "http://localhost:8080/v1/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2257,7 +2257,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8080/reviews/1",
+									"raw": "http://localhost:8080/v1/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"

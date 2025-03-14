@@ -24,7 +24,7 @@ func NewUserHandler(db db.DBInterface) *UserHandler {
 	return &UserHandler{DB: db}
 }
 
-// GetAllUsersHandler retrieves paginated user entries (admin access required)
+// GetAllUsers godoc
 // @Summary Get all users (admin only)
 // @Description Retrieve a paginated list of all users. Requires admin privileges.
 // @Tags users
@@ -32,11 +32,24 @@ func NewUserHandler(db db.DBInterface) *UserHandler {
 // @Param page query int false "Page number (default: 1)"
 // @Param limit query int false "Number of items per page (default: 10)"
 // @Success 200 {array} models.User
-// @Failure 400 {string} string "Invalid pagination parameters"
-// @Failure 403 {string} string "Access denied"
-// @Failure 500 {string} string "Failed to retrieve users"
+// @Failure 400 {object} map[string]string "Invalid pagination parameters"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 500 {object} map[string]string "Failed to retrieve users"
 // @Security ApiKeyAuth
-// @Router /users [get]
+// @Router /v1/users [get]
+// @ExampleResponse
+// [
+//
+//	{
+//	  "id": 1,
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// ]
+// @Security ApiKeyAuth
 func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	isAdmin, ok := r.Context().Value(middleware.IsAdminContextKey).(bool)
 	if !ok || !isAdmin {
@@ -75,16 +88,29 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// GetUserHandler retrieves a user by ID
+// GetUser godoc
 // @Summary Get a user by ID
 // @Description Retrieve a user by their ID. Requires authentication.
 // @Tags users
 // @Produce json
 // @Param id path int true "User ID"
 // @Success 200 {object} models.User
-// @Failure 404 {string} string "User not found"
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Failed to retrieve user"
 // @Security ApiKeyAuth
-// @Router /users/{id} [get]
+// @Router /v1/users/{id} [get]
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -113,17 +139,37 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CreateUserHandler creates a new user
+// CreateUser godoc
 // @Summary Create a new user
 // @Description Create a new user with the provided data.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body models.User true "User data"
-// @Success 201 {object} models.User
-// @Failure 400 {string} string "Invalid input"
-// @Failure 500 {string} string "Failed to create user"
-// @Router /users [post]
+// @Param user body models.UserCreateRequest true "User data"
+// @Success 201 {object} models.UserResponse
+// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 409 {object} map[string]string "User with this username or email already exists"
+// @Failure 500 {object} map[string]string "Failed to create user"
+// @Router /v1/users [post]
+// @Example
+//
+//	{
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "password": "password123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security []
 func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
@@ -166,20 +212,39 @@ func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// UpdateUserHandler updates an existing user
+// UpdateUser godoc
 // @Summary Update a user
 // @Description Update an existing user with the provided data. Requires authentication.
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Param user body models.User true "Updated user data"
-// @Success 200 {object} models.User
-// @Failure 400 {string} string "Invalid input"
-// @Failure 404 {string} string "User not found"
-// @Failure 500 {string} string "Failed to update user"
+// @Param user body models.UserCreateRequest true "Updated user data"
+// @Success 200 {object} models.UserResponse
+// @Failure 400 {object} map[string]string "Invalid input or ID format"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Failed to update user"
 // @Security ApiKeyAuth
-// @Router /users/{id} [put]
+// @Router /v1/users/{id} [put]
+// @Example
+//
+//	{
+//	  "username": "john_doe_updated",
+//	  "email": "john_updated@example.com",
+//	  "password": "newpassword123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "username": "john_doe_updated",
+//	  "email": "john_updated@example.com",
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -231,16 +296,18 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// DeleteUserHandler deletes a user
+// DeleteUser godoc
 // @Summary Delete a user
 // @Description Delete a user by their ID. Requires authentication.
 // @Tags users
 // @Param id path int true "User ID"
 // @Success 204 "No Content"
-// @Failure 404 {string} string "User not found"
-// @Failure 500 {string} string "Failed to delete user"
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Failed to delete user"
 // @Security ApiKeyAuth
-// @Router /users/{id} [delete]
+// @Router /v1/users/{id} [delete]
+// @Security ApiKeyAuth
 func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]

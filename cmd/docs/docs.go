@@ -23,8 +23,15 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/animes": {
+        "/v1/anime": {
             "get": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Retrieve a list of all anime entries",
                 "produces": [
                     "application/json"
@@ -44,14 +51,22 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve animes",
+                        "description": "Failed to retrieve anime",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Create a new anime entry with the provided data",
                 "consumes": [
                     "application/json"
@@ -70,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.AnimeCreateRequest"
                         }
                     }
                 ],
@@ -78,26 +93,39 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.AnimeResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid input or missing required fields",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to create anime",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/animes/{id}": {
+        "/v1/anime/{id}": {
             "get": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Retrieve an anime by its ID",
                 "produces": [
                     "application/json"
@@ -125,18 +153,38 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID format",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Anime not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve anime",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Update an existing anime entry with the provided data",
                 "consumes": [
                     "application/json"
@@ -176,24 +224,38 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input or ID format",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Anime not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to update anime",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Delete an anime entry by its ID",
                 "tags": [
                     "anime"
@@ -215,26 +277,42 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID format",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "Anime not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to delete anime",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/animes/{id}/reviews": {
+        "/v1/anime/{id}/reviews": {
             "get": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Retrieve paginated reviews for an anime by its ID",
                 "produces": [
                     "application/json"
@@ -277,21 +355,34 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID format or pagination parameters",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to retrieve reviews",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/auth/authenticate": {
+        "/v1/auth/authenticate": {
             "post": {
-                "description": "Authenticate a user and return a JWT token.",
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
+                "description": "Authenticate a user and return a JWT token",
                 "consumes": [
                     "application/json"
                 ],
@@ -326,27 +417,43 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "401": {
                         "description": "User not found or invalid credentials",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to generate token",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/auth/register": {
+        "/v1/auth/register": {
             "post": {
-                "description": "Register a new user with the provided data.",
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
+                "description": "Register a new user with the provided data",
                 "consumes": [
                     "application/json"
                 ],
@@ -378,27 +485,41 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input or missing required fields",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "409": {
                         "description": "User with this username or email already exists",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to hash password or create user",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/reviews": {
+        "/v1/reviews": {
             "post": {
-                "description": "Create a new review with the input payload",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a new review for an anime",
                 "consumes": [
                     "application/json"
                 ],
@@ -411,12 +532,12 @@ const docTemplate = `{
                 "summary": "Create a new review",
                 "parameters": [
                     {
-                        "description": "Review object",
+                        "description": "Review data",
                         "name": "review",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewCreateRequest"
                         }
                     }
                 ],
@@ -424,11 +545,11 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid input or missing required fields",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -437,7 +558,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Anime or user not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -446,7 +567,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Failed to create review",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -457,12 +578,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/reviews/{id}": {
+        "/v1/reviews/{id}": {
             "get": {
-                "description": "Get a review by its ID",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
                 ],
+                "description": "Retrieve a review by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -487,7 +612,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid ID format",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -496,7 +621,16 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Review not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve review",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -507,7 +641,12 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update a review with the input payload",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Update an existing review with the provided data",
                 "consumes": [
                     "application/json"
                 ],
@@ -517,7 +656,7 @@ const docTemplate = `{
                 "tags": [
                     "reviews"
                 ],
-                "summary": "Update a review by ID",
+                "summary": "Update a review",
                 "parameters": [
                     {
                         "type": "integer",
@@ -527,12 +666,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Review object",
+                        "description": "Updated review data",
                         "name": "review",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewCreateRequest"
                         }
                     }
                 ],
@@ -544,7 +683,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid input or ID format",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -553,7 +692,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Review not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -562,7 +701,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Failed to update review",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -573,17 +712,16 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Delete a review by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "reviews"
                 ],
-                "summary": "Delete a review by ID",
+                "summary": "Delete a review",
                 "parameters": [
                     {
                         "type": "integer",
@@ -598,7 +736,7 @@ const docTemplate = `{
                         "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid ID format",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -607,7 +745,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Review not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -616,7 +754,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Failed to delete review",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -627,9 +765,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/v1/users": {
             "get": {
                 "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
                     {
                         "ApiKeyAuth": []
                     }
@@ -669,24 +810,40 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid pagination parameters",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "403": {
                         "description": "Access denied",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to retrieve users",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Create a new user with the provided data.",
                 "consumes": [
                     "application/json"
@@ -705,7 +862,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserCreateRequest"
                         }
                     }
                 ],
@@ -713,27 +870,45 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input",
+                        "description": "Invalid input or missing required fields",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "User with this username or email already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to create user",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/users/{id}": {
+        "/v1/users/{id}": {
             "get": {
                 "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
                     {
                         "ApiKeyAuth": []
                     }
@@ -762,16 +937,40 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.User"
                         }
                     },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve user",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "put": {
                 "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
                     {
                         "ApiKeyAuth": []
                     }
@@ -801,7 +1000,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserCreateRequest"
                         }
                     }
                 ],
@@ -809,31 +1008,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input",
+                        "description": "Invalid input or ID format",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to update user",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "delete": {
                 "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
                     {
                         "ApiKeyAuth": []
                     }
@@ -856,16 +1067,31 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Failed to delete user",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -880,44 +1106,107 @@ const docTemplate = `{
             ],
             "properties": {
                 "created_at": {
-                    "description": "Creation timestamp",
+                    "description": "Timestamp when the anime was created",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "description": {
-                    "description": "Description",
+                    "description": "Description of the anime",
                     "type": "string",
                     "maxLength": 500,
                     "example": "A story about ninjas."
                 },
                 "id": {
-                    "description": "Review ID",
+                    "description": "Unique identifier for the anime",
                     "type": "integer",
                     "example": 1
                 },
                 "rating": {
-                    "description": "Rating                          // Rating",
+                    "description": "Average rating of the anime",
                     "type": "number",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 8.5
                 },
                 "reviews": {
-                    "description": "Relationship with Review (omitted unless necessary)",
+                    "description": "List of reviews for the anime (omitted unless necessary)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Review"
                     }
                 },
                 "title": {
-                    "description": "Title",
+                    "description": "Title of the anime",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 3,
                     "example": "Naruto"
                 },
                 "updated_at": {
-                    "description": "Update timestamp",
+                    "description": "Timestamp when the anime was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
+        "models.AnimeCreateRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "description": "Description of the anime",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "A story about ninjas."
+                },
+                "rating": {
+                    "description": "Rating of the anime",
+                    "type": "number",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 8.5
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Naruto"
+                }
+            }
+        },
+        "models.AnimeResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the anime was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "description": {
+                    "description": "Description of the anime",
+                    "type": "string",
+                    "example": "A story about ninjas."
+                },
+                "id": {
+                    "description": "Unique identifier for the anime",
+                    "type": "integer",
+                    "example": 1
+                },
+                "rating": {
+                    "description": "Average rating of the anime",
+                    "type": "number",
+                    "example": 8.5
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
+                    "example": "Naruto"
+                },
+                "updated_at": {
+                    "description": "Timestamp when the anime was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 }
@@ -931,40 +1220,130 @@ const docTemplate = `{
             ],
             "properties": {
                 "animeId": {
-                    "description": "Add cascade delete constraint",
+                    "description": "ID of the anime being reviewed",
                     "type": "integer",
                     "example": 1
                 },
                 "content": {
-                    "description": "Review content",
+                    "description": "Content of the review",
                     "type": "string",
                     "maxLength": 500,
                     "example": "This anime is amazing!"
                 },
                 "created_at": {
-                    "description": "Creation timestamp",
+                    "description": "Timestamp when the review was created",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "id": {
-                    "description": "Review ID",
+                    "description": "Unique identifier for the review",
                     "type": "integer",
                     "example": 1
                 },
                 "rating": {
-                    "description": "Rating (0-10)",
+                    "description": "Rating given in the review (0-10)",
                     "type": "integer",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 9
                 },
                 "updated_at": {
-                    "description": "Update timestamp",
+                    "description": "Timestamp when the review was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "userId": {
-                    "description": "User ID",
+                    "description": "ID of the user who created the review",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.ReviewCreateRequest": {
+            "type": "object",
+            "required": [
+                "animeId",
+                "content",
+                "rating",
+                "userId"
+            ],
+            "properties": {
+                "animeId": {
+                    "description": "ID of the anime being reviewed",
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "description": "Content of the review",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "This anime is amazing!"
+                },
+                "rating": {
+                    "description": "Rating given in the review (0-10)",
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 9
+                },
+                "userId": {
+                    "description": "ID of the user creating the review",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.ReviewResponse": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Anime details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AnimeResponse"
+                        }
+                    ]
+                },
+                "animeId": {
+                    "description": "ID of the anime being reviewed",
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "description": "Content of the review",
+                    "type": "string",
+                    "example": "This anime is amazing!"
+                },
+                "created_at": {
+                    "description": "Timestamp when the review was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier for the review",
+                    "type": "integer",
+                    "example": 1
+                },
+                "rating": {
+                    "description": "Rating given in the review (0-10)",
+                    "type": "integer",
+                    "example": 9
+                },
+                "updated_at": {
+                    "description": "Timestamp when the review was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "user": {
+                    "description": "User details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.UserResponse"
+                        }
+                    ]
+                },
+                "userId": {
+                    "description": "ID of the user who created the review",
                     "type": "integer",
                     "example": 1
                 }
@@ -978,41 +1357,72 @@ const docTemplate = `{
             ],
             "properties": {
                 "created_at": {
-                    "description": "Creation timestamp",
+                    "description": "Timestamp when the user was created",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "email": {
-                    "description": "Email (omitted unless necessary)",
+                    "description": "Email address of the user (omitted unless necessary)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
                     "example": "john@example.com"
                 },
                 "id": {
-                    "description": "Review ID",
+                    "description": "Unique identifier for the user",
                     "type": "integer",
                     "example": 1
                 },
                 "is_admin": {
-                    "description": "IsAdmin",
+                    "description": "Indicates if the user has admin privileges",
                     "type": "boolean",
                     "example": false
                 },
                 "reviews": {
-                    "description": "Relationship with Review (omitted unless necessary)",
+                    "description": "List of reviews created by the user (omitted unless necessary)",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Review"
                     }
                 },
                 "updated_at": {
-                    "description": "Update timestamp",
+                    "description": "Timestamp when the user was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "username": {
-                    "description": "Username",
+                    "description": "Unique username for the user",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "john_doe"
+                }
+            }
+        },
+        "models.UserCreateRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Email address for the new user",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "john@example.com"
+                },
+                "password": {
+                    "description": "Password for the new user",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "password123"
+                },
+                "username": {
+                    "description": "Username for the new user",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
@@ -1028,20 +1438,58 @@ const docTemplate = `{
             ],
             "properties": {
                 "password": {
-                    "description": "Password",
+                    "description": "Password for authentication",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
                     "example": "password123"
                 },
                 "username": {
-                    "description": "Username",
+                    "description": "Username for authentication",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
                     "example": "john_doe"
                 }
             }
+        },
+        "models.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp when the user was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier for the user",
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_admin": {
+                    "description": "Indicates if the user has admin privileges",
+                    "type": "boolean",
+                    "example": false
+                },
+                "updated_at": {
+                    "description": "Timestamp when the user was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "username": {
+                    "description": "Username of the user",
+                    "type": "string",
+                    "example": "john_doe"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "description": "Use the format \"Bearer \u003cJWT_TOKEN\u003e\". Example: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
@@ -1050,8 +1498,8 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
-	Schemes:          []string{},
+	BasePath:         "/v1",
+	Schemes:          []string{"http"},
 	Title:            "MyAnimeAPI",
 	Description:      "This is a sample API for managing anime and reviews.",
 	InfoInstanceName: "swagger",

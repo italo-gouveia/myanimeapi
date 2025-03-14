@@ -33,18 +33,37 @@ func NewAuthHandler(db db.DBInterface) *AuthHandler {
 	return &AuthHandler{DB: db}
 }
 
-// RegisterUserHandler registers a new user
+// RegisterUser godoc
 // @Summary Register a new user
-// @Description Register a new user with the provided data.
+// @Description Register a new user with the provided data
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param user body models.User true "User registration data"
 // @Success 201 {object} models.User
-// @Failure 400 {string} string "Invalid input or missing required fields"
-// @Failure 409 {string} string "User with this username or email already exists"
-// @Failure 500 {string} string "Failed to hash password or create user"
-// @Router /auth/register [post]
+// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 409 {object} map[string]string "User with this username or email already exists"
+// @Failure 500 {object} map[string]string "Failed to hash password or create user"
+// @Router /v1/auth/register [post]
+// @Example
+//
+//	{
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "password": "password123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security []
 func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
@@ -96,18 +115,32 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// AuthenticateHandler authenticates a user and returns a JWT token
+// AuthenticateUser godoc
 // @Summary Authenticate a user
-// @Description Authenticate a user and return a JWT token.
+// @Description Authenticate a user and return a JWT token
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param credentials body models.UserCredentials true "User credentials"
 // @Success 200 {object} map[string]string "Returns a JWT token"
-// @Failure 400 {string} string "Invalid input"
-// @Failure 401 {string} string "User not found or invalid credentials"
-// @Failure 500 {string} string "Failed to generate token"
-// @Router /auth/authenticate [post]
+// @Failure 400 {object} map[string]string "Invalid input"
+// @Failure 401 {object} map[string]string "User not found or invalid credentials"
+// @Failure 500 {object} map[string]string "Failed to generate token"
+// @Router /v1/auth/authenticate [post]
+// @Example
+//
+//	{
+//	  "username": "john_doe",
+//	  "password": "password123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+//	}
+//
+// @Security []
 func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.UserCredentials)
