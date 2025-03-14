@@ -61,6 +61,18 @@ swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
 This command it will generate the swagger docs. And then, after you run the application locally, you will be abble to go to `http://localhost:8080/swagger/index.html`.
 
 ----------
+Start the godoc server:
+
+```bash
+godoc -http=:6060
+```
+Open your browser and navigate to:
+
+```bash
+http://localhost:6060/pkg/myanimeapi/
+```
+
+----------
 Generate Mocks for DBInterface:
 Run the following command to generate a mock for the DBInterface:
 
