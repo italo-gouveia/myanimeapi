@@ -137,21 +137,7 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ### Flow Diagram
 
-```
-+-------------------+       +-------------------+       +-------------------+
-|   Client Request  | ----> |   Authentication  | ----> |   Authorization   |
-+-------------------+       +-------------------+       +-------------------+
-        |                           |                           |
-        v                           v                           v
-+-------------------+       +-------------------+       +-------------------+
-|   User Routes     |       |   Anime Routes    |       |   Review Routes   |
-+-------------------+       +-------------------+       +-------------------+
-        |                           |                           |
-        v                           v                           v
-+-------------------+       +-------------------+       +-------------------+
-|   Database CRUD   | <---> |   Database CRUD   | <---> |   Database CRUD   |
-+-------------------+       +-------------------+       +-------------------+
-```
+![Client Request Flow](/myanimeapi/resources/client_request_flow.png)
 
 ### Model Entity Relationship
 
