@@ -35,16 +35,29 @@ func NewAnimeHandler(db db.DBInterface) *AnimeHandler {
 	return &AnimeHandler{DB: db}
 }
 
-// GetAnimeHandler retrieves an anime by ID
+// GetAnime godoc
 // @Summary Get an anime by ID
 // @Description Retrieve an anime by its ID
 // @Tags anime
 // @Produce json
 // @Param id path int true "Anime ID"
 // @Success 200 {object} models.Anime
-// @Failure 400 {string} string "Invalid ID format"
-// @Failure 404 {string} string "Anime not found"
-// @Router /animes/{id} [get]
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Anime not found"
+// @Failure 500 {object} map[string]string "Failed to retrieve anime"
+// @Router /v1/anime/{id} [get]
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security []
 func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -73,14 +86,29 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAllAnimesHandler retrieves all anime entries
+// GetAllAnime godoc
 // @Summary Get all anime entries
 // @Description Retrieve a list of all anime entries
 // @Tags anime
 // @Produce json
 // @Success 200 {array} models.Anime
-// @Failure 500 {string} string "Failed to retrieve animes"
-// @Router /animes [get]
+// @Failure 500 {object} map[string]string "Failed to retrieve anime"
+// @Router /v1/anime [get]
+// @ExampleResponse
+// [
+//
+//	{
+//	  "id": 1,
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// ]
+//
+// @Security []
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	var animes []models.Anime
 	result := h.DB.Find(r.Context(), &animes)
@@ -98,7 +126,7 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by ID
+// GetPaginatedReviewsForAnime godoc
 // @Summary Get paginated reviews for an anime
 // @Description Retrieve paginated reviews for an anime by its ID
 // @Tags anime
@@ -107,9 +135,24 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 // @Param page query int false "Page number (default: 1)"
 // @Param limit query int false "Number of items per page (default: 10)"
 // @Success 200 {array} models.Review
-// @Failure 400 {string} string "Invalid ID format or pagination parameters"
-// @Failure 500 {string} string "Failed to retrieve reviews"
-// @Router /animes/{id}/reviews [get]
+// @Failure 400 {object} map[string]string "Invalid ID format or pagination parameters"
+// @Failure 500 {object} map[string]string "Failed to retrieve reviews"
+// @Router /v1/anime/{id}/reviews [get]
+// @ExampleResponse
+// [
+//
+//	{
+//	  "id": 1,
+//	  "user_id": 1,
+//	  "anime_id": 1,
+//	  "content": "Great anime!",
+//	  "rating": 9,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// ]
+// @Security []
 func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -165,7 +208,7 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	}
 }
 
-// CreateAnimeHandler creates a new anime entry
+// CreateAnime godoc
 // @Summary Create a new anime
 // @Description Create a new anime entry with the provided data
 // @Tags anime
@@ -173,9 +216,29 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 // @Produce json
 // @Param anime body models.Anime true "Anime data"
 // @Success 201 {object} models.Anime
-// @Failure 400 {string} string "Invalid input or missing required fields"
-// @Failure 500 {string} string "Failed to create anime"
-// @Router /animes [post]
+// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 500 {object} map[string]string "Failed to create anime"
+// @Router /v1/anime [post]
+// @Example
+//
+//	{
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Anime)
@@ -201,7 +264,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// UpdateAnimeHandler updates an existing anime entry
+// UpdateAnime godoc
 // @Summary Update an anime
 // @Description Update an existing anime entry with the provided data
 // @Tags anime
@@ -210,10 +273,30 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 // @Param id path int true "Anime ID"
 // @Param anime body models.Anime true "Updated anime data"
 // @Success 200 {object} models.Anime
-// @Failure 400 {string} string "Invalid input or ID format"
-// @Failure 404 {string} string "Anime not found"
-// @Failure 500 {string} string "Failed to update anime"
-// @Router /animes/{id} [put]
+// @Failure 400 {object} map[string]string "Invalid input or ID format"
+// @Failure 404 {object} map[string]string "Anime not found"
+// @Failure 500 {object} map[string]string "Failed to update anime"
+// @Router /v1/anime/{id} [put]
+// @Example
+//
+//	{
+//	  "title": "Naruto Shippuden",
+//	  "description": "The continuation of Naruto's journey.",
+//	  "rating": 9.0
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "title": "Naruto Shippuden",
+//	  "description": "The continuation of Naruto's journey.",
+//	  "rating": 9.0,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -260,16 +343,17 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// DeleteAnimeHandler deletes an anime entry
+// DeleteAnime godoc
 // @Summary Delete an anime
 // @Description Delete an anime entry by its ID
 // @Tags anime
 // @Param id path int true "Anime ID"
 // @Success 204 "No Content"
-// @Failure 400 {string} string "Invalid ID format"
-// @Failure 404 {string} string "Anime not found"
-// @Failure 500 {string} string "Failed to delete anime"
-// @Router /animes/{id} [delete]
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Anime not found"
+// @Failure 500 {object} map[string]string "Failed to delete anime"
+// @Router /v1/anime/{id} [delete]
+// @Security ApiKeyAuth
 func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]

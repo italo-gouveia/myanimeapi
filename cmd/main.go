@@ -57,6 +57,12 @@ import (
 // @host localhost:8080
 // @BasePath /v1
 // @schemes http
+//
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description Use the format "Bearer <JWT_TOKEN>". Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+// @security ApiKeyAuth
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
