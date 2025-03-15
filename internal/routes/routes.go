@@ -1,12 +1,8 @@
 // internal/routes/routes.go
 // Package routes provides the routing for the application.
-// It registers the routes for the different resources.
-// It also registers the Swagger documentation.
-// It uses the handlers package to handle the requests.
-// It uses the mux package to handle the routing.
-// It uses the httpSwagger package to serve the Swagger documentation.
-// It uses the swaggo package to generate the Swagger documentation.
-// It uses the gorilla/mux package to handle the routing.
+// It registers routes for different resources, such as anime, users, reviews, and authentication.
+// It also serves Swagger documentation for API endpoints.
+// The package uses the `gorilla/mux` package for routing and the `http-swagger` package to serve Swagger documentation.
 package routes
 
 import (
@@ -21,7 +17,23 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-// RegisterRoutes registers all routes for the application
+// RegisterRoutes registers all routes for the application.
+// It sets up routes for health checks, anime, users, reviews, and authentication.
+// It also applies global middleware, such as logging and rate limiting.
+//
+// Parameters:
+//   - router: A pointer to a `mux.Router` instance to register routes.
+//   - swaggerURL: The URL path to the Swagger JSON file.
+//   - animeHandler: A pointer to an `AnimeHandler` instance for anime-related routes.
+//   - userHandler: A pointer to a `UserHandler` instance for user-related routes.
+//   - reviewHandler: A pointer to a `ReviewHandler` instance for review-related routes.
+//   - authHandler: A pointer to an `AuthHandler` instance for authentication-related routes.
+//
+// Example usage:
+//
+//	router := mux.NewRouter()
+//	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler)
+//	http.ListenAndServe(":8080", router)
 func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler) {
 	// Create a new rate limiter with a limit of 100 requests per minute
 	rateLimiter := middleware.NewRateLimiter()
