@@ -28,7 +28,8 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [**6. Authentication Flow**](#6-authentication-flow)
     - [**7. Rate Limiting Flow**](#7-rate-limiting-flow)
     - [**8. User Registration Sequence**](#8-user-registration-sequence)
-    - [**9. Anime Creation Sequence**](#9-anime-creation-sequence)
+    - [**9. User Authentication Sequence**](#9-user-authentication-sequence)
+    - [**10. Anime Creation Sequence**](#10-anime-creation-sequence)
     - [**How to Generate Diagrams**](#how-to-generate-diagrams)
     - [**Notes**](#notes)
   - [Testing](#testing)
@@ -238,7 +239,14 @@ The sequence of steps involved in registering a new user.
 
 ---
 
-### **9. Anime Creation Sequence**
+### **9. User Authentication Sequence**
+The sequence of steps involved in authenticate an user.
+
+![User Authentication Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_user_authentication.png)
+
+---
+
+### **10. Anime Creation Sequence**
 The sequence of steps involved in creating a new anime entry.
 
 ![Anime Creation Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_anime_creation.png)
