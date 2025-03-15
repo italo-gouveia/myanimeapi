@@ -20,15 +20,15 @@ import (
 //	  "password": "password123"
 //	}
 type UserCredentials struct {
-	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`     // Username
-	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"` // Password
+	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`     // Username for authentication
+	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"` // Password for authentication
 }
 
 // Claims represents the JWT claims used for authentication.
 // It includes the user ID and expiration time.
 type Claims struct {
-	UserID    uint  `json:"user_id"` // User ID
-	ExpiresAt int64 `json:"exp"`     // Expiration time
+	UserID    uint  `json:"user_id" example:"1"`      // User ID in the JWT claims
+	ExpiresAt int64 `json:"exp" example:"1698765432"` // Expiration time of the JWT token
 	jwt.RegisteredClaims
 }
 
@@ -46,15 +46,15 @@ type Claims struct {
 //	  "is_admin": false
 //	}
 type User struct {
-	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                                                                 // User ID
-	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                        // Creation timestamp
-	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                        // Update timestamp
-	Username  string    `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`              // Username
-	Email     string    `json:"email,omitempty" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email (omitted unless necessary)
-	Password  string    `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                        // Password (never serialized)
-	IsAdmin   bool      `json:"is_admin" gorm:"default:false" example:"false"`                                                    // IsAdmin
+	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                                                                 // Unique identifier for the user
+	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was created
+	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was last updated
+	Username  string    `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`              // Unique username for the user
+	Email     string    `json:"email,omitempty" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Unique Email address of the user (omitted unless necessary)
+	Password  string    `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                        // Password of the user (never serialized)
+	IsAdmin   bool      `json:"is_admin" gorm:"default:false" example:"false"`                                                    // Indicates if the user has admin privileges
 
-	Reviews []Review `json:"reviews,omitempty"` // Relationship with Review (omitted unless necessary)
+	Reviews []Review `json:"reviews,omitempty"` // List of reviews created by the user (omitted unless necessary)
 }
 
 // Anime represents an anime entry in the system.
@@ -71,14 +71,14 @@ type User struct {
 //	  "rating": 8.5
 //	}
 type Anime struct {
-	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`                                         // Anime ID
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                // Creation timestamp
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                // Update timestamp
-	Title       string    `json:"title" gorm:"not null" validate:"required,min=3,max=100" example:"Naruto"` // Title
-	Description string    `json:"description" validate:"max=500" example:"A story about ninjas."`           // Description
-	Rating      float32   `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                             // Rating
+	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`                                         // Unique identifier for the anime
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was created
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was last updated
+	Title       string    `json:"title" gorm:"not null" validate:"required,min=3,max=100" example:"Naruto"` // Title of the anime
+	Description string    `json:"description" validate:"max=500" example:"A story about ninjas."`           // Description of the anime
+	Rating      float32   `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                             // Average rating of the anime
 
-	Reviews []Review `json:"reviews,omitempty"` // Relationship with Review (omitted unless necessary)
+	Reviews []Review `json:"reviews,omitempty"` // List of reviews for the anime (omitted unless necessary)
 }
 
 // Review represents a review for an anime.
@@ -134,15 +134,15 @@ type Review struct {
 //	  }
 //	}
 type ReviewResponse struct {
-	ID        uint          `json:"id"`         // Review ID
-	CreatedAt time.Time     `json:"created_at"` // Creation timestamp
-	UpdatedAt time.Time     `json:"updated_at"` // Update timestamp
-	UserID    uint          `json:"userId"`     // User ID
-	AnimeID   uint          `json:"animeId"`    // Anime ID
-	Content   string        `json:"content"`    // Review content
-	Rating    int           `json:"rating"`     // Rating
-	User      UserResponse  `json:"user"`       // User details
-	Anime     AnimeResponse `json:"anime"`      // Anime details
+	ID        uint          `json:"id" example:"1"`                            // Unique identifier for the review
+	CreatedAt time.Time     `json:"created_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the review was created
+	UpdatedAt time.Time     `json:"updated_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the review was last updated
+	UserID    uint          `json:"userId" example:"1"`                        // ID of the user who created the review
+	AnimeID   uint          `json:"animeId" example:"1"`                       // ID of the anime being reviewed
+	Content   string        `json:"content" example:"This anime is amazing!"`  // Content of the review
+	Rating    int           `json:"rating" example:"9"`                        // Rating given in the review (0-10)
+	User      UserResponse  `json:"user"`                                      // User details
+	Anime     AnimeResponse `json:"anime"`                                     // Anime details
 }
 
 // UserResponse represents a simplified user response.
@@ -156,9 +156,11 @@ type ReviewResponse struct {
 //	  "is_admin": false
 //	}
 type UserResponse struct {
-	ID       uint   `json:"id"`       // User ID
-	Username string `json:"username"` // Username
-	IsAdmin  bool   `json:"is_admin"` // IsAdmin
+	ID        uint      `json:"id" example:"1"`                            // Unique identifier for the user
+	Username  string    `json:"username" example:"john_doe"`               // Username of the user
+	IsAdmin   bool      `json:"is_admin" example:"false"`                  // Indicates if the user has admin privileges
+	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the user was created
+	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the user was last updated
 }
 
 // AnimeResponse represents a simplified anime response.
@@ -173,8 +175,63 @@ type UserResponse struct {
 //	  "rating": 8.5
 //	}
 type AnimeResponse struct {
-	ID          uint    `json:"id"`          // Anime ID
-	Title       string  `json:"title"`       // Title
-	Description string  `json:"description"` // Description
-	Rating      float32 `json:"rating"`      // Rating
+  ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was created
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
+	Title       string    `json:"title" example:"Naruto"`                      // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."` // Description of the anime
+	Rating      float32   `json:"rating" example:"8.5"`                        // Average rating of the anime
+
+	User  User  `gorm:"foreignKey:UserID" json:"-" validate:"-"`                               // User who created the review (excluded from JSON)
+	Anime Anime `gorm:"foreignKey:AnimeID;constraint:OnDelete:CASCADE;" json:"-" validate:"-"` // Anime being reviewed (excluded from JSON)
+}
+
+// AnimeCreateRequest represents the request payload for creating an anime.
+// It includes fields for the title, description, and rating of the anime.
+//
+// Example:
+//
+//	{
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5
+//	}
+type AnimeCreateRequest struct {
+	Title       string  `json:"title" validate:"required,min=3,max=100" example:"Naruto"`       // Title of the anime (required, 3-100 characters)
+	Description string  `json:"description" validate:"max=500" example:"A story about ninjas."` // Description of the anime (optional, max 500 characters)
+	Rating      float32 `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                   // Rating of the anime (0-10)
+}
+
+// ReviewCreateRequest represents the request payload for creating a review.
+// It includes fields for the user ID, anime ID, review content, and rating.
+//
+// Example:
+//
+//	{
+//	  "userId": 1,
+//	  "animeId": 1,
+//	  "content": "This anime is amazing!",
+//	  "rating": 9
+//	}
+type ReviewCreateRequest struct {
+	UserID  uint   `json:"userId" validate:"required" example:"1"`                               // ID of the user creating the review (required)
+	AnimeID uint   `json:"animeId" validate:"required" example:"1"`                              // ID of the anime being reviewed (required)
+	Content string `json:"content" validate:"required,max=500" example:"This anime is amazing!"` // Content of the review (required, max 500 characters)
+	Rating  int    `json:"rating" validate:"required,gte=0,lte=10" example:"9"`                  // Rating given in the review (0-10, required)
+}
+
+// UserCreateRequest represents the request payload for creating a user.
+// It includes fields for the username, email, and password.
+//
+// Example:
+//
+//	{
+//	  "username": "john_doe",
+//	  "email": "john@example.com",
+//	  "password": "password123"
+//	}
+type UserCreateRequest struct {
+  Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`             // Username for the new user (required, 3-50 characters)
+	Email    string `json:"email" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email address for the new user (required, valid email format, 5-100 characters)
+	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`         // Password for the new user (required, 5-100 characters)
 }

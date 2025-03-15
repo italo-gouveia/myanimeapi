@@ -45,8 +45,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	router.Use(middleware.LoggingMiddleware)
 	log.Println("Global middleware registered")
 
+	// Create a versioned subrouter
+	v1Router := router.PathPrefix("/v1").Subrouter()
+
 	// Health check endpoint
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	v1Router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
 			http.Error(w, "Failed to write response", http.StatusInternalServerError)
@@ -56,19 +59,19 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	log.Println("Health check endpoint registered")
 
 	// Register anime routes
-	animeHandler.RegisterAnimeRoutes(router)
+	animeHandler.RegisterAnimeRoutes(v1Router)
 	log.Println("Anime routes registered")
 
 	// Register user routes
-	userHandler.RegisterUserRoutes(router)
+	userHandler.RegisterUserRoutes(v1Router)
 	log.Println("User routes registered")
 
 	// Register review routes
-	reviewHandler.RegisterReviewRoutes(router)
+	reviewHandler.RegisterReviewRoutes(v1Router)
 	log.Println("Review routes registered")
 
 	// Register auth routes
-	authHandler.RegisterAuthRoutes(router)
+	authHandler.RegisterAuthRoutes(v1Router)
 	log.Println("Auth routes registered")
 
 	// Register Swagger documentation
