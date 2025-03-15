@@ -9,6 +9,45 @@ on:
       - main
 
 jobs:
+  pre-build-ai-validation:
+      name: AI Pre-Build Validation
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install OpenAI Python client
+        run: pip install openai
+
+      - name: Run AI Pre-Build Validation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python3 - <<EOF
+          import openai
+          import os
+
+          openai.api_key = os.getenv("OPENAI_API_KEY")
+
+          # Get the list of changed files
+          changed_files = os.popen("git diff --name-only HEAD^ HEAD").read().splitlines()
+
+          # Analyze changes using OpenAI
+          response = openai.ChatCompletion.create(
+              model="gpt-4",
+              messages=[
+                  {"role": "system", "content": "You are a code reviewer. Analyze the following code changes and predict potential build failures or issues."},
+                  {"role": "user", "content": f"Here are the changed files: {changed_files}. Please analyze them."}
+              ]
+          )
+
+          print(response['choices'][0]['message']['content'])
+          EOF
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -42,6 +81,34 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
+  
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run SonarCloud Analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MyAnimeAPI'
+          format: 'ALL'
+          fail_on_cvss: 7
+  
   swagger:
     name: Validate Swagger Docs
     runs-on: ubuntu-latest
