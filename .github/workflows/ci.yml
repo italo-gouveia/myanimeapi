@@ -83,19 +83,3 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest
-
-#  deploy:
-#    name: Deploy to Server
-#    runs-on: ubuntu-latest
-#    needs: [docker]
-#    steps:
-#      - name: Deploy to server
-#        uses: appleboy/ssh-action@master
-#        with:
-#          host: ${{ secrets.SSH_HOST }}
-#          username: ${{ secrets.SSH_USERNAME }}
-#          key: ${{ secrets.SSH_PRIVATE_KEY }}
-#          script: |
-#            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest
-#            docker-compose down
-#            docker-compose up -d
