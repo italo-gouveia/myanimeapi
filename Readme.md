@@ -2,6 +2,43 @@
 
 MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authentication. It is built using Go, Gorilla Mux for routing, GORM for database interactions, and supports PostgreSQL as the database backend.
 
+---
+
+## Table of Contents
+
+- [MyAnimeAPI](#myanimeapi)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Technologies Used](#technologies-used)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Docker Setup](#docker-setup)
+  - [API Endpoints](#api-endpoints)
+    - [Authentication](#authentication)
+    - [Users](#users)
+    - [Anime](#anime)
+    - [Reviews](#reviews)
+  - [Diagrams](#diagrams)
+    - [**1. Architecture Diagram**](#1-architecture-diagram)
+    - [**2. Database Schema (ER Diagram)**](#2-database-schema-er-diagram)
+    - [**3. Component Diagram**](#3-component-diagram)
+    - [**4. Deployment Diagram**](#4-deployment-diagram)
+    - [**5. Client Request Flow**](#5-client-request-flow)
+    - [**6. Authentication Flow**](#6-authentication-flow)
+    - [**7. Rate Limiting Flow**](#7-rate-limiting-flow)
+    - [**8. User Registration Sequence**](#8-user-registration-sequence)
+    - [**9. Anime Creation Sequence**](#9-anime-creation-sequence)
+    - [**How to Generate Diagrams**](#how-to-generate-diagrams)
+    - [**Notes**](#notes)
+  - [Testing](#testing)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgments](#acknowledgments)
+  - [Contact](#contact)
+
+---
+
 ## Features
 
 - **Anime Management**: Create, read, update, and delete anime entries.
@@ -141,21 +178,85 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ## Diagrams
 
-### Architecture Diagram
+This section provides visual representations of the application's architecture, database schema, component interactions, deployment flow, and key workflows.
 
-```
-+-------------------+       +-------------------+       +-------------------+
-|   Client (HTTP)   | <---> |   Go API Server   | <---> |   PostgreSQL DB   |
-+-------------------+       +-------------------+       +-------------------+
-```
+---
 
-### Flow Diagram
+### **1. Architecture Diagram**
+The high-level architecture of the MyAnimeAPI application, showing the interaction between components.
+
+![Architecture Diagram](/myanimeapi/resources/architecture_diagram.png)
+
+---
+
+### **2. Database Schema (ER Diagram)**
+The Entity-Relationship (ER) diagram for the database, illustrating the relationships between `users`, `anime`, and `reviews` tables.
+
+![Database Schema](/myanimeapi/resources/entity_model_relationship.png)
+
+---
+
+### **3. Component Diagram**
+A breakdown of the application's components, including handlers, middleware, and database interactions.
+
+![Component Diagram](/myanimeapi/resources/component_diagram.png)
+
+---
+
+### **4. Deployment Diagram**
+The deployment flow, showing how the application is built, tested, and deployed using Docker and GitHub Actions.
+
+![Deployment Diagram](/myanimeapi/resources/deployment_diagram.png)
+
+---
+
+### **5. Client Request Flow**
+The flow of a typical client request through the API, including middleware and handlers.
 
 ![Client Request Flow](/myanimeapi/resources/client_request_flow.png)
 
-### Model Entity Relationship
+---
 
-![Model Entity Relationship](/myanimeapi/resources/entity_model_relationship.png)
+### **6. Authentication Flow**
+The JWT-based authentication flow, detailing how users authenticate and access protected routes.
+
+![Authentication Flow](/myanimeapi/resources/flow_diagram_for_auth.png)
+
+---
+
+### **7. Rate Limiting Flow**
+The rate-limiting mechanism, showing how requests are throttled to prevent abuse.
+
+![Rate Limiting Flow](/myanimeapi/resources/flow_diagram_for_rate_limiting.png)
+
+---
+
+### **8. User Registration Sequence**
+The sequence of steps involved in registering a new user.
+
+![User Registration Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_user_registration.png)
+
+---
+
+### **9. Anime Creation Sequence**
+The sequence of steps involved in creating a new anime entry.
+
+![Anime Creation Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_anime_creation.png)
+
+---
+
+### **How to Generate Diagrams**
+1. Use tools like [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) or [dbdiagram.io](https://dbdiagram.io/) to create the diagrams.
+2. Export the diagrams as `.png` or `.svg` files.
+3. Save the images in the `/myanimeapi/resources/` directory.
+4. Reference the images in the `README.md` as shown above.
+
+---
+
+### **Notes**
+- Ensure all diagram images are stored in the `/myanimeapi/resources/` directory.
+- Use consistent naming conventions for the diagram files (e.g., `architecture_diagram.png`, `entity_model_relationship.png`).
+- If you update the diagrams, make sure to update the corresponding images in the `resources` folder.
 
 ## Testing
 
