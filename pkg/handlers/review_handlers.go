@@ -48,15 +48,28 @@ func NewReviewHandler(db db.DBInterface) *ReviewHandler {
 // If the ID is invalid or the review is not found, it returns an appropriate error response.
 //
 // @Summary Get a review by ID
-// @Description Get a review by its ID
+// @Description Retrieve a review by its ID
 // @Tags reviews
-// @Accept json
 // @Produce json
 // @Param id path int true "Review ID"
 // @Success 200 {object} models.ReviewResponse
-// @Failure 400 {string} string "Invalid ID format"
-// @Failure 404 {string} string "Review not found"
-// @Router /reviews/{id} [get]
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Review not found"
+// @Failure 500 {object} map[string]string "Failed to retrieve review"
+// @Router /v1/reviews/{id} [get]
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "user_id": 1,
+//	  "anime_id": 1,
+//	  "content": "Great anime!",
+//	  "rating": 9,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security []
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -119,16 +132,38 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 // and creates the review. If successful, it returns the created review as a JSON response.
 //
 // @Summary Create a new review
-// @Description Create a new review with the input payload
+// @Description Create a new review for an anime
 // @Tags reviews
 // @Accept json
 // @Produce json
-// @Param review body models.Review true "Review object"
+// @Param review body models.ReviewCreateRequest true "Review data"
 // @Success 201 {object} models.Review
-// @Failure 400 {string} string "Invalid input"
-// @Failure 404 {string} string "User or anime not found"
-// @Failure 500 {string} string "Failed to create review"
-// @Router /reviews [post]
+// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 404 {object} map[string]string "Anime or user not found"
+// @Failure 500 {object} map[string]string "Failed to create review"
+// @Router /v1/reviews [post]
+// @Example
+//
+//	{
+//	  "user_id": 1,
+//	  "anime_id": 1,
+//	  "content": "Great anime!",
+//	  "rating": 9
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "user_id": 1,
+//	  "anime_id": 1,
+//	  "content": "Great anime!",
+//	  "rating": 9,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
@@ -187,12 +222,32 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param id path int true "Review ID"
-// @Param review body models.Review true "Review object"
+// @Param review body models.ReviewCreateRequest true "Updated review data"
 // @Success 200 {object} models.ReviewResponse
-// @Failure 400 {string} string "Invalid input or ID format"
-// @Failure 404 {string} string "Review not found"
-// @Failure 500 {string} string "Failed to update review"
-// @Router /reviews/{id} [put]
+// @Failure 400 {object} map[string]string "Invalid input or ID format"
+// @Failure 404 {object} map[string]string "Review not found"
+// @Failure 500 {object} map[string]string "Failed to update review"
+// @Router /v1/reviews/{id} [put]
+// @Example
+//
+//	{
+//	  "content": "Updated review content",
+//	  "rating": 8
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "user_id": 1,
+//	  "anime_id": 1,
+//	  "content": "Updated review content",
+//	  "rating": 8,
+//	  "created_at": "2023-10-01T12:00:00Z",
+//	  "updated_at": "2023-10-01T12:00:00Z"
+//	}
+//
+// @Security ApiKeyAuth
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -278,6 +333,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 404 {string} string "Review not found"
 // @Failure 500 {string} string "Failed to delete review"
 // @Router /reviews/{id} [delete]
+// @Security ApiKeyAuth
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
