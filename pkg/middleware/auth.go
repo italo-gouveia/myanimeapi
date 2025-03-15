@@ -1,7 +1,6 @@
 // pkg/middleware/auth.go
-// Middleware functions for authentication and authorization
-// This package defines middleware functions for authenticating users using JWT tokens and checking if the user has admin privileges.
-// It also contains a function to generate JWT tokens with custom claims.
+// Package middleware provides middleware functions for authentication and authorization in the MyAnimeAPI application.
+// It includes functions for validating JWT tokens, checking admin privileges, and generating JWT tokens with custom claims.
 package middleware
 
 import (
@@ -15,14 +14,21 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// CustomClaims defines the JWT claims structure
+// CustomClaims defines the JWT claims structure.
+// It includes the user ID and admin status.
 type CustomClaims struct {
-	IsAdmin bool `json:"is_admin"`
-	UserID  uint `json:"user_id"`
+	IsAdmin bool `json:"is_admin"` // Indicates if the user is an admin
+	UserID  uint `json:"user_id"`  // User ID
 	jwt.RegisteredClaims
 }
 
-// Authenticate is a middleware function that checks for a valid JWT token
+// Authenticate is a middleware function that checks for a valid JWT token in the request.
+// If the token is valid, it stores the user ID and admin status in the request context.
+// If the token is invalid or missing, it returns a 401 Unauthorized response.
+//
+// Example:
+//
+//	router.Use(middleware.Authenticate)
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Authenticate middleware triggered for: %s", r.URL.Path)
@@ -59,7 +65,13 @@ func Authenticate(next http.Handler) http.Handler {
 	})
 }
 
-// CheckAdmin checks if the user has admin privileges
+// CheckAdmin is a middleware function that checks if the user has admin privileges.
+// If the user is not an admin, it returns a 403 Forbidden response.
+// If the user is an admin, it allows the request to proceed.
+//
+// Example:
+//
+//	router.Use(middleware.CheckAdmin)
 func CheckAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		isAdmin, ok := r.Context().Value(IsAdminContextKey).(bool)
@@ -74,7 +86,16 @@ func CheckAdmin(next http.Handler) http.Handler {
 	})
 }
 
-// GenerateToken generates a JWT token with custom claims
+// GenerateToken generates a JWT token with custom claims.
+// It includes the user ID, admin status, and an expiration time of 24 hours.
+// The token is signed using the JWT secret key from the environment variables.
+//
+// Example:
+//
+//	token, err := middleware.GenerateToken(1, true)
+//	if err != nil {
+//	    log.Fatalf("Error generating token: %v", err)
+//	}
 func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	claims := CustomClaims{
 		UserID:  userID,
