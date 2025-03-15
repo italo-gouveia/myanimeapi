@@ -29,6 +29,7 @@ import (
 	"myanimeapi/internal/routes"
 	"myanimeapi/pkg/database"
 	myhandlers "myanimeapi/pkg/handlers" // Alias for your custom handlers package
+	"myanimeapi/pkg/middleware"
 
 	gorillahandlers "github.com/gorilla/handlers" // Alias for Gorilla's handlers package
 	"github.com/gorilla/mux"
@@ -92,14 +93,25 @@ func main() {
 	// Create a new router
 	router := mux.NewRouter()
 
+	// Determine environment
+	env := os.Getenv("ENVIRONMENT")
+	if env == "production" {
+		log.Println("Running in production mode")
+
+		// Apply HTTPS redirection middleware
+		router.Use(middleware.RedirectToHTTPS)
+	}
+
+	// Serve Swagger UI
+	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	swaggerURL := "http://localhost:8080/swagger/doc.json" // or fetch from config
 	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler)
 	log.Println("Routes registered successfully")
 
 	// Configure CORS
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	corsHandler := gorillahandlers.CORS(
-		gorillahandlers.AllowedOrigins([]string{"*"}), // Allow all origins
+		gorillahandlers.AllowedOrigins([]string{allowedOrigins}),
 		gorillahandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}),
 		gorillahandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)

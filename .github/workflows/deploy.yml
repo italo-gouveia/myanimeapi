@@ -1,0 +1,68 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Run tests
+        run: go test -v ./...
+
+  deploy:
+    if: github.ref == 'refs/heads/main' # Only run on main branch
+    needs: test # Wait for tests to pass
+    runs-on: ubuntu-latest
+    environment: production # Reference the production environment
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Build Docker image
+        run: docker build -t myanimeapi .
+
+      - name: Log in to Render
+        run: |
+          echo "${{ secrets.RENDER_API_KEY }}" | docker login -u "${{ secrets.RENDER_USERNAME }}" --password-stdin registry.render.com
+
+      - name: Push Docker image to Render
+        run: |
+          docker tag myanimeapi registry.render.com/my-render-service/my-anime-api
+          docker push registry.render.com/my-render-service/my-anime-api
+
+      - name: Deploy to Render
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "serviceId": "${{ secrets.RENDER_SERVICE_ID }}",
+              "image": "registry.render.com/my-render-service/my-anime-api"
+            }' \
+            https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys

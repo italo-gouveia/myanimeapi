@@ -31,6 +31,9 @@ WORKDIR /root/
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
 
+# Copy the Swagger documentation
+COPY --from=builder /app/cmd/docs ./cmd/docs
+
 # Copy the .env file
 COPY .env .
 

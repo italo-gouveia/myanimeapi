@@ -77,6 +77,18 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	// Register Swagger documentation
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL(swaggerURL), // Path to swagger.json
+		httpSwagger.UIConfig(map[string]string{
+			"theme": "swagger-ui-dark.css", // Use the dark theme
+			"title": "MyAnimeAPI Documentation",
+			/*			"customStyle": `
+			    	.topbar-wrapper img {
+			        	content: url('https://example.com/logo.png');
+			        	width: 100px;
+			        	height: auto;
+			    	}
+				`,*/ // it will be generated later
+			//"customFavicon": "https://example.com/favicon.ico", // Custom favicon(it will be generated later)
+		}),
 	))
 	log.Println("Swagger documentation registered")
 }
