@@ -1,13 +1,16 @@
-// internal/handlers/auth_handler.go
-// This package defines the handlers for the authentication routes.
-// It is used by the server to handle authentication-related requests.
-// It provides handlers for user registration and authentication.
-// It uses the auth package to hash and compare passwords.
-// It uses the middleware package to generate JWT tokens.
-// It uses the models package to interact with the database.
-// It uses the gorilla/mux package to handle HTTP requests.
-// It uses the http package to write HTTP responses.
-// It uses the encoding/json package to encode and decode JSON data.
+// pkg/handlers/auth_handler.go
+// Package handlers provides HTTP handlers for authentication-related routes in the MyAnimeAPI application.
+// It defines methods to handle user registration and authentication, including password hashing and JWT token generation.
+// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and token generation.
+//
+// Example usage:
+//
+//	db := // initialize your database connection
+//	authHandler := handlers.NewAuthHandler(db)
+//	router := mux.NewRouter()
+//	authHandler.RegisterAuthRoutes(router)
+//
+//	http.ListenAndServe(":8080", router)
 package handlers
 
 import (
@@ -23,17 +26,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// AuthHandler defines the handlers for authentication-related routes
+// AuthHandler defines the handlers for authentication-related routes.
+// It contains a database interface for interacting with the database.
 type AuthHandler struct {
 	DB db.DBInterface
 }
 
-// NewAuthHandler creates a new AuthHandler instance
+// NewAuthHandler creates a new instance of AuthHandler.
+// It accepts a database interface and returns a pointer to an AuthHandler.
+//
+// Example:
+//
+//	db := // initialize your database connection
+//	authHandler := NewAuthHandler(db)
 func NewAuthHandler(db db.DBInterface) *AuthHandler {
 	return &AuthHandler{DB: db}
 }
 
-// RegisterUser godoc
+// RegisterUserHandler registers a new user in the database.
+// It validates the input payload, checks for existing users with the same username or email,
+// hashes the password, and creates the user. If successful, it returns the created user as a JSON response.
+//
 // @Summary Register a new user
 // @Description Register a new user with the provided data
 // @Tags auth
@@ -115,7 +128,10 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// AuthenticateUser godoc
+// AuthenticateHandler authenticates a user and returns a JWT token.
+// It validates the input payload, checks the user's credentials, and generates a JWT token if the credentials are valid.
+// If the credentials are invalid or the token generation fails, it returns an error response.
+//
 // @Summary Authenticate a user
 // @Description Authenticate a user and return a JWT token
 // @Tags auth
@@ -176,12 +192,6 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	/*	if !auth.CheckPasswordHash(payload.Password, user.Password) {
-		log.Printf("Invalid credentials for user %s", payload.Username)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}*/
-
 	// Generate JWT token
 	token, err := middleware.GenerateToken(user.ID, user.IsAdmin)
 	if err != nil {
@@ -199,7 +209,13 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// RegisterAuthRoutes registers all authentication-related routes
+// RegisterAuthRoutes registers all authentication-related routes with the provided router.
+// It defines public routes for user registration and authentication.
+//
+// Example:
+//
+//	router := mux.NewRouter()
+//	authHandler.RegisterAuthRoutes(router)
 func (h *AuthHandler) RegisterAuthRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.Handle("/auth/authenticate", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AuthenticateHandler), models.UserCredentials{})).Methods("POST")

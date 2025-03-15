@@ -1,4 +1,6 @@
 // pkg/middleware/rate_limit.go
+// Package middleware provides HTTP middleware utilities for handling requests.
+// This file defines a rate-limiting middleware that restricts the number of requests a client can make within a specified time window.
 package middleware
 
 import (
@@ -9,19 +11,22 @@ import (
 	"time"
 )
 
-// RateLimiter is a struct to hold rate-limiting data
+// RateLimiter is a struct that holds rate-limiting data for clients.
+// It tracks the number of requests made by each client within a specified time window.
 type RateLimiter struct {
-	mu      sync.Mutex
-	clients map[string]*clientInfo
-	clock   func() time.Time // Custom clock for testing
+	mu      sync.Mutex             // Mutex to ensure thread-safe access to the clients map
+	clients map[string]*clientInfo // Map of client IPs to their request information
+	clock   func() time.Time       // Custom clock function for testing purposes
 }
 
+// clientInfo holds information about a client's request activity.
 type clientInfo struct {
-	count    int       // Number of requests made by the client
-	lastSeen time.Time // Last time the client made a request
+	count    int       // Number of requests made by the client within the current time window
+	lastSeen time.Time // Timestamp of the client's last request
 }
 
-// NewRateLimiter creates a new RateLimiter instance
+// NewRateLimiter creates and returns a new RateLimiter instance.
+// It initializes the clients map and sets the default clock to the current time.
 func NewRateLimiter() *RateLimiter {
 	return &RateLimiter{
 		clients: make(map[string]*clientInfo),
@@ -29,14 +34,24 @@ func NewRateLimiter() *RateLimiter {
 	}
 }
 
-// SetClock sets a custom clock for testing
+// SetClock sets a custom clock function for testing purposes.
+// This allows the rate limiter to use a simulated time source instead of the system clock.
 func (rl *RateLimiter) SetClock(clock func() time.Time) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	rl.clock = clock
 }
 
-// RateLimitMiddleware is a middleware that limits the number of requests per IP
+// RateLimitMiddleware is an HTTP middleware that enforces rate limits based on the client's IP address.
+// It limits the number of requests a client can make within a specified time window.
+// The rate limit is stricter for authentication-related endpoints (e.g., /auth/authenticate, /auth/register).
+//
+// Example usage:
+//
+//	rl := NewRateLimiter()
+//	http.Handle("/path", rl.RateLimitMiddleware(myHandler))
+//
+// This will enforce rate limits for requests to "/path".
 func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rl.mu.Lock()

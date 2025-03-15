@@ -42,18 +42,18 @@ definitions:
   models.AnimeCreateRequest:
     properties:
       description:
-        description: Description of the anime
+        description: Description of the anime (optional, max 500 characters)
         example: A story about ninjas.
         maxLength: 500
         type: string
       rating:
-        description: Rating of the anime
+        description: Rating of the anime (0-10)
         example: 8.5
         maximum: 10
         minimum: 0
         type: number
       title:
-        description: Title of the anime
+        description: Title of the anime (required, 3-100 characters)
         example: Naruto
         maxLength: 100
         minLength: 3
@@ -91,34 +91,34 @@ definitions:
   models.Review:
     properties:
       animeId:
-        description: ID of the anime being reviewed
+        description: Anime ID with cascade delete constraint
         example: 1
         type: integer
       content:
-        description: Content of the review
+        description: Review content
         example: This anime is amazing!
         maxLength: 500
         type: string
       created_at:
-        description: Timestamp when the review was created
+        description: Creation timestamp
         example: "2025-02-20T19:27:00Z"
         type: string
       id:
-        description: Unique identifier for the review
+        description: Review ID
         example: 1
         type: integer
       rating:
-        description: Rating given in the review (0-10)
+        description: Rating (0-10)
         example: 9
         maximum: 10
         minimum: 0
         type: integer
       updated_at:
-        description: Timestamp when the review was last updated
+        description: Update timestamp
         example: "2025-02-20T19:27:00Z"
         type: string
       userId:
-        description: ID of the user who created the review
+        description: User ID
         example: 1
         type: integer
     required:
@@ -128,22 +128,22 @@ definitions:
   models.ReviewCreateRequest:
     properties:
       animeId:
-        description: ID of the anime being reviewed
+        description: ID of the anime being reviewed (required)
         example: 1
         type: integer
       content:
-        description: Content of the review
+        description: Content of the review (required, max 500 characters)
         example: This anime is amazing!
         maxLength: 500
         type: string
       rating:
-        description: Rating given in the review (0-10)
+        description: Rating given in the review (0-10, required)
         example: 9
         maximum: 10
         minimum: 0
         type: integer
       userId:
-        description: ID of the user creating the review
+        description: ID of the user creating the review (required)
         example: 1
         type: integer
     required:
@@ -198,7 +198,7 @@ definitions:
         example: "2025-02-20T19:27:00Z"
         type: string
       email:
-        description: Email address of the user (omitted unless necessary)
+        description: Unique Email address of the user (omitted unless necessary)
         example: john@example.com
         maxLength: 100
         minLength: 5
@@ -233,19 +233,20 @@ definitions:
   models.UserCreateRequest:
     properties:
       email:
-        description: Email address for the new user
+        description: Email address for the new user (required, valid email format,
+          5-100 characters)
         example: john@example.com
         maxLength: 100
         minLength: 5
         type: string
       password:
-        description: Password for the new user
+        description: Password for the new user (required, 5-100 characters)
         example: password123
         maxLength: 100
         minLength: 5
         type: string
       username:
-        description: Username for the new user
+        description: Username for the new user (required, 3-50 characters)
         example: john_doe
         maxLength: 50
         minLength: 3
@@ -309,6 +310,39 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
+  /reviews/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a review by its ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid ID format
+          schema:
+            type: string
+        "404":
+          description: Review not found
+          schema:
+            type: string
+        "500":
+          description: Failed to delete review
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a review by ID
+      tags:
+      - reviews
   /v1/anime:
     get:
       description: Retrieve a list of all anime entries
@@ -638,7 +672,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.ReviewResponse'
+            $ref: '#/definitions/models.Review'
         "400":
           description: Invalid input or missing required fields
           schema:
@@ -663,40 +697,6 @@ paths:
       tags:
       - reviews
   /v1/reviews/{id}:
-    delete:
-      description: Delete a review by its ID
-      parameters:
-      - description: Review ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid ID format
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Review not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Failed to delete review
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a review
-      tags:
-      - reviews
     get:
       description: Retrieve a review by its ID
       parameters:
@@ -711,7 +711,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Review'
+            $ref: '#/definitions/models.ReviewResponse'
         "400":
           description: Invalid ID format
           schema:
@@ -739,7 +739,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing review with the provided data
+      description: Update a review with the input payload
       parameters:
       - description: Review ID
         in: path
@@ -758,7 +758,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Review'
+            $ref: '#/definitions/models.ReviewResponse'
         "400":
           description: Invalid input or ID format
           schema:
@@ -779,7 +779,7 @@ paths:
             type: object
       security:
       - ApiKeyAuth: []
-      summary: Update a review
+      summary: Update a review by ID
       tags:
       - reviews
   /v1/users:

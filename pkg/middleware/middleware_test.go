@@ -1,4 +1,6 @@
 // pkg/middleware/middleware_test.go
+// Package middleware provides HTTP middleware utilities for handling requests.
+// This file contains tests for the middleware functions defined in the package.
 package middleware
 
 import (
@@ -16,17 +18,20 @@ import (
 )
 
 const (
-	testSecretKey = "test-secret-key"
+	testSecretKey = "test-secret-key" // Secret key for testing JWT
 )
 
+// setup initializes the environment for testing.
 func setup() {
 	os.Setenv("JWT_SECRET_KEY", testSecretKey)
 }
 
+// teardown cleans up the environment after testing.
 func teardown() {
 	os.Unsetenv("JWT_SECRET_KEY")
 }
 
+// TestAuthenticateMiddleware tests the Authenticate middleware with a valid token.
 func TestAuthenticateMiddleware(t *testing.T) {
 	setup()
 	defer teardown()
@@ -68,6 +73,7 @@ func TestAuthenticateMiddleware(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
+// TestAuthenticateMiddleware_InvalidToken tests the Authenticate middleware with an invalid token.
 func TestAuthenticateMiddleware_InvalidToken(t *testing.T) {
 	setup()
 	defer teardown()
@@ -95,6 +101,7 @@ func TestAuthenticateMiddleware_InvalidToken(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 
+// TestCheckAdminMiddleware tests the CheckAdmin middleware with an admin context.
 func TestCheckAdminMiddleware(t *testing.T) {
 	// Create a request with admin context
 	req, err := http.NewRequest("GET", "/admin", nil)
@@ -120,6 +127,7 @@ func TestCheckAdminMiddleware(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
+// TestCheckAdminMiddleware_NonAdmin tests the CheckAdmin middleware with a non-admin context.
 func TestCheckAdminMiddleware_NonAdmin(t *testing.T) {
 	// Create a request with non-admin context
 	req, err := http.NewRequest("GET", "/admin", nil)
@@ -145,6 +153,7 @@ func TestCheckAdminMiddleware_NonAdmin(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
+// TestGenerateToken tests the GenerateToken function.
 func TestGenerateToken(t *testing.T) {
 	setup()
 	defer teardown()
@@ -166,6 +175,7 @@ func TestGenerateToken(t *testing.T) {
 	assert.True(t, claims.IsAdmin)
 }
 
+// TestLoggingMiddleware tests the LoggingMiddleware function.
 func TestLoggingMiddleware(t *testing.T) {
 	// Create a request
 	req, err := http.NewRequest("GET", "/", nil)
@@ -189,7 +199,73 @@ func TestLoggingMiddleware(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
-/*func TestRateLimiterMiddleware(t *testing.T) {
+// TestValidateAndSanitizePayloadMiddleware tests the ValidateAndSanitizePayload middleware with a valid payload.
+func TestValidateAndSanitizePayloadMiddleware(t *testing.T) {
+	type Payload struct {
+		Name  string `json:"name" validate:"required,min=3,max=50"`
+		Email string `json:"email" validate:"required,email"`
+	}
+
+	// Create a request with a valid payload
+	payload := Payload{Name: "John Doe", Email: "john.doe@example.com"}
+	payloadJSON, _ := json.Marshal(payload)
+	req, err := http.NewRequest("POST", "/", strings.NewReader(string(payloadJSON)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a response recorder
+	rr := httptest.NewRecorder()
+
+	// Create a handler to use the middleware
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		validatedPayload := r.Context().Value(ValidatedPayloadKey)
+		assert.NotNil(t, validatedPayload)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Apply the middleware
+	middleware := ValidateAndSanitizePayload(handler, Payload{})
+	middleware.ServeHTTP(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+// TestValidateAndSanitizePayloadMiddleware_InvalidPayload tests the ValidateAndSanitizePayload middleware with an invalid payload.
+func TestValidateAndSanitizePayloadMiddleware_InvalidPayload(t *testing.T) {
+	type Payload struct {
+		Name  string `json:"name" validate:"required,min=3,max=50"`
+		Email string `json:"email" validate:"required,email"`
+	}
+
+	// Create a request with an invalid payload
+	payload := Payload{Name: "Jo", Email: "invalid-email"}
+	payloadJSON, _ := json.Marshal(payload)
+	req, err := http.NewRequest("POST", "/", strings.NewReader(string(payloadJSON)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a response recorder
+	rr := httptest.NewRecorder()
+
+	// Create a handler to use the middleware
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("Should not reach this point")
+	})
+
+	// Apply the middleware
+	middleware := ValidateAndSanitizePayload(handler, Payload{})
+	middleware.ServeHTTP(rr, req)
+
+	// Check the status code
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+// TestRateLimiterMiddleware is a commented-out test for the RateLimiter middleware.
+/*
+func TestRateLimiterMiddleware(t *testing.T) {
 	rl := NewRateLimiter()
 
 	// Create a custom clock to control time in the test
@@ -234,66 +310,5 @@ func TestLoggingMiddleware(t *testing.T) {
 	// Make another request (should be allowed again)
 	middleware.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
-}*/
-
-func TestValidateAndSanitizePayloadMiddleware(t *testing.T) {
-	type Payload struct {
-		Name  string `json:"name" validate:"required,min=3,max=50"`
-		Email string `json:"email" validate:"required,email"`
-	}
-
-	// Create a request with a valid payload
-	payload := Payload{Name: "John Doe", Email: "john.doe@example.com"}
-	payloadJSON, _ := json.Marshal(payload)
-	req, err := http.NewRequest("POST", "/", strings.NewReader(string(payloadJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a response recorder
-	rr := httptest.NewRecorder()
-
-	// Create a handler to use the middleware
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		validatedPayload := r.Context().Value(ValidatedPayloadKey)
-		assert.NotNil(t, validatedPayload)
-		w.WriteHeader(http.StatusOK)
-	})
-
-	// Apply the middleware
-	middleware := ValidateAndSanitizePayload(handler, Payload{})
-	middleware.ServeHTTP(rr, req)
-
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
 }
-
-func TestValidateAndSanitizePayloadMiddleware_InvalidPayload(t *testing.T) {
-	type Payload struct {
-		Name  string `json:"name" validate:"required,min=3,max=50"`
-		Email string `json:"email" validate:"required,email"`
-	}
-
-	// Create a request with an invalid payload
-	payload := Payload{Name: "Jo", Email: "invalid-email"}
-	payloadJSON, _ := json.Marshal(payload)
-	req, err := http.NewRequest("POST", "/", strings.NewReader(string(payloadJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a response recorder
-	rr := httptest.NewRecorder()
-
-	// Create a handler to use the middleware
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Should not reach this point")
-	})
-
-	// Apply the middleware
-	middleware := ValidateAndSanitizePayload(handler, Payload{})
-	middleware.ServeHTTP(rr, req)
-
-	// Check the status code
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-}
+*/

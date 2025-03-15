@@ -1,12 +1,8 @@
 // internal/config/config.go
 // Package config provides configuration settings for the application.
-// It loads the configuration from environment variables.
-// It defines the configuration structure.
-// It provides a function to load the configuration.
-// It uses the os package to read environment variables.
-// It uses the strconv package to convert environment variables to integers.
-// It uses the fmt package to format strings.
-// It uses the log package to log messages.
+// It loads configuration from environment variables and defines the structure for server, database, logging, and API configurations.
+// The package uses the `os` package to read environment variables and the `strconv` package to convert environment variables to integers.
+// It also provides helper functions to retrieve environment variables with default values.
 package config
 
 import (
@@ -15,36 +11,49 @@ import (
 	"strconv"
 )
 
+// ServerConfig holds configuration settings for the server.
 type ServerConfig struct {
-	Host string
-	Port int
+	Host string // Host address for the server
+	Port int    // Port number for the server
 }
 
+// DatabaseConfig holds configuration settings for the database.
 type DatabaseConfig struct {
-	Type     string
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Name     string
+	Type     string // Type of the database (e.g., postgres, mysql)
+	Host     string // Host address for the database
+	Port     int    // Port number for the database
+	User     string // Username for the database
+	Password string // Password for the database
+	Name     string // Name of the database
 }
 
+// LoggingConfig holds configuration settings for logging.
 type LoggingConfig struct {
-	Level string
-	File  string
+	Level string // Logging level (e.g., info, debug, error)
+	File  string // File path for logging output
 }
 
+// APIConfig holds configuration settings for the API.
 type APIConfig struct {
-	Key string
+	Key string // API key for authentication
 }
 
+// Config is the top-level configuration structure that holds all configuration settings.
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Logging  LoggingConfig
-	API      APIConfig
+	Server   ServerConfig   // Server configuration
+	Database DatabaseConfig // Database configuration
+	Logging  LoggingConfig  // Logging configuration
+	API      APIConfig      // API configuration
 }
 
+// LoadConfig loads the configuration from environment variables and returns a Config struct.
+// It uses default values for missing environment variables and logs the loaded configuration.
+// Example usage:
+//
+//	cfg := LoadConfig()
+//	fmt.Println(cfg.Server.Host)
+//
+// This will load the configuration and print the server host.
 func LoadConfig() *Config {
 	var cfg Config
 
@@ -85,6 +94,7 @@ func LoadConfig() *Config {
 	return &cfg
 }
 
+// getEnv retrieves the value of an environment variable or returns a default value if the variable is not set.
 func getEnv(key string, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
@@ -92,6 +102,7 @@ func getEnv(key string, defaultValue string) string {
 	return defaultValue
 }
 
+// getEnvAsInt retrieves the value of an environment variable as an integer or returns a default value if the variable is not set or cannot be converted.
 func getEnvAsInt(key string, defaultValue int) int {
 	if value, exists := os.LookupEnv(key); exists {
 		intValue, err := strconv.Atoi(value)
@@ -102,7 +113,9 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-/*func getEnvAsBool(key string, defaultValue bool) bool {
+// getEnvAsBool (commented out) retrieves the value of an environment variable as a boolean or returns a default value if the variable is not set or cannot be converted.
+/*
+func getEnvAsBool(key string, defaultValue bool) bool {
 	if value, exists := os.LookupEnv(key); exists {
 		boolValue, err := strconv.ParseBool(value)
 		if err == nil {
@@ -111,7 +124,10 @@ func getEnvAsInt(key string, defaultValue int) int {
 	}
 	return defaultValue
 }
+*/
 
+// getEnvAsDuration (commented out) retrieves the value of an environment variable as a duration or returns a default value if the variable is not set or cannot be converted.
+/*
 func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 	if value, exists := os.LookupEnv(key); exists {
 		durationValue, err := time.ParseDuration(value)
@@ -120,4 +136,5 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 		}
 	}
 	return defaultValue
-}*/
+}
+*/

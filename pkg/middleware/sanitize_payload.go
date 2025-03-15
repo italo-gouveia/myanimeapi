@@ -1,4 +1,7 @@
 // pkg/middleware/sanitize_payload.go
+// Package middleware provides HTTP middleware utilities for handling requests.
+// This file defines a middleware for validating and sanitizing request payloads.
+// It uses the `validator` package for validation and `bluemonday` for sanitization.
 package middleware
 
 import (
@@ -12,16 +15,29 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-var validate = validator.New()
-var p = bluemonday.UGCPolicy() // Sanitization policy
+var validate = validator.New() // Global validator instance
+var p = bluemonday.UGCPolicy() // Sanitization policy for user-generated content
 
-// Define a custom type for context keys
+// contextKeyValidation is a custom type for context keys to avoid key collisions.
 type contextKeyValidation string
 
-// Define the key for the validated payload
+// ValidatedPayloadKey is the context key for storing the validated and sanitized payload.
 const ValidatedPayloadKey contextKeyValidation = "validatedPayload"
 
-// Generic middleware for validation and sanitization
+// ValidateAndSanitizePayload is a middleware that validates and sanitizes the request payload.
+// It decodes the request body into the provided payload type, validates it using the `validator` package,
+// sanitizes string fields using `bluemonday`, and stores the validated payload in the request context.
+//
+// Example usage:
+//
+//	type MyPayload struct {
+//	    Name  string `json:"name" validate:"required,min=3,max=50"`
+//	    Email string `json:"email" validate:"required,email"`
+//	}
+//
+//	http.Handle("/path", ValidateAndSanitizePayload(myHandler, MyPayload{}))
+//
+// This will validate and sanitize the request payload for "/path".
 func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log the start of the middleware
@@ -91,7 +107,8 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 	})
 }
 
-// sanitizePayload sanitizes all string fields in the payload
+// sanitizePayload sanitizes all string fields in the payload.
+// It uses the `bluemonday` policy to sanitize user-generated content.
 func sanitizePayload(payload interface{}) {
 	v := reflect.ValueOf(payload).Elem() // Get the underlying value of the pointer
 	for i := 0; i < v.NumField(); i++ {
@@ -103,13 +120,15 @@ func sanitizePayload(payload interface{}) {
 	}
 }
 
-// sanitizePayload sanitizes all string fields in the payload, including nested structs
-/*func sanitizePayload(payload interface{}) {
+// sanitizePayload (commented out) is an alternative implementation that supports nested structs and pointers.
+// It recursively sanitizes all string fields in the payload, including those in nested structs and pointers.
+/*
+func sanitizePayload(payload interface{}) {
 	v := reflect.ValueOf(payload).Elem() // Get the underlying value of the pointer
 	sanitizeValue(v)
 }
 
-// sanitizeValue recursively sanitizes all string fields in the value
+// sanitizeValue recursively sanitizes all string fields in the value.
 func sanitizeValue(v reflect.Value) {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
