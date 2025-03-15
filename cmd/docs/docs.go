@@ -23,6 +23,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/reviews/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a review by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Delete a review by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete review",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/anime": {
             "get": {
                 "security": [
@@ -545,7 +597,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
+                            "$ref": "#/definitions/models.Review"
                         }
                     },
                     "400": {
@@ -608,7 +660,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewResponse"
                         }
                     },
                     "400": {
@@ -646,7 +698,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Update an existing review with the provided data",
+                "description": "Update a review with the input payload",
                 "consumes": [
                     "application/json"
                 ],
@@ -656,7 +708,7 @@ const docTemplate = `{
                 "tags": [
                     "reviews"
                 ],
-                "summary": "Update a review",
+                "summary": "Update a review by ID",
                 "parameters": [
                     {
                         "type": "integer",
@@ -679,7 +731,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.ReviewResponse"
                         }
                     },
                     "400": {
@@ -702,59 +754,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to update review",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete a review by its ID",
-                "tags": [
-                    "reviews"
-                ],
-                "summary": "Delete a review",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Review not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete review",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1156,20 +1155,20 @@ const docTemplate = `{
             ],
             "properties": {
                 "description": {
-                    "description": "Description of the anime",
+                    "description": "Description of the anime (optional, max 500 characters)",
                     "type": "string",
                     "maxLength": 500,
                     "example": "A story about ninjas."
                 },
                 "rating": {
-                    "description": "Rating of the anime",
+                    "description": "Rating of the anime (0-10)",
                     "type": "number",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 8.5
                 },
                 "title": {
-                    "description": "Title of the anime",
+                    "description": "Title of the anime (required, 3-100 characters)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 3,
@@ -1220,40 +1219,40 @@ const docTemplate = `{
             ],
             "properties": {
                 "animeId": {
-                    "description": "ID of the anime being reviewed",
+                    "description": "Anime ID with cascade delete constraint",
                     "type": "integer",
                     "example": 1
                 },
                 "content": {
-                    "description": "Content of the review",
+                    "description": "Review content",
                     "type": "string",
                     "maxLength": 500,
                     "example": "This anime is amazing!"
                 },
                 "created_at": {
-                    "description": "Timestamp when the review was created",
+                    "description": "Creation timestamp",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "id": {
-                    "description": "Unique identifier for the review",
+                    "description": "Review ID",
                     "type": "integer",
                     "example": 1
                 },
                 "rating": {
-                    "description": "Rating given in the review (0-10)",
+                    "description": "Rating (0-10)",
                     "type": "integer",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 9
                 },
                 "updated_at": {
-                    "description": "Timestamp when the review was last updated",
+                    "description": "Update timestamp",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "userId": {
-                    "description": "ID of the user who created the review",
+                    "description": "User ID",
                     "type": "integer",
                     "example": 1
                 }
@@ -1269,25 +1268,25 @@ const docTemplate = `{
             ],
             "properties": {
                 "animeId": {
-                    "description": "ID of the anime being reviewed",
+                    "description": "ID of the anime being reviewed (required)",
                     "type": "integer",
                     "example": 1
                 },
                 "content": {
-                    "description": "Content of the review",
+                    "description": "Content of the review (required, max 500 characters)",
                     "type": "string",
                     "maxLength": 500,
                     "example": "This anime is amazing!"
                 },
                 "rating": {
-                    "description": "Rating given in the review (0-10)",
+                    "description": "Rating given in the review (0-10, required)",
                     "type": "integer",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 9
                 },
                 "userId": {
-                    "description": "ID of the user creating the review",
+                    "description": "ID of the user creating the review (required)",
                     "type": "integer",
                     "example": 1
                 }
@@ -1362,7 +1361,7 @@ const docTemplate = `{
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "email": {
-                    "description": "Email address of the user (omitted unless necessary)",
+                    "description": "Unique Email address of the user (omitted unless necessary)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
@@ -1408,21 +1407,21 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "description": "Email address for the new user",
+                    "description": "Email address for the new user (required, valid email format, 5-100 characters)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
                     "example": "john@example.com"
                 },
                 "password": {
-                    "description": "Password for the new user",
+                    "description": "Password for the new user (required, 5-100 characters)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
                     "example": "password123"
                 },
                 "username": {
-                    "description": "Username for the new user",
+                    "description": "Username for the new user (required, 3-50 characters)",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
