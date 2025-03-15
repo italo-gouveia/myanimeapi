@@ -10,35 +10,37 @@ on:
 
 jobs:
   pre-build-ai-validation:
-      name: AI Pre-Build Validation
-      runs-on: ubuntu-latest
-      steps:
+    name: AI Pre-Build Validation
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install OpenAI Python client
-        run: pip install openai
+      - name: Install required Python packages
+        run: pip install openai requests
 
       - name: Run AI Pre-Build Validation
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python3 - <<EOF
-          import openai
+          from openai import OpenAI
           import os
 
-          openai.api_key = os.getenv("OPENAI_API_KEY")
+          client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
           # Get the list of changed files
           changed_files = os.popen("git diff --name-only HEAD^ HEAD").read().splitlines()
 
           # Analyze changes using OpenAI
-          response = openai.ChatCompletion.create(
+          response = client.chat.completions.create(
               model="gpt-4",
               messages=[
                   {"role": "system", "content": "You are a code reviewer. Analyze the following code changes and predict potential build failures or issues."},
@@ -46,8 +48,9 @@ jobs:
               ]
           )
 
-          print(response['choices'][0]['message']['content'])
+          print(response.choices[0].message.content)
           EOF
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -81,7 +84,6 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-  
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
@@ -94,6 +96,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
 
   security:
     name: Security Analysis
@@ -108,7 +112,7 @@ jobs:
           project: 'MyAnimeAPI'
           format: 'ALL'
           fail_on_cvss: 7
-  
+
   swagger:
     name: Validate Swagger Docs
     runs-on: ubuntu-latest
