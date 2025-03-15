@@ -31,24 +31,32 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python3 - <<EOF
-          from openai import OpenAI
           import os
+          import time
+          from openai import OpenAI
 
           client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-          # Get the list of changed files
+          def analyze_changes_with_retry(changed_files, retries=3, delay=5):
+              for attempt in range(retries):
+                  try:
+                      response = client.chat.completions.create(
+                          model="gpt-3.5-turbo",  # Use gpt-3.5-turbo if gpt-4 is not accessible
+                          messages=[
+                              {"role": "system", "content": "You are a code reviewer. Analyze the following code changes and predict potential build failures or issues."},
+                              {"role": "user", "content": f"Here are the changed files: {changed_files}. Please analyze them."}
+                          ]
+                      )
+                      return response.choices[0].message.content
+                  except openai.RateLimitError:
+                      if attempt < retries - 1:
+                          time.sleep(delay)  # Wait before retrying
+                      else:
+                          raise  # Re-raise the exception if all retries fail
+
           changed_files = os.popen("git diff --name-only HEAD^ HEAD").read().splitlines()
-
-          # Analyze changes using OpenAI
-          response = client.chat.completions.create(
-              model="gpt-3.5-turbo",  # Use gpt-3.5-turbo if gpt-4 is not accessible
-              messages=[
-                  {"role": "system", "content": "You are a code reviewer. Analyze the following code changes and predict potential build failures or issues."},
-                  {"role": "user", "content": f"Here are the changed files: {changed_files}. Please analyze them."}
-              ]
-          )
-
-          print(response.choices[0].message.content)
+          analysis_result = analyze_changes_with_retry(changed_files)
+          print(analysis_result)
           EOF
 
   lint:
