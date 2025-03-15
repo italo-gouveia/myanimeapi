@@ -1,30 +1,32 @@
 # MyAnimeAPI
 
-MyAnimeAPI is a RESTful API built with Go (Golang) that allows users to manage anime, reviews, and user accounts. It provides endpoints for creating, reading, updating, and deleting (CRUD) anime and reviews, as well as user authentication and authorization using JWT (JSON Web Tokens).
+MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authentication. It is built using Go, Gorilla Mux for routing, GORM for database interactions, and supports PostgreSQL as the database backend.
 
 ## Features
 
-- **User Management**: Register, authenticate, and manage user accounts.
 - **Anime Management**: Create, read, update, and delete anime entries.
-- **Review Management**: Create, read, update, and delete reviews for anime.
-- **Authentication & Authorization**: Secure endpoints using JWT tokens.
-- **Pagination**: Retrieve paginated lists of users and reviews.
-- **Database Integration**: Uses PostgreSQL for data storage and GORM for ORM (Object-Relational Mapping).
+- **User Management**: Register, authenticate, and manage users.
+- **Review Management**: Add, update, and delete reviews for anime.
+- **Authentication**: JWT-based authentication for secure access.
+- **Pagination**: Paginated responses for large datasets.
+- **Rate Limiting**: Protect endpoints from abuse with rate limiting.
+- **Swagger Documentation**: Auto-generated API documentation.
 
 ## Technologies Used
 
-- **Go (Golang)**: The primary programming language.
-- **Gorilla Mux**: A powerful HTTP router and URL matcher for building Go web servers.
-- **GORM**: An ORM library for Go that supports PostgreSQL, MySQL, SQLite, and more.
-- **JWT (JSON Web Tokens)**: Used for user authentication and authorization.
-- **PostgreSQL**: A powerful, open-source relational database system.
+- **Go**: Backend programming language.
+- **Gorilla Mux**: HTTP router and dispatcher.
+- **GORM**: ORM for database interactions.
+- **PostgreSQL**: Relational database.
+- **JWT**: JSON Web Tokens for authentication.
+- **Swagger**: API documentation.
 - **Docker**: Containerization for easy deployment and development.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Go 1.22 or higher
+- Go 1.23 or higher
 - PostgreSQL
 - Docker (optional)
 
@@ -33,7 +35,7 @@ MyAnimeAPI is a RESTful API built with Go (Golang) that allows users to manage a
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/myanimeapi.git
+git clone https://github.com/{{yourusername}}/myanimeapi.git
 cd myanimeapi
 ```
 
@@ -124,7 +126,7 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ### Anime
 
-- **GET** `/v1/anime`: Retrieve all anime entries.
+- **GET** `/v1/anime`: Get all anime entries.
 - **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID.
 - **POST** `/v1/anime`: Create a new anime entry (Authenticated users only).
 - **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only).
@@ -132,7 +134,7 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ### Reviews
 
-- **GET** `/v1/reviews/{id}`: Retrieve a specific review by ID.
+- **GET** `/v1/reviews/{id}`: Get a specific review by ID.
 - **POST** `/v1/reviews`: Create a new review (Authenticated users only).
 - **PUT** `/v1/reviews/{id}`: Update an existing review (Authenticated users only).
 - **DELETE** `/v1/reviews/{id}`: Delete a review (Authenticated users only).
@@ -165,8 +167,31 @@ go test ./...
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+
+2. Create a new branch for your feature or bugfix.
+
+3. Commit your changes with clear and descriptive messages.
+
+4. Submit a pull request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+- [Gorilla Mux](https://github.com/gorilla/mux) for routing.
+
+- [GORM](https://gorm.io/) for database interactions.
+
+- [JWT](https://jwt.io/) for authentication.
+
+- [Swagger](https://swagger.io/) for API documentation.
+
+- [Docker](https://www.docker.com/) for Containerization
+
+## Contact
+For questions or feedback, please reach out to italogouveiadev@outlook.com.
+
