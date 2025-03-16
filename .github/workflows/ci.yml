@@ -151,13 +151,6 @@ jobs:
           project: 'MyAnimeAPI'
           format: 'ALL'
           fail_on_cvss: 7
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'myanimeapi:latest'
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
       - name: Run Gosec
         uses: securego/gosec@master
         with:
@@ -216,3 +209,10 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myanimeapi:latest'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
