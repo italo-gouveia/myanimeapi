@@ -9,7 +9,7 @@ jobs:
   analyze-changes:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Ensure this permission is set
+      pull-requests: write  # Allow updating PR descriptions
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -31,9 +31,13 @@ jobs:
           import json
 
           def analyze_changes():
-              # Get the list of changed files
+              # Get the base and head SHAs for the PR
+              base_sha = os.getenv("GITHUB_BASE_SHA")  # Target branch (e.g., main)
+              head_sha = os.getenv("GITHUB_HEAD_SHA")  # Source branch (e.g., feature branch)
+
+              # Get the list of all changed files in the PR
               changed_files = subprocess.check_output(
-                  ["git", "diff", "--name-only", "HEAD^", "HEAD"]
+                  ["git", "diff", "--name-only", base_sha, head_sha]
               ).decode("utf-8").splitlines()
 
               # Analyze changes (example logic)
