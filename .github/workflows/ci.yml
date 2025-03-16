@@ -12,6 +12,8 @@ on:
 jobs:
   pre-build-validation:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Allow updating PR descriptions
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,6 +26,8 @@ jobs:
           python-version: '3.9'
 
       - name: Run Pre-Build Validation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 - <<EOF
           import os
@@ -49,11 +53,35 @@ jobs:
 
               return feedback
 
+          def update_pr_description(description):
+              # Update the PR description using the GitHub API
+              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+              repo = os.getenv("GITHUB_REPOSITORY")
+              github_token = os.getenv("GITHUB_TOKEN")
+
+              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+              headers = {
+                  "Authorization": f"Bearer {github_token}",
+                  "Accept": "application/vnd.github.v3+json",
+              }
+              data = {"body": description}
+
+              subprocess.run(
+                  [
+                      "curl",
+                      "-X", "PATCH",
+                      "-H", f"Authorization: Bearer {github_token}",
+                      "-H", "Content-Type: application/json",
+                      "-d", f'{{"body": "{description}"}}',
+                      update_url,
+                  ],
+                  check=True,
+              )
+
           if __name__ == "__main__":
               feedback = analyze_changes()
-              print(feedback)
+              update_pr_description(feedback)
           EOF
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
