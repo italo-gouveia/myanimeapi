@@ -159,14 +159,22 @@ jobs:
         uses: zricethezav/gitleaks-action@v2  # Use the correct version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN as an environment variable
-      - name: Run ZAP Scan
-        uses: zaproxy/action-baseline@v0.6.0
-        with:
-          target: 'http://localhost:8080'
       - name: Run Gosec
         uses: securego/gosec@master
         with:
           args: './...'
+      
+      - name: Log in to Docker Hub  # Optional: Only if authentication is required
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Run ZAP Scan
+        uses: zaproxy/action-baseline@v0.6.0
+        with:
+          target: 'http://localhost:8080'
+          image: 'owasp/zap2docker-stable'  # Use the correct image
 
   swagger:
     name: Validate Swagger Docs
