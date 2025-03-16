@@ -32,6 +32,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
@@ -131,7 +132,12 @@ func CheckPasswordHash(password, encodedHash string) bool {
 	}
 
 	// Hash the provided password with the same parameters
-	comparisonHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(len(hash)))
+	hashLen := len(hash)
+	if hashLen < 0 || hashLen > math.MaxUint32 {
+		fmt.Errorf("invalid hash length")
+		return false
+	}
+	comparisonHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(hashLen))
 
 	// Compare the hashes in a constant-time manner
 	if subtle.ConstantTimeCompare(hash, comparisonHash) == 1 {

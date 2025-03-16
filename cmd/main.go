@@ -118,8 +118,9 @@ func main() {
 
 	// Start the server with graceful shutdown
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler: corsHandler(router),
+		Addr:              fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:           corsHandler(router),
+		ReadHeaderTimeout: 10 * time.Second, // Add a timeout for reading headers
 	}
 
 	// Channel to listen for interrupt signals

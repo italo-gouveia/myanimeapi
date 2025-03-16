@@ -151,10 +151,6 @@ jobs:
           project: 'MyAnimeAPI'
           format: 'ALL'
           fail_on_cvss: 7
-      - name: Run Gosec
-        uses: securego/gosec@master
-        with:
-          args: './...'
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
         with:
@@ -167,6 +163,10 @@ jobs:
         uses: zaproxy/action-baseline@v0.6.0
         with:
           target: 'http://localhost:8080'
+      - name: Run Gosec
+        uses: securego/gosec@master
+        with:
+          args: './...'
 
   swagger:
     name: Validate Swagger Docs
