@@ -39,19 +39,46 @@ jobs:
                   ["git", "diff", "--name-only", "HEAD^", "HEAD"]
               ).decode("utf-8").splitlines()
 
-              # Analyze changes (example logic)
+              # Initialize feedback and error flag
               feedback = "## Pre-Build Validation Feedback\n"
               feedback += "The following files were modified:\n"
+              has_errors = False
+
+              # Perform checks on changed files
               for file in changed_files:
                   feedback += f"- **{file}**: Modified\n"
 
+                  # Example: Check for sensitive data in files
+                  if file.endswith(".env") or file.endswith(".json"):
+                      with open(file, "r") as f:
+                          content = f.read()
+                          if "password" in content or "secret" in content:
+                              feedback += f"  ⚠️ **Warning**: Potential sensitive data found in `{file}`.\n"
+                              has_errors = True
+
+                  # Example: Validate JSON files
+                  if file.endswith(".json"):
+                      try:
+                          with open(file, "r") as f:
+                              json.load(f)  # Validate JSON format
+                      except json.JSONDecodeError:
+                          feedback += f"  ❌ **Error**: Invalid JSON format in `{file}`.\n"
+                          has_errors = True
+
+                  # Example: Ensure required files are present
+                  if file == "Dockerfile":
+                      if not os.path.exists("Dockerfile"):
+                          feedback += f"  ❌ **Error**: `Dockerfile` is missing.\n"
+                          has_errors = True
+
               # Add a summary
               feedback += "\n### Recommendations\n"
-              feedback += "1. Ensure all changes are properly tested.\n"
-              feedback += "2. Verify that no sensitive data is exposed.\n"
-              feedback += "3. Check for any potential build issues.\n"
+              if has_errors:
+                  feedback += "❌ **Errors were found**. Please fix them before proceeding.\n"
+              else:
+                  feedback += "✅ No critical issues found. Proceed with caution.\n"
 
-              return feedback
+              return feedback, has_errors
 
           def update_pr_description(description):
               # Update the PR description using the GitHub API
@@ -82,8 +109,13 @@ jobs:
               )
 
           if __name__ == "__main__":
-              feedback = analyze_changes()
+              feedback, has_errors = analyze_changes()
               update_pr_description(feedback)
+
+              # Fail the job if errors are found
+              if has_errors:
+                  print("❌ Errors detected. Failing the job.")
+                  exit(1)
           EOF
 
   lint:
