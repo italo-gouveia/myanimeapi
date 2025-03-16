@@ -10,8 +10,7 @@ on:
       - main
 
 jobs:
-  pre-build-ai-validation:
-    name: AI Pre-Build Validation
+  pre-build-validation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,57 +23,35 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install required Python packages
-        run: pip install requests openai
-
-      - name: Run AI Pre-Build Validation
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Run Pre-Build Validation
         run: |
           python3 - <<EOF
           import os
-          import time
-          from openai import OpenAI, RateLimitError
+          import subprocess
 
-          # Initialize OpenAI client
-          try:
-              client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-          except Exception as e:
-              print(f"OpenAI initialization failed: {e}")
-              client = None
+          def analyze_changes():
+              # Get the list of changed files
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", "HEAD^", "HEAD"]
+              ).decode("utf-8").splitlines()
 
-          def analyze_changes_with_retry(client, changed_files, retries=3, delay=5):
-              if not client:
-                  print("OpenAI client not initialized. Skipping analysis.")
-                  return "Automated PR description generation failed. Please add a manual description."
+              # Analyze changes (example logic)
+              feedback = "## Pre-Build Validation Feedback\n"
+              feedback += "The following files were modified:\n"
+              for file in changed_files:
+                  feedback += f"- **{file}**: Modified\n"
 
-              for attempt in range(retries):
-                  try:
-                      response = client.chat.completions.create(
-                          model="gpt-3.5-turbo",  # Use gpt-3.5-turbo as a fallback
-                          messages=[
-                              {"role": "system", "content": "You are a code reviewer. Analyze the following code changes and predict potential build failures or issues."},
-                              {"role": "user", "content": f"Here are the changed files: {changed_files}. Please analyze them."}
-                          ]
-                      )
-                      return response.choices[0].message.content
-                  except RateLimitError as e:
-                      print(f"Rate limit exceeded. Retrying in {delay} seconds... (Attempt {attempt + 1}/{retries})")
-                      if attempt < retries - 1:
-                          time.sleep(delay)
-                      else:
-                          print("All retries failed. Skipping OpenAI analysis.")
-                          return "Automated PR description generation failed due to rate limits. Please add a manual description."
-                  except Exception as e:
-                      print(f"OpenAI API call failed: {e}")
-                      return "Automated PR description generation failed. Please add a manual description."
+              # Add a summary
+              feedback += "\n### Recommendations\n"
+              feedback += "1. Ensure all changes are properly tested.\n"
+              feedback += "2. Verify that no sensitive data is exposed.\n"
+              feedback += "3. Check for any potential build issues.\n"
 
-          # Get the list of changed files
-          changed_files = os.popen("git diff --name-only HEAD^ HEAD").read().splitlines()
+              return feedback
 
-          # Analyze changes using OpenAI (with retry logic)
-          analysis_result = analyze_changes_with_retry(client, changed_files)
-          print(analysis_result)
+          if __name__ == "__main__":
+              feedback = analyze_changes()
+              print(feedback)
           EOF
 
   lint:
@@ -110,12 +87,13 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-  code-quality:
-    name: Code Quality Analysis
+  sonarcloud-analysis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
 
       - name: Run SonarCloud Analysis
         uses: SonarSource/sonarqube-scan-action@v5.0.0
