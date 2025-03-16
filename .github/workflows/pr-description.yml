@@ -24,6 +24,8 @@ jobs:
       - name: Analyze changes and update PR description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
         run: |
           python3 - <<EOF
           import os
@@ -32,8 +34,8 @@ jobs:
 
           def analyze_changes():
               # Get the base and head SHAs for the PR
-              base_sha = os.getenv("GITHUB_BASE_SHA")  # Target branch (e.g., main)
-              head_sha = os.getenv("GITHUB_HEAD_SHA")  # Source branch (e.g., feature branch)
+              base_sha = os.getenv("BASE_SHA")
+              head_sha = os.getenv("HEAD_SHA")
 
               # Get the list of all changed files in the PR
               changed_files = subprocess.check_output(
