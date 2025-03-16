@@ -10,14 +10,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install OpenAI Python client
-        run: pip install openai
+      - name: Install required Python packages
+        run: pip install requests openai
 
       - name: Generate PR Description
         env:
@@ -25,35 +27,53 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 - <<EOF
-          import openai
           import os
+          import time
           import requests
+          from openai import OpenAI, RateLimitError
 
-          openai.api_key = os.getenv("OPENAI_API_KEY")
-          github_token = os.getenv("GITHUB_TOKEN")
+          # Initialize OpenAI client
+          try:
+              client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+          except Exception as e:
+              print(f"OpenAI initialization failed: {e}")
+              client = None
 
           # Get PR details
+          github_token = os.getenv("GITHUB_TOKEN")
           pr_number = os.getenv("GITHUB_REF").split("/")[-2]
           repo = os.getenv("GITHUB_REPOSITORY")
           pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
           headers = {"Authorization": f"Bearer {github_token}"}
-          pr_details = requests.get(pr_url, headers=headers).json()
 
-          # Get changed files
-          changed_files = requests.get(pr_details["url"] + "/files", headers=headers).json()
+          try:
+              pr_details = requests.get(pr_url, headers=headers).json()
+              changed_files = requests.get(pr_details["url"] + "/files", headers=headers).json()
 
-          # Generate PR description using OpenAI
-          response = openai.ChatCompletion.create(
-              model="gpt-4",
-              messages=[
-                  {"role": "system", "content": "You are a code reviewer. Analyze the following PR changes and generate a description."},
-                  {"role": "user", "content": f"Here are the changed files: {changed_files}. Please generate a PR description."}
-              ]
-          )
+              # Generate PR description using OpenAI (if client is initialized)
+              if client:
+                  try:
+                      response = client.chat.completions.create(
+                          model="gpt-3.5-turbo",  # Use gpt-3.5-turbo as a fallback
+                          messages=[
+                              {"role": "system", "content": "You are a code reviewer. Analyze the following PR changes and generate a description."},
+                              {"role": "user", "content": f"Here are the changed files: {changed_files}. Please generate a PR description."}
+                          ]
+                      )
+                      description = response.choices[0].message.content
+                  except RateLimitError as e:
+                      print(f"Rate limit exceeded: {e}")
+                      description = "Automated PR description generation failed due to rate limits. Please add a manual description."
+                  except Exception as e:
+                      print(f"OpenAI API call failed: {e}")
+                      description = "Automated PR description generation failed. Please add a manual description."
+              else:
+                  description = "OpenAI client not initialized. Please add a manual description."
 
-          description = response['choices'][0]['message']['content']
+              # Update PR description
+              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+              requests.patch(update_url, headers=headers, json={"body": description})
 
-          # Update PR description
-          update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-          requests.patch(update_url, headers=headers, json={"body": description})
+          except Exception as e:
+              print(f"An error occurred: {e}")
           EOF
