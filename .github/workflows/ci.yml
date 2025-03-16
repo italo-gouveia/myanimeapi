@@ -1,4 +1,3 @@
-
 name: CI/CD Pipeline
 
 on:
@@ -32,6 +31,7 @@ jobs:
           python3 - <<EOF
           import os
           import subprocess
+          import json
 
           def analyze_changes():
               # Get the list of changed files
@@ -66,13 +66,16 @@ jobs:
               }
               data = {"body": description}
 
+              # Use `json.dumps` to properly format the JSON payload
+              json_data = json.dumps(data)
+
               subprocess.run(
                   [
                       "curl",
                       "-X", "PATCH",
                       "-H", f"Authorization: Bearer {github_token}",
                       "-H", "Content-Type: application/json",
-                      "-d", f'{{"body": "{description}"}}',
+                      "-d", json_data,
                       update_url,
                   ],
                   check=True,
@@ -82,6 +85,7 @@ jobs:
               feedback = analyze_changes()
               update_pr_description(feedback)
           EOF
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

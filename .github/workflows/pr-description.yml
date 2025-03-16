@@ -8,6 +8,8 @@ on:
 jobs:
   analyze-changes:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Ensure this permission is set
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,6 +28,7 @@ jobs:
           python3 - <<EOF
           import os
           import subprocess
+          import json
 
           def analyze_changes():
               # Get the list of changed files
@@ -57,13 +60,16 @@ jobs:
               }
               data = {"body": description}
 
+              # Use `json.dumps` to properly format the JSON payload
+              json_data = json.dumps(data)
+
               subprocess.run(
                   [
                       "curl",
                       "-X", "PATCH",
                       "-H", f"Authorization: Bearer {github_token}",
                       "-H", "Content-Type: application/json",
-                      "-d", f'{{"body": "{description}"}}',
+                      "-d", json_data,
                       update_url,
                   ],
                   check=True,
