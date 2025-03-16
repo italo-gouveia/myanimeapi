@@ -21,62 +21,42 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install requests
-
-      - name: Analyze changes with DeepSeek
+      - name: Analyze changes and update PR description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}  # Your DeepSeek API key
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
         run: |
           python3 - <<EOF
           import os
-          import requests
+          import subprocess
           import json
 
-          # Fetch the PR diff using GitHub API
-          def fetch_pr_diff():
-              pr_number = os.getenv("PR_NUMBER")
-              repo = os.getenv("REPO")
-              github_token = os.getenv("GITHUB_TOKEN")
+          def analyze_changes():
+              # Get the base and head SHAs for the PR
+              base_sha = os.getenv("BASE_SHA")
+              head_sha = os.getenv("HEAD_SHA")
 
-              url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-              headers = {
-                  "Authorization": f"Bearer {github_token}",
-                  "Accept": "application/vnd.github.v3.diff",
-              }
-              response = requests.get(url, headers=headers)
-              response.raise_for_status()
-              return response.text
+              # Get the list of all changed files in the PR
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", base_sha, head_sha]
+              ).decode("utf-8").splitlines()
 
-          # Analyze changes using DeepSeek API
-          def analyze_changes_with_deepseek(diff):
-              deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
-              prompt = f"Analyze the following code changes and provide feedback:\n\n{diff}\n\nFeedback:"
-              headers = {
-                  "Authorization": f"Bearer {deepseek_api_key}",
-                  "Content-Type": "application/json",
-              }
-              data = {
-                  "model": "deepseek-coder",  # Use the appropriate DeepSeek model
-                  "messages": [{"role": "user", "content": prompt}],
-                  "max_tokens": 500,
-              }
-              response = requests.post(
-                  "https://api.deepseek.com/v1/chat/completions",  # Replace with DeepSeek's API endpoint
-                  headers=headers,
-                  json=data,
-              )
-              response.raise_for_status()
-              return response.json()["choices"][0]["message"]["content"]
+              # Analyze changes (example logic)
+              analysis = "## Changes Detected\n"
+              for file in changed_files:
+                  analysis += f"- **{file}**: Modified\n"
 
-          # Update PR description with DeepSeek feedback
-          def update_pr_description(feedback):
-              pr_number = os.getenv("PR_NUMBER")
-              repo = os.getenv("REPO")
+              # Add a summary
+              analysis += "\n### Summary\n"
+              analysis += "This PR includes changes to the following files. Please review them carefully."
+
+              return analysis
+
+          def update_pr_description(description):
+              # Update the PR description using the GitHub API
+              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+              repo = os.getenv("GITHUB_REPOSITORY")
               github_token = os.getenv("GITHUB_TOKEN")
 
               update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
@@ -84,13 +64,24 @@ jobs:
                   "Authorization": f"Bearer {github_token}",
                   "Accept": "application/vnd.github.v3+json",
               }
-              data = {"body": feedback}
+              data = {"body": description}
 
-              response = requests.patch(update_url, headers=headers, json=data)
-              response.raise_for_status()
+              # Use `json.dumps` to properly format the JSON payload
+              json_data = json.dumps(data)
+
+              subprocess.run(
+                  [
+                      "curl",
+                      "-X", "PATCH",
+                      "-H", f"Authorization: Bearer {github_token}",
+                      "-H", "Content-Type: application/json",
+                      "-d", json_data,
+                      update_url,
+                  ],
+                  check=True,
+              )
 
           if __name__ == "__main__":
-              diff = fetch_pr_diff()
-              feedback = analyze_changes_with_deepseek(diff)
-              update_pr_description(feedback)
+              description = analyze_changes()
+              update_pr_description(description)
           EOF
