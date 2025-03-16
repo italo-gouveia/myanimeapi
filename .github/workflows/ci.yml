@@ -156,7 +156,7 @@ jobs:
         with:
           config: p/ci
       - name: Run GitLeaks
-        uses: zricethezav/gitleaks-action@v2
+        uses: zricethezav/gitleaks-action@v3
         with:
           config-path: .gitleaks.toml
           github-token: ${{ secrets.GITHUB_TOKEN }}
