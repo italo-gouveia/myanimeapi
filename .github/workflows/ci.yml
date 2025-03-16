@@ -159,6 +159,7 @@ jobs:
         uses: zricethezav/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run ZAP Scan
         uses: zaproxy/action-baseline@v0.6.0
         with:
