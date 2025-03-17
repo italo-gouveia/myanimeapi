@@ -41,12 +41,8 @@ func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
 		if r.Header.Get("X-Forwarded-Proto") != "https" {
 			host := r.Host
 			if isAllowedDomain(host) {
-				// Construct the redirect URL using only the trusted host and the original path
-				redirectURL := "https://" + host + r.URL.Path
-				if r.URL.RawQuery != "" {
-					redirectURL += "?" + r.URL.RawQuery
-				}
-				// Redirect to HTTPS
+				// Hardcode the HTTPS URL for trusted domains
+				redirectURL := "https://" + host
 				http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 				return
 			}
