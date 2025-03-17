@@ -32,6 +32,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
@@ -88,24 +89,21 @@ func HashPassword(password string) (string, error) {
 //	} else {
 //	    log.Println("Password is invalid")
 //	}
-func CheckPasswordHash(password, encodedHash string) bool {
+func CheckPasswordHash(password, encodedHash string) (bool, error) {
 	// Split the encoded hash into its components
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 {
-		log.Printf("Invalid hash format")
-		return false
+		return false, fmt.Errorf("invalid hash format")
 	}
 
 	// Extract the parameters from the encoded hash
 	var version int
 	_, err := fmt.Sscanf(parts[2], "v=%d", &version)
 	if err != nil {
-		log.Printf("Error parsing version: %v", err)
-		return false
+		return false, fmt.Errorf("error parsing version: %v", err)
 	}
 	if version != argon2.Version {
-		log.Printf("Incompatible Argon2 version")
-		return false
+		return false, fmt.Errorf("incompatible Argon2 version")
 	}
 
 	var memory uint32
@@ -113,33 +111,33 @@ func CheckPasswordHash(password, encodedHash string) bool {
 	var threads uint8
 	_, err = fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &time, &threads)
 	if err != nil {
-		log.Printf("Error parsing parameters: %v", err)
-		return false
+		return false, fmt.Errorf("error parsing parameters: %v", err)
 	}
 
 	// Decode the salt and hash
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil {
-		log.Printf("Error decoding salt: %v", err)
-		return false
+		return false, fmt.Errorf("error decoding salt: %v", err)
 	}
 
 	hash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
-		log.Printf("Error decoding hash: %v", err)
-		return false
+		return false, fmt.Errorf("error decoding hash: %v", err)
 	}
 
 	// Hash the provided password with the same parameters
-	comparisonHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(len(hash)))
+	hashLen := len(hash)
+	if hashLen < 0 || hashLen > math.MaxUint32 {
+		return false, fmt.Errorf("invalid hash length")
+	}
+	comparisonHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(hashLen))
 
 	// Compare the hashes in a constant-time manner
 	if subtle.ConstantTimeCompare(hash, comparisonHash) == 1 {
-		return true
+		return true, nil
 	}
 
-	log.Printf("Password mismatch")
-	return false
+	return false, fmt.Errorf("password mismatch")
 }
 
 // MigrateHash migrates a legacy bcrypt hash to an Argon2 hash.
