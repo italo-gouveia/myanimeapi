@@ -4,7 +4,7 @@
 package middleware
 
 // allowedDomains is a list of trusted domains to which HTTPS redirection is allowed.
-var allowedDomains = []string{"localhost", "myanimeapi.onrender.com", "myanimeapi.com"}
+//var allowedDomains = []string{"localhost", "myanimeapi.onrender.com", "myanimeapi.com"}
 
 // isAllowedDomain checks if the provided host is in the list of allowed domains.
 // It ensures that the host matches one of the trusted domains to prevent open redirect vulnerabilities.
