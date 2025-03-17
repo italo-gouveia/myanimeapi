@@ -48,6 +48,11 @@ jobs:
       - name: Build Docker image
         run: docker build -t myanimeapi .
 
+      - name: Configure DNS
+        run: |
+          # Use Google's public DNS to resolve the registry hostname
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+
       - name: Verify DNS resolution
         run: |
           # Check if the registry hostname resolves
