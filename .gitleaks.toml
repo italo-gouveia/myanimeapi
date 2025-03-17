@@ -1,0 +1,16 @@
+title = "Gitleaks Configuration"
+
+[[rules]]
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|token|secret)[\s:=]*['"]?([a-z0-9]{32,})['"]?'''
+tags = ["key", "api", "token", "secret"]
+
+[[rules]]
+description = "AWS Access Key ID"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["aws", "key"]
+
+[[rules]]
+description = "AWS Secret Access Key"
+regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
+tags = ["aws", "key"]

@@ -144,6 +144,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch the entire commit history
 
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
@@ -160,7 +162,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN as an environment variable
         with:
-          #config-path: .gitleaks.toml  # Optional: Path to your Gitleaks config
+          config-path: .gitleaks.toml
           redact: true
           verbose: true
       - name: Run Gosec
