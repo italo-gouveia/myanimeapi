@@ -53,7 +53,7 @@ func TestHTTPSRedirectMiddleware(t *testing.T) {
 
 		// Check the status code and redirect location
 		assert.Equal(t, http.StatusMovedPermanently, rr.Code, "Status code should be 301")
-		assert.Equal(t, "https://myanimeapi.com/", rr.Header().Get("Location"), "Redirect location should match")
+		assert.Equal(t, "https://myanimeapi.com", rr.Header().Get("Location"), "Redirect location should match")
 	})
 
 	t.Run("Untrusted Domain - Forbidden", func(t *testing.T) {
