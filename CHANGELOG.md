@@ -5,7 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## [1.0.0] - 2025-03-17
 
 ### Added
 - Initial project setup with Go, PostgreSQL, and Docker.
@@ -13,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JWT-based authentication and authorization.
 - Swagger documentation for API endpoints.
 - Unit tests for handlers using mocks.
+- Initial release of MyAnimeAPI.
 
 ### Changed
 - Improved error handling and validation in API endpoints.
@@ -26,8 +28,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused dependencies and code.
 
 ---
-
-## [1.0.0] - 2025-02-26
-
-### Added
-- Initial release of MyAnimeAPI.

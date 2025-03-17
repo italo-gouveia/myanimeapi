@@ -34,6 +34,8 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [**Notes**](#notes)
   - [Testing](#testing)
   - [Contributing](#contributing)
+    - [Git Semantic Versioning](#git-semantic-versioning)
+    - [Tagging Releases with Git](#tagging-releases-with-git)
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
   - [Contact](#contact)
@@ -285,6 +287,39 @@ Contributions are welcome! Please follow these steps:
 3. Commit your changes with clear and descriptive messages.
 
 4. Submit a pull request.
+
+   
+### Git Semantic Versioning
+Adjust the CHANGELOG.md File with the changes.
+
+Do the following:
+
+```bash
+git commit -m "feat: Add new endpoint to fetch anime by genre"
+git tag v1.1.0
+git push origin main --tags
+```
+
+Or do like this:
+### Tagging Releases with Git
+To mark specific versions of your API, use Git tags.
+
+Steps to Tag a Release
+
+**1. Create a Git Tag:**
+After updating the VERSION constant and CHANGELOG.md, create a Git tag for the release:
+
+```bash
+git tag v1.0.0
+```
+**2. Push the Tag to GitHub:**
+Push the tag to your remote repository:
+```bash
+git push origin v1.0.0
+```
+
+**3. Create a GitHub Release:**
+Go to your repository on GitHub, navigate to Releases, and create a new release for the tag. Include the changelog entries for that version.
 
 ## License
 
