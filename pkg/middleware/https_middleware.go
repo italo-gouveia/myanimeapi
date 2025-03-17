@@ -41,8 +41,13 @@ func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
 		if r.Header.Get("X-Forwarded-Proto") != "https" {
 			host := r.Host
 			if isAllowedDomain(host) {
+				// Construct the redirect URL using only the trusted host and the original path
+				redirectURL := "https://" + host + r.URL.Path
+				if r.URL.RawQuery != "" {
+					redirectURL += "?" + r.URL.RawQuery
+				}
 				// Redirect to HTTPS
-				http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
+				http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 				return
 			}
 			// If the domain is not allowed, return a 403 Forbidden error
