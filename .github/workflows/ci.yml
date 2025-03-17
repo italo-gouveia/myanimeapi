@@ -159,6 +159,10 @@ jobs:
         uses: zricethezav/gitleaks-action@v2  # Use the correct version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN as an environment variable
+        with:
+          #config-path: .gitleaks.toml  # Optional: Path to your Gitleaks config
+          redact: true
+          verbose: true
       - name: Run Gosec
         uses: securego/gosec@master
         with:
