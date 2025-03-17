@@ -116,19 +116,57 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Run tests
-        run: go test -v ./...
+      - name: Run tests and generate coverage report
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
 
-  sonarcloud-analysis:
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.out
+
+  release:
+    name: Release
     runs-on: ubuntu-latest
+    needs: [lint, test]  # Ensure this job runs after lint and test
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch full Git history
 
+      - name: Set up Node.js (for Semantic Release)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Semantic Release
+        run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+
+      - name: Run Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+  sonarcloud-analysis:
+    runs-on: ubuntu-latest
+    needs: [test]  # Ensure this job runs after the test job
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage-report
+          path: .
+
       - name: Run SonarCloud Analysis
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        uses: SonarSource/sonarcloud-github-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -137,6 +175,7 @@ jobs:
           SONAR_PULLREQUEST_KEY: ${{ github.event.pull_request.number }}  # Pull request number
           SONAR_PULLREQUEST_BRANCH: ${{ github.head_ref }}                # Source branch
           SONAR_PULLREQUEST_BASE: ${{ github.base_ref }}                  # Target branch
+          SONAR_GOLANG_COVERAGE_REPORT_PATHS: coverage.out  # Pass the coverage report to SonarCloud
 
   security:
     name: Security Analysis
@@ -169,18 +208,6 @@ jobs:
         uses: securego/gosec@master
         with:
           args: './...'
-      
-#      - name: Log in to Docker Hub  # Optional: Only if authentication is required
-#        uses: docker/login-action@v2
-#        with:
-#          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-#      - name: Run ZAP Scan
-#        uses: zaproxy/action-baseline@v0.6.0
-#        with:
-#          target: 'http://localhost:8080'
-#          docker_name: 'owasp/zap2docker-weekly'  # Use the weekly build
 
   swagger:
     name: Validate Swagger Docs
