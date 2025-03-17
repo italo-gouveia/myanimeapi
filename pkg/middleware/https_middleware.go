@@ -3,24 +3,19 @@
 // This file contains middleware for enforcing HTTPS connections.
 package middleware
 
-import (
-	"net/http"
-	"strings"
-)
-
 // allowedDomains is a list of trusted domains to which HTTPS redirection is allowed.
 var allowedDomains = []string{"localhost", "myanimeapi.onrender.com", "myanimeapi.com"}
 
 // isAllowedDomain checks if the provided host is in the list of allowed domains.
 // It ensures that the host matches one of the trusted domains to prevent open redirect vulnerabilities.
-func isAllowedDomain(host string) bool {
+/*func isAllowedDomain(host string) bool {
 	for _, domain := range allowedDomains {
 		if strings.EqualFold(host, domain) {
 			return true
 		}
 	}
 	return false
-}
+}*/
 
 // HTTPSRedirectMiddleware is a middleware that redirects HTTP requests to HTTPS.
 // It checks if the request is already using HTTPS by inspecting the "X-Forwarded-Proto" header.
@@ -35,7 +30,7 @@ func isAllowedDomain(host string) bool {
 //	http.ListenAndServe(":80", middleware.HTTPSRedirectMiddleware(router))
 //
 //	When a client accesses "http://example.com", they will be redirected to "https://example.com".
-func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
+/*func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if the request is not HTTPS
 		if r.Header.Get("X-Forwarded-Proto") != "https" {
@@ -54,3 +49,4 @@ func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+*/

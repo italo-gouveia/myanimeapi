@@ -32,7 +32,7 @@ func teardown() {
 }
 
 // TestHTTPSRedirectMiddleware tests the HTTPSRedirectMiddleware function.
-func TestHTTPSRedirectMiddleware(t *testing.T) {
+/*func TestHTTPSRedirectMiddleware(t *testing.T) {
 	t.Run("Trusted Domain - Redirect to HTTPS", func(t *testing.T) {
 		// Create a request with a trusted domain
 		req, err := http.NewRequest("GET", "http://myanimeapi.com/", nil)
@@ -99,7 +99,7 @@ func TestHTTPSRedirectMiddleware(t *testing.T) {
 		// Check the status code
 		assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
 	})
-}
+}*/
 
 // TestAuthenticateMiddleware tests the Authenticate middleware with a valid token.
 func TestAuthenticateMiddleware(t *testing.T) {
