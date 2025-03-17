@@ -1,0 +1,87 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  analyze-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Allow updating PR descriptions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Analyze changes and update PR description
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
+        run: |
+          python3 - <<EOF
+          import os
+          import subprocess
+          import json
+
+          def analyze_changes():
+              # Get the base and head SHAs for the PR
+              base_sha = os.getenv("BASE_SHA")
+              head_sha = os.getenv("HEAD_SHA")
+
+              # Get the list of all changed files in the PR
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", base_sha, head_sha]
+              ).decode("utf-8").splitlines()
+
+              # Analyze changes (example logic)
+              analysis = "## Changes Detected\n"
+              for file in changed_files:
+                  analysis += f"- **{file}**: Modified\n"
+
+              # Add a summary
+              analysis += "\n### Summary\n"
+              analysis += "This PR includes changes to the following files. Please review them carefully."
+
+              return analysis
+
+          def update_pr_description(description):
+              # Update the PR description using the GitHub API
+              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+              repo = os.getenv("GITHUB_REPOSITORY")
+              github_token = os.getenv("GITHUB_TOKEN")
+
+              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+              headers = {
+                  "Authorization": f"Bearer {github_token}",
+                  "Accept": "application/vnd.github.v3+json",
+              }
+              data = {"body": description}
+
+              # Use `json.dumps` to properly format the JSON payload
+              json_data = json.dumps(data)
+
+              subprocess.run(
+                  [
+                      "curl",
+                      "-X", "PATCH",
+                      "-H", f"Authorization: Bearer {github_token}",
+                      "-H", "Content-Type: application/json",
+                      "-d", json_data,
+                      update_url,
+                  ],
+                  check=True,
+              )
+
+          if __name__ == "__main__":
+              description = analyze_changes()
+              update_pr_description(description)
+          EOF

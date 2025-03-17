@@ -9,6 +9,83 @@ on:
       - main
 
 jobs:
+  pre-build-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Allow updating PR descriptions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run Pre-Build Validation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<EOF
+          import os
+          import subprocess
+          import json
+
+          def analyze_changes():
+              # Get the list of changed files
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", "HEAD^", "HEAD"]
+              ).decode("utf-8").splitlines()
+
+              # Analyze changes (example logic)
+              feedback = "## Pre-Build Validation Feedback\n"
+              feedback += "The following files were modified:\n"
+              for file in changed_files:
+                  feedback += f"- **{file}**: Modified\n"
+
+              # Add a summary
+              feedback += "\n### Recommendations\n"
+              feedback += "1. Ensure all changes are properly tested.\n"
+              feedback += "2. Verify that no sensitive data is exposed.\n"
+              feedback += "3. Check for any potential build issues.\n"
+
+              return feedback
+
+          def update_pr_description(description):
+              # Update the PR description using the GitHub API
+              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+              repo = os.getenv("GITHUB_REPOSITORY")
+              github_token = os.getenv("GITHUB_TOKEN")
+
+              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+              headers = {
+                  "Authorization": f"Bearer {github_token}",
+                  "Accept": "application/vnd.github.v3+json",
+              }
+              data = {"body": description}
+
+              # Use `json.dumps` to properly format the JSON payload
+              json_data = json.dumps(data)
+
+              subprocess.run(
+                  [
+                      "curl",
+                      "-X", "PATCH",
+                      "-H", f"Authorization: Bearer {github_token}",
+                      "-H", "Content-Type: application/json",
+                      "-d", json_data,
+                      update_url,
+                  ],
+                  check=True,
+              )
+
+          if __name__ == "__main__":
+              feedback = analyze_changes()
+              update_pr_description(feedback)
+          EOF
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -41,6 +118,63 @@ jobs:
 
       - name: Run tests
         run: go test -v ./...
+
+  sonarcloud-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full Git history
+
+      - name: Run SonarCloud Analysis
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_PULLREQUEST_KEY: ${{ github.event.pull_request.number }}  # Pull request number
+          SONAR_PULLREQUEST_BRANCH: ${{ github.head_ref }}                # Source branch
+          SONAR_PULLREQUEST_BASE: ${{ github.base_ref }}                  # Target branch
+
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MyAnimeAPI'
+          format: 'ALL'
+          fail_on_cvss: 7
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/ci
+      - name: Run GitLeaks
+        uses: zricethezav/gitleaks-action@v2  # Use the correct version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN as an environment variable
+      - name: Run Gosec
+        uses: securego/gosec@master
+        with:
+          args: './...'
+      
+#      - name: Log in to Docker Hub  # Optional: Only if authentication is required
+#        uses: docker/login-action@v2
+#        with:
+#          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+#      - name: Run ZAP Scan
+#        uses: zaproxy/action-baseline@v0.6.0
+#        with:
+#          target: 'http://localhost:8080'
+#          docker_name: 'owasp/zap2docker-weekly'  # Use the weekly build
 
   swagger:
     name: Validate Swagger Docs
@@ -77,9 +211,23 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          tags: myanimeapi:latest  # Build the image locally with this tag
+
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myanimeapi:latest'  # Scan the locally built image
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest  # Push the image to Docker Hub
