@@ -48,6 +48,14 @@ jobs:
       - name: Build Docker image
         run: docker build -t myanimeapi .
 
+      - name: Verify DNS resolution
+        run: |
+          # Check if the registry hostname resolves
+          if ! nslookup registry.render.com; then
+            echo "Error: Cannot resolve registry.render.com"
+            exit 1
+          fi
+
       - name: Log in to Render
         run: |
           echo "${{ secrets.RENDER_API_KEY }}" | docker login -u "${{ secrets.RENDER_USERNAME }}" --password-stdin registry.render.com
