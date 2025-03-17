@@ -99,7 +99,7 @@ func main() {
 		log.Println("Running in production mode")
 
 		// Apply HTTPS redirection middleware
-		router.Use(middleware.RedirectToHTTPS)
+		router.Use(middleware.HTTPSRedirectMiddleware)
 	}
 
 	// Serve Swagger UI
