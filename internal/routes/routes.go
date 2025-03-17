@@ -34,7 +34,7 @@ import (
 //	router := mux.NewRouter()
 //	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler)
 //	http.ListenAndServe(":8080", router)
-func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler) {
+func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler, version string) {
 	// Create a new rate limiter with a limit of 100 requests per minute
 	rateLimiter := middleware.NewRateLimiter()
 
@@ -57,6 +57,10 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 		}
 	}).Methods("GET")
 	log.Println("Health check endpoint registered")
+
+	// Register version endpoint
+	v1Router.HandleFunc("/version", VersionHandler(version)).Methods("GET")
+	log.Println("Version endpoint registered")
 
 	// Register anime routes
 	animeHandler.RegisterAnimeRoutes(v1Router)
@@ -91,4 +95,24 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 		}),
 	))
 	log.Println("Swagger documentation registered")
+}
+
+// VersionHandler returns a handler function for the /version endpoint.
+// It responds with the current version of the API in JSON format.
+//
+// Parameters:
+//   - version: The current version of the API (e.g., "1.0.0").
+//
+// Returns:
+//   - http.HandlerFunc: A handler function for the /version endpoint.
+func VersionHandler(version string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte(`{"version": "` + version + `"}`)); err != nil {
+			log.Printf("Failed to write response: %v", err)
+			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+			return
+		}
+	}
 }

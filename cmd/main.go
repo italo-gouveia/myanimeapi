@@ -36,6 +36,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	VERSION = "1.0.0" // Current version of the API
+)
+
 // @title MyAnimeAPI
 // @version 1.0
 // @description This is a sample API for managing anime and reviews.
@@ -104,7 +108,7 @@ func main() {
 	// Serve Swagger UI
 	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler)
+	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler, VERSION)
 	log.Println("Routes registered successfully")
 
 	// Configure CORS
@@ -128,7 +132,7 @@ func main() {
 
 	// Start the server in a goroutine
 	go func() {
-		log.Printf("Server started on :%d", cfg.Server.Port)
+		log.Printf("Starting MyAnimeAPI version %s on :%d", VERSION, cfg.Server.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting server: %v", err)
 		}
