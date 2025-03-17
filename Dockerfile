@@ -25,8 +25,11 @@ RUN go build -o main ./cmd
 # Stage 2: Run the Go binary
 FROM alpine:latest
 
+# Create a non-root user and group
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 # Set the Current Working Directory inside the container
-WORKDIR /root/
+WORKDIR /app
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
@@ -36,6 +39,12 @@ COPY --from=builder /app/cmd/docs ./cmd/docs
 
 # Copy the .env file
 COPY .env .
+
+# Change ownership of the application files to the non-root user
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
