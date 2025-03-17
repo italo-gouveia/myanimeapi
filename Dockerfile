@@ -25,6 +25,9 @@ RUN go build -o main ./cmd
 # Stage 2: Run the Go binary
 FROM debian:bookworm-slim
 
+# Update and upgrade packages to fix vulnerabilities
+RUN apt-get update && apt-get upgrade -y
+
 # Set the Current Working Directory inside the container
 WORKDIR /root/
 
