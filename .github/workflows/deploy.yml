@@ -39,7 +39,6 @@ jobs:
 
       - name: Install Docker
         run: |
-          # Install Docker using the official Docker installation script
           curl -fsSL https://get.docker.com -o get-docker.sh
           sudo sh get-docker.sh
           sudo systemctl start docker
@@ -48,35 +47,12 @@ jobs:
       - name: Build Docker image
         run: docker build -t myanimeapi .
 
-      - name: Configure DNS
-        run: |
-          # Use Google's public DNS to resolve the registry hostname
-          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-
-      - name: Verify DNS resolution
-        run: |
-          # Check if the registry hostname resolves
-          if ! nslookup registry.render.com; then
-            echo "Error: Cannot resolve registry.render.com"
-            exit 1
-          fi
-
-      - name: Log in to Render
-        run: |
-          echo "${{ secrets.RENDER_API_KEY }}" | docker login -u "${{ secrets.RENDER_USERNAME }}" --password-stdin registry.render.com
-
-      - name: Push Docker image to Render
-        run: |
-          docker tag myanimeapi registry.render.com/my-render-service/my-anime-api
-          docker push registry.render.com/my-render-service/my-anime-api
-
       - name: Deploy to Render
         run: |
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "serviceId": "${{ secrets.RENDER_SERVICE_ID }}",
-              "image": "registry.render.com/my-render-service/my-anime-api"
+              "serviceId": "${{ secrets.RENDER_SERVICE_ID }}"
             }' \
             https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys
