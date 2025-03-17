@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "a53c6819-9c1a-4ad9-b806-871e3ac64a9f",
+		"_postman_id": "4bd4e381-5247-4e8d-8192-af6f3ed0ec00",
 		"name": "MyAnimeAPI",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "3319899"
@@ -11,6 +11,31 @@
 			"item": [
 				{
 					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Testes para Login",
+									"pm.test(\"Status code is 200 for valid credentials\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"JWT token is present in the response\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.token).to.be.a('string');",
+									"});",
+									"",
+									"pm.test(\"Status code is 401 for invalid credentials\", function () {",
+									"    if (pm.response.code === 401) {",
+									"        pm.response.to.have.status(401);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -25,7 +50,7 @@
 							"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/v1/auth/authenticate",
+							"raw": "http://localhost:8080/auth/authenticate",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -34,9 +59,9 @@
 							"path": [
 								"auth",
 								"authenticate"
-								]
-							}
-						},
+							]
+						}
+					},
 					"response": [
 						{
 							"name": "401 INVALID CREDENTIALS",
@@ -54,7 +79,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/authenticate",
+									"raw": "http://localhost:8080/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -106,7 +131,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/authenticate",
+									"raw": "http://localhost:8080/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -154,7 +179,7 @@
 									"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/authenticate",
+									"raw": "http://localhost:8080/auth/authenticate",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -186,35 +211,43 @@
 							"cookie": [],
 							"body": "{\n    \"error\": \"Rate limit exceeded. Please try again later.\"\n}"
 						}
-					],
+					]
+				},
+				{
+					"name": "Register",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Login",
-									"pm.test(\"Status code is 200 for valid credentials\", function () {",
-									"    pm.response.to.have.status(200);",
+									"// Testes para Register",
+									"pm.test(\"Status code is 201 for successful registration\", function () {",
+									"    pm.response.to.have.status(201);",
 									"});",
 									"",
-									"pm.test(\"JWT token is present in the response\", function () {",
+									"pm.test(\"Response contains expected fields\", function () {",
 									"    const response = pm.response.json();",
-									"    pm.expect(response.token).to.be.a('string');",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('Username');",
+									"    pm.expect(response).to.have.property('Email');",
 									"});",
 									"",
-									"pm.test(\"Status code is 401 for invalid credentials\", function () {",
-									"    if (pm.response.code === 401) {",
-									"        pm.response.to.have.status(401);",
+									"pm.test(\"Status code is 409 for conflict (user already exists)\", function () {",
+									"    if (pm.response.code === 409) {",
+									"        pm.response.to.have.status(409);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
 									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Register",
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -229,7 +262,7 @@
 							"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/v1/auth/register",
+							"raw": "http://localhost:8080/auth/register",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -258,7 +291,7 @@
 									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/register",
+									"raw": "http://localhost:8080/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -306,7 +339,7 @@
 									"raw": "{\n    \"username\": \"bruna\",\n    \"email\": \"bruna@outlook.com\",\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/register",
+									"raw": "http://localhost:8080/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -358,7 +391,7 @@
 									"raw": "{\n    \"password\": \"bruna\"\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/auth/register",
+									"raw": "http://localhost:8080/auth/register",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -394,39 +427,6 @@
 							"cookie": [],
 							"body": "Username and password are required\n"
 						}
-					],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Tests for Register",
-									"pm.test(\"Status code is 201 for successful registration\", function () {",
-									"    pm.response.to.have.status(201);",
-									"});",
-									"",
-									"pm.test(\"Response contains expected fields\", function () {",
-									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('ID');",
-									"    pm.expect(response).to.have.property('Username');",
-									"    pm.expect(response).to.have.property('Email');",
-									"});",
-									"",
-									"pm.test(\"Status code is 409 for conflict (user already exists)\", function () {",
-									"    if (pm.response.code === 409) {",
-									"        pm.response.to.have.status(409);",
-									"    }",
-									"});",
-									"",
-									"pm.test(\"Status code is 400 for bad request\", function () {",
-									"    if (pm.response.code === 400) {",
-									"        pm.response.to.have.status(400);",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
 					]
 				}
 			]
@@ -436,6 +436,33 @@
 			"item": [
 				{
 					"name": "Get User By Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Testes para Get User By Id",
+									"pm.test(\"Status code is 200 for valid user\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('username');",
+									"    pm.expect(response).to.have.property('is_admin');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent user\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -450,7 +477,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/v1/users/1",
+							"raw": "localhost:8080/users/1",
 							"host": [
 								"localhost"
 							],
@@ -468,7 +495,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/users/1",
+									"raw": "localhost:8080/users/1",
 									"host": [
 										"localhost"
 									],
@@ -505,7 +532,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/users/5",
+									"raw": "localhost:8080/users/5",
 									"host": [
 										"localhost"
 									],
@@ -540,37 +567,29 @@
 							"cookie": [],
 							"body": "User not found\n"
 						}
-					],
+					]
+				},
+				{
+					"name": "Get Users",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Get User By Id",
-									"pm.test(\"Status code is 200 for valid user\", function () {",
+									"// Testes para Get Users",
+									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains expected fields\", function () {",
+									"pm.test(\"Response is an array of users\", function () {",
 									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('id');",
-									"    pm.expect(response).to.have.property('username');",
-									"    pm.expect(response).to.have.property('is_admin');",
-									"});",
-									"",
-									"pm.test(\"Status code is 404 for non-existent user\", function () {",
-									"    if (pm.response.code === 404) {",
-									"        pm.response.to.have.status(404);",
-									"    }",
+									"    pm.expect(response).to.be.an('array');",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Get Users",
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -585,7 +604,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/v1/users",
+							"raw": "localhost:8080/users",
 							"host": [
 								"localhost"
 							],
@@ -602,7 +621,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/users",
+									"raw": "localhost:8080/users",
 									"host": [
 										"localhost"
 									],
@@ -632,25 +651,6 @@
 							"cookie": [],
 							"body": "[\n    {\n        \"id\": 3,\n        \"created_at\": \"2025-02-16T14:00:04.344167-03:00\",\n        \"updated_at\": \"2025-02-16T14:00:04.344167-03:00\",\n        \"username\": \"bruna\",\n        \"email\": \"bruna@outlook.com\",\n        \"is_admin\": false\n    },\n    {\n        \"id\": 1,\n        \"created_at\": \"2025-02-15T11:40:02.228852-03:00\",\n        \"updated_at\": \"2025-03-10T09:37:59.277299-03:00\",\n        \"username\": \"italo\",\n        \"is_admin\": true\n    }\n]"
 						}
-					],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Tests for Get Users",
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response is an array of users\", function () {",
-									"    const response = pm.response.json();",
-									"    pm.expect(response).to.be.an('array');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
 					]
 				}
 			]
@@ -660,9 +660,37 @@
 			"item": [
 				{
 					"name": "Get Paginated Reviews for Anime",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Testes para Get Paginated Reviews for Anime",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array of reviews\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for invalid limit or page\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
-						"header": []
+						"header": [],
+						"url": {
+							"raw": ""
+						}
 					},
 					"response": [
 						{
@@ -671,7 +699,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/6/reviews",
+									"raw": "localhost:8080/anime/6/reviews",
 									"host": [
 										"localhost"
 									],
@@ -709,7 +737,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=1",
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=1",
 									"host": [
 										"localhost"
 									],
@@ -757,7 +785,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=2",
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=2",
 									"host": [
 										"localhost"
 									],
@@ -805,7 +833,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/6/reviews?limit=-2&page=2",
+									"raw": "localhost:8080/anime/6/reviews?limit=-2&page=2",
 									"host": [
 										"localhost"
 									],
@@ -857,7 +885,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/6/reviews?limit=2&page=-2",
+									"raw": "localhost:8080/anime/6/reviews?limit=2&page=-2",
 									"host": [
 										"localhost"
 									],
@@ -903,40 +931,34 @@
 							"cookie": [],
 							"body": "invalid page number. Must be a positive integer\n"
 						}
-					],
+					]
+				},
+				{
+					"name": "Get All Animes",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Get Paginated Reviews for Anime",
+									"// Testes para Get All Animes",
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response is an array of reviews\", function () {",
+									"pm.test(\"Response is an array of animes\", function () {",
 									"    const response = pm.response.json();",
 									"    pm.expect(response).to.be.an('array');",
-									"});",
-									"",
-									"pm.test(\"Status code is 400 for invalid limit or page\", function () {",
-									"    if (pm.response.code === 400) {",
-									"        pm.response.to.have.status(400);",
-									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Get All Animes",
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/v1/anime",
+							"raw": "localhost:8080/anime",
 							"host": [
 								"localhost"
 							],
@@ -953,7 +975,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime",
+									"raw": "localhost:8080/anime",
 									"host": [
 										"localhost"
 									],
@@ -989,7 +1011,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime",
+									"raw": "localhost:8080/anime",
 									"host": [
 										"localhost"
 									],
@@ -1019,34 +1041,42 @@
 							"cookie": [],
 							"body": "{\n    \"error\": \"Rate limit exceeded. Please try again later.\"\n}"
 						}
-					],
+					]
+				},
+				{
+					"name": "Get Anime by ID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Get All Animes",
-									"pm.test(\"Status code is 200\", function () {",
+									"// Testes para Get Anime by ID",
+									"pm.test(\"Status code is 200 for valid anime\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response is an array of animes\", function () {",
+									"pm.test(\"Response contains expected fields\", function () {",
 									"    const response = pm.response.json();",
-									"    pm.expect(response).to.be.an('array');",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('Title');",
+									"    pm.expect(response).to.have.property('Description');",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Get Anime by ID",
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/v1/anime/1",
+							"raw": "localhost:8080/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1064,7 +1094,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/1",
+									"raw": "localhost:8080/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1105,7 +1135,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/2",
+									"raw": "localhost:8080/anime/2",
 									"host": [
 										"localhost"
 									],
@@ -1136,15 +1166,18 @@
 							"cookie": [],
 							"body": "{\n    \"ID\": 2,\n    \"CreatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"UpdatedAt\": \"2025-02-16T12:08:04.270715-03:00\",\n    \"DeletedAt\": null,\n    \"Title\": \"Fire Force\",\n    \"Description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"Rating\": 0\n}"
 						}
-					],
+					]
+				},
+				{
+					"name": "Create Anime",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Get Anime by ID",
-									"pm.test(\"Status code is 200 for valid anime\", function () {",
-									"    pm.response.to.have.status(200);",
+									"// Testes para Create Anime",
+									"pm.test(\"Status code is 201 for successful creation\", function () {",
+									"    pm.response.to.have.status(201);",
 									"});",
 									"",
 									"pm.test(\"Response contains expected fields\", function () {",
@@ -1154,19 +1187,16 @@
 									"    pm.expect(response).to.have.property('Description');",
 									"});",
 									"",
-									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
-									"    if (pm.response.code === 404) {",
-									"        pm.response.to.have.status(404);",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
 									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Create Anime",
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -1191,7 +1221,7 @@
 							"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8080/v1/anime",
+							"raw": "localhost:8080/anime",
 							"host": [
 								"localhost"
 							],
@@ -1218,7 +1248,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População\",\n    \"release_date\": \"2019-02-01\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/v1/anime",
+									"raw": "localhost:8080/anime",
 									"host": [
 										"localhost"
 									],
@@ -1264,7 +1294,7 @@
 									"raw": "{\n    \"title\": \"<script>alert('XSS')</script>Naruto\",\n    \"description\": \"<img src='x' onerror='alert(1)'>A story about ninjas.\",\n    \"rating\": 8.5\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/v1/anime",
+									"raw": "localhost:8080/anime",
 									"host": [
 										"localhost"
 									],
@@ -1294,37 +1324,36 @@
 							"cookie": [],
 							"body": "{\n    \"errors\": {\n        \"Rating\": \"Rating must be greater than or equal to 0.\",\n        \"Title\": \"Title is a required field.\"\n    }\n}"
 						}
-					],
+					]
+				},
+				{
+					"name": "Update Anime",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Create Anime",
-									"pm.test(\"Status code is 201 for successful creation\", function () {",
-									"    pm.response.to.have.status(201);",
+									"// Testes para Update Anime",
+									"pm.test(\"Status code is 200 for successful update\", function () {",
+									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains expected fields\", function () {",
+									"pm.test(\"Response contains updated fields\", function () {",
 									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('ID');",
 									"    pm.expect(response).to.have.property('Title');",
 									"    pm.expect(response).to.have.property('Description');",
 									"});",
 									"",
-									"pm.test(\"Status code is 400 for bad request\", function () {",
-									"    if (pm.response.code === 400) {",
-									"        pm.response.to.have.status(400);",
+									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
 									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Update Anime",
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -1349,7 +1378,7 @@
 							"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8080/v1/anime/1",
+							"raw": "localhost:8080/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1377,7 +1406,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/v1/anime/1",
+									"raw": "localhost:8080/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1424,7 +1453,7 @@
 									"raw": "{\n    \"title\": \"Fire Force\",\n    \"description\": \"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\"\n}"
 								},
 								"url": {
-									"raw": "localhost:8080/v1/anime/1",
+									"raw": "localhost:8080/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1459,21 +1488,18 @@
 							"cookie": [],
 							"body": "Anime not found\n"
 						}
-					],
+					]
+				},
+				{
+					"name": "Delete Anime",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Update Anime",
-									"pm.test(\"Status code is 200 for successful update\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response contains updated fields\", function () {",
-									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('Title');",
-									"    pm.expect(response).to.have.property('Description');",
+									"// Testes para Delete Anime",
+									"pm.test(\"Status code is 204 for successful deletion\", function () {",
+									"    pm.response.to.have.status(204);",
 									"});",
 									"",
 									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
@@ -1485,10 +1511,7 @@
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Delete Anime",
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -1503,7 +1526,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/v1/anime/1",
+							"raw": "localhost:8080/anime/1",
 							"host": [
 								"localhost"
 							],
@@ -1521,7 +1544,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/1",
+									"raw": "localhost:8080/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1542,7 +1565,7 @@
 								}
 							],
 							"cookie": [],
-							"body": null
+							"body": ""
 						},
 						{
 							"name": "404 NOT FOUND",
@@ -1550,7 +1573,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "localhost:8080/v1/anime/1",
+									"raw": "localhost:8080/anime/1",
 									"host": [
 										"localhost"
 									],
@@ -1585,26 +1608,6 @@
 							"cookie": [],
 							"body": "Anime not found\n"
 						}
-					],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Tests for Delete Anime",
-									"pm.test(\"Status code is 204 for successful deletion\", function () {",
-									"    pm.response.to.have.status(204);",
-									"});",
-									"",
-									"pm.test(\"Status code is 404 for non-existent anime\", function () {",
-									"    if (pm.response.code === 404) {",
-									"        pm.response.to.have.status(404);",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
 					]
 				}
 			]
@@ -1614,6 +1617,41 @@
 			"item": [
 				{
 					"name": "Create Review",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Testes para Create Review",
+									"pm.test(\"Status code is 201 for successful creation\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains expected fields\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('ID');",
+									"    pm.expect(response).to.have.property('UserID');",
+									"    pm.expect(response).to.have.property('AnimeID');",
+									"    pm.expect(response).to.have.property('Content');",
+									"    pm.expect(response).to.have.property('Rating');",
+									"});",
+									"",
+									"pm.test(\"Status code is 400 for bad request\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Status code is 404 for non-existent user or anime\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1631,7 +1669,7 @@
 							"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/v1/reviews",
+							"raw": "http://localhost:8080/reviews",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1662,7 +1700,7 @@
 									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 2,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews",
+									"raw": "http://localhost:8080/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1712,7 +1750,7 @@
 									"raw": "{\n  \"userId\": -1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews",
+									"raw": "http://localhost:8080/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1766,7 +1804,7 @@
 									"raw": "{\n  \"userId\": 200000,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews",
+									"raw": "http://localhost:8080/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1820,7 +1858,7 @@
 									"raw": "{\n  \"userId\": 1,\n  \"animeId\": 1,\n  \"content\": \"This anime is amazing!\",\n  \"rating\": 9\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews",
+									"raw": "http://localhost:8080/reviews",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1850,20 +1888,23 @@
 								{
 									"key": "Content-Length",
 									"value": "16"
-									}
-								],
+								}
+							],
 							"cookie": [],
 							"body": "Anime not found\n"
 						}
-					],
+					]
+				},
+				{
+					"name": "Get Review by ID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Create Review",
-									"pm.test(\"Status code is 201 for successful creation\", function () {",
-									"    pm.response.to.have.status(201);",
+									"// Testes para Get Review by ID",
+									"pm.test(\"Status code is 200 for valid review\", function () {",
+									"    pm.response.to.have.status(200);",
 									"});",
 									"",
 									"pm.test(\"Response contains expected fields\", function () {",
@@ -1875,30 +1916,27 @@
 									"    pm.expect(response).to.have.property('Rating');",
 									"});",
 									"",
-									"pm.test(\"Status code is 400 for bad request\", function () {",
-									"    if (pm.response.code === 400) {",
-									"        pm.response.to.have.status(400);",
+									"pm.test(\"Status code is 404 for non-existent review\", function () {",
+									"    if (pm.response.code === 404) {",
+									"        pm.response.to.have.status(404);",
 									"    }",
 									"});",
 									"",
-									"pm.test(\"Status code is 404 for non-existent user or anime\", function () {",
-									"    if (pm.response.code === 404) {",
-									"        pm.response.to.have.status(404);",
+									"pm.test(\"Status code is 400 for invalid ID format\", function () {",
+									"    if (pm.response.code === 400) {",
+									"        pm.response.to.have.status(400);",
 									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Get Review by ID",
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/v1/reviews/1",
+							"raw": "http://localhost:8080/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1917,7 +1955,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/1",
+									"raw": "http://localhost:8080/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1955,7 +1993,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/10000",
+									"raw": "http://localhost:8080/reviews/10000",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1997,7 +2035,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/200000000000",
+									"raw": "http://localhost:8080/reviews/200000000000",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2033,45 +2071,30 @@
 							"cookie": [],
 							"body": "Invalid ID format\n"
 						}
-					],
+					]
+				},
+				{
+					"name": "Update Review",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Get Review by ID",
-									"pm.test(\"Status code is 200 for valid review\", function () {",
+									"// Testes para Update Review",
+									"pm.test(\"Status code is 200 for successful update\", function () {",
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains expected fields\", function () {",
+									"pm.test(\"Response contains updated fields\", function () {",
 									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('ID');",
-									"    pm.expect(response).to.have.property('UserID');",
-									"    pm.expect(response).to.have.property('AnimeID');",
-									"    pm.expect(response).to.have.property('Content');",
-									"    pm.expect(response).to.have.property('Rating');",
-									"});",
-									"",
-									"pm.test(\"Status code is 404 for non-existent review\", function () {",
-									"    if (pm.response.code === 404) {",
-									"        pm.response.to.have.status(404);",
-									"    }",
-									"});",
-									"",
-									"pm.test(\"Status code is 400 for invalid ID format\", function () {",
-									"    if (pm.response.code === 400) {",
-									"        pm.response.to.have.status(400);",
-									"    }",
+									"    pm.expect(response).to.have.property('content');",
+									"    pm.expect(response).to.have.property('rating');",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Update Review",
+					],
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -2089,7 +2112,7 @@
 							"raw": "{\n  \"content\": \"Updated review content.\",\n  \"rating\": 8\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/v1/reviews/1",
+							"raw": "http://localhost:8080/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2121,7 +2144,7 @@
 									"raw": "{\n  \"content\": \"Re-Updated review content.\",\n  \"rating\": 8\n}"
 								},
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/1",
+									"raw": "http://localhost:8080/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2153,30 +2176,30 @@
 							"cookie": [],
 							"body": "{\n    \"id\": 1,\n    \"created_at\": \"2025-02-18T20:31:02.247611-03:00\",\n    \"updated_at\": \"2025-03-13T13:56:15.2782538-03:00\",\n    \"userId\": 1,\n    \"animeId\": 2,\n    \"content\": \"Re-Updated review content.\",\n    \"rating\": 8,\n    \"user\": {\n        \"id\": 0,\n        \"username\": \"\",\n        \"is_admin\": false\n    },\n    \"anime\": {\n        \"id\": 0,\n        \"title\": \"\",\n        \"description\": \"\",\n        \"rating\": 0\n    }\n}"
 						}
-					],
+					]
+				},
+				{
+					"name": "Delete Review",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Tests for Update Review",
-									"pm.test(\"Status code is 200 for successful update\", function () {",
-									"    pm.response.to.have.status(200);",
+									"// Testes para Delete Review",
+									"pm.test(\"Status code is 204 for successful deletion\", function () {",
+									"    pm.response.to.have.status(204);",
 									"});",
 									"",
-									"pm.test(\"Response contains updated fields\", function () {",
-									"    const response = pm.response.json();",
-									"    pm.expect(response).to.have.property('content');",
-									"    pm.expect(response).to.have.property('rating');",
+									"pm.test(\"Status code is 401 for invalid token\", function () {",
+									"    if (pm.response.code === 401) {",
+									"        pm.response.to.have.status(401);",
+									"    }",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
-					]
-				},
-				{
-					"name": "Delete Review",
+					],
 					"request": {
 						"method": "DELETE",
 						"header": [
@@ -2186,7 +2209,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8080/v1/reviews/1",
+							"raw": "http://localhost:8080/reviews/1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2210,7 +2233,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/1",
+									"raw": "http://localhost:8080/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2257,7 +2280,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8080/v1/reviews/1",
+									"raw": "http://localhost:8080/reviews/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2279,29 +2302,127 @@
 								}
 							],
 							"cookie": [],
-							"body": null
-						}
-					],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Tests for Delete Review",
-									"pm.test(\"Status code is 204 for successful deletion\", function () {",
-									"    pm.response.to.have.status(204);",
-									"});",
-									"",
-									"pm.test(\"Status code is 401 for invalid token\", function () {",
-									"    if (pm.response.code === 401) {",
-									"        pm.response.to.have.status(401);",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
+							"body": ""
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/v1/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"health"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "200 OK",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/v1/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"health"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "plain",
+					"header": [
+						{
+							"key": "Date",
+							"value": "Mon, 17 Mar 2025 20:49:07 GMT"
+						},
+						{
+							"key": "Content-Length",
+							"value": "2"
+						},
+						{
+							"key": "Content-Type",
+							"value": "text/plain; charset=utf-8"
+						}
+					],
+					"cookie": [],
+					"body": "OK"
+				}
+			]
+		},
+		{
+			"name": "Version",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/v1/version",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"version"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "200 OK",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/v1/version",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"version"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Date",
+							"value": "Mon, 17 Mar 2025 20:48:33 GMT"
+						},
+						{
+							"key": "Content-Length",
+							"value": "20"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"version\": \"1.0.0\"\n}"
 				}
 			]
 		}
