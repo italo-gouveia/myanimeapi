@@ -31,6 +31,76 @@ func teardown() {
 	os.Unsetenv("JWT_SECRET_KEY")
 }
 
+// TestHTTPSRedirectMiddleware tests the HTTPSRedirectMiddleware function.
+/*func TestHTTPSRedirectMiddleware(t *testing.T) {
+	t.Run("Trusted Domain - Redirect to HTTPS", func(t *testing.T) {
+		// Create a request with a trusted domain
+		req, err := http.NewRequest("GET", "http://myanimeapi.com/", nil)
+		assert.NoError(t, err)
+		req.Header.Set("X-Forwarded-Proto", "http") // Simulate HTTP request
+
+		// Create a response recorder
+		rr := httptest.NewRecorder()
+
+		// Create a handler to use the middleware
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("Should not reach this point")
+		})
+
+		// Apply the middleware
+		middleware := HTTPSRedirectMiddleware(handler)
+		middleware.ServeHTTP(rr, req)
+
+		// Check the status code and redirect location
+		assert.Equal(t, http.StatusMovedPermanently, rr.Code, "Status code should be 301")
+		assert.Equal(t, "https://myanimeapi.com", rr.Header().Get("Location"), "Redirect location should match")
+	})
+
+	t.Run("Untrusted Domain - Forbidden", func(t *testing.T) {
+		// Create a request with an untrusted domain
+		req, err := http.NewRequest("GET", "http://malicious.com/", nil)
+		assert.NoError(t, err)
+		req.Header.Set("X-Forwarded-Proto", "http") // Simulate HTTP request
+
+		// Create a response recorder
+		rr := httptest.NewRecorder()
+
+		// Create a handler to use the middleware
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("Should not reach this point")
+		})
+
+		// Apply the middleware
+		middleware := HTTPSRedirectMiddleware(handler)
+		middleware.ServeHTTP(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusForbidden, rr.Code, "Status code should be 403")
+	})
+
+	t.Run("Already HTTPS - Proceed", func(t *testing.T) {
+		// Create a request with HTTPS
+		req, err := http.NewRequest("GET", "https://myanimeapi.com/", nil)
+		assert.NoError(t, err)
+		req.Header.Set("X-Forwarded-Proto", "https") // Simulate HTTPS request
+
+		// Create a response recorder
+		rr := httptest.NewRecorder()
+
+		// Create a handler to use the middleware
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		// Apply the middleware
+		middleware := HTTPSRedirectMiddleware(handler)
+		middleware.ServeHTTP(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
+	})
+}*/
+
 // TestAuthenticateMiddleware tests the Authenticate middleware with a valid token.
 func TestAuthenticateMiddleware(t *testing.T) {
 	setup()

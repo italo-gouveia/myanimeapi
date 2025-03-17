@@ -29,7 +29,6 @@ import (
 	"myanimeapi/internal/routes"
 	"myanimeapi/pkg/database"
 	myhandlers "myanimeapi/pkg/handlers" // Alias for your custom handlers package
-	"myanimeapi/pkg/middleware"
 
 	gorillahandlers "github.com/gorilla/handlers" // Alias for Gorilla's handlers package
 	"github.com/gorilla/mux"
@@ -99,7 +98,7 @@ func main() {
 		log.Println("Running in production mode")
 
 		// Apply HTTPS redirection middleware
-		router.Use(middleware.RedirectToHTTPS)
+		//router.Use(middleware.HTTPSRedirectMiddleware)
 	}
 
 	// Serve Swagger UI
