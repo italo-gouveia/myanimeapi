@@ -15,7 +15,7 @@ var allowedDomains = []string{"localhost", "myanimeapi.onrender.com", "myanimeap
 // It ensures that the host matches one of the trusted domains to prevent open redirect vulnerabilities.
 func isAllowedDomain(host string) bool {
 	for _, domain := range allowedDomains {
-		if strings.HasSuffix(host, domain) {
+		if strings.EqualFold(host, domain) {
 			return true
 		}
 	}
