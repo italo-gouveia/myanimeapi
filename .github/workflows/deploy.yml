@@ -39,9 +39,9 @@ jobs:
 
       - name: Install Docker
         run: |
-          sudo apt-get update
-          sudo apt-get remove -y containerd || true  # Remove containerd if it exists
-          sudo apt-get install -y containerd.io docker.io
+          # Install Docker using the official Docker installation script
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
           sudo systemctl start docker
           sudo systemctl enable docker
 
