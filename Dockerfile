@@ -1,10 +1,10 @@
 # Stage 1: Build the Go binary
 FROM golang:1.23 AS builder
 
-# Set the Current Working Directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy go mod and sum files
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
 # Download all dependencies
@@ -13,14 +13,14 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
-# Install swag CLI
+# Install swag CLI for generating Swagger documentation
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Generate Swagger documentation
 RUN swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
 
-# Build the Go binary
-RUN go build -o main ./cmd
+# Build the Go binary (statically linked)
+RUN CGO_ENABLED=0 go build -o main ./cmd
 
 # Stage 2: Run the Go binary
 FROM alpine:latest
@@ -28,11 +28,17 @@ FROM alpine:latest
 # Create a non-root user and group
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Set the Current Working Directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Pre-built binary file from the previous stage
+# Copy the pre-built binary from the builder stage
 COPY --from=builder /app/main .
+
+# Debug: List files in the /app directory
+RUN ls -l /app
+
+# Ensure the binary is executable
+RUN chmod +x /app/main
 
 # Copy the Swagger documentation
 COPY --from=builder /app/cmd/docs ./cmd/docs
