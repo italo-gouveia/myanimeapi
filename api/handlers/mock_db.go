@@ -13,7 +13,7 @@ package handlers
 import (
 	"context"
 
-	"myanimeapi/pkg/models"
+	"myanimeapi/api/models"
 
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"

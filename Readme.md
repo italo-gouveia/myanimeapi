@@ -188,83 +188,83 @@ This section provides visual representations of the application's architecture, 
 ### **1. Architecture Diagram**
 The high-level architecture of the MyAnimeAPI application, showing the interaction between components.
 
-![Architecture Diagram](/myanimeapi/resources/architecture_diagram.png)
+![Architecture Diagram](./assets/architecture_diagram.png)
 
 ---
 
 ### **2. Database Schema (ER Diagram)**
 The Entity-Relationship (ER) diagram for the database, illustrating the relationships between `users`, `anime`, and `reviews` tables.
 
-![Database Schema](/myanimeapi/resources/entity_model_relationship.png)
+![Database Schema](./assets/entity_model_relationship.png)
 
 ---
 
 ### **3. Component Diagram**
 A breakdown of the application's components, including handlers, middleware, and database interactions.
 
-![Component Diagram](/myanimeapi/resources/component_diagram.png)
+![Component Diagram](./assets/component_diagram.png)
 
 ---
 
 ### **4. Deployment Diagram**
 The deployment flow, showing how the application is built, tested, and deployed using Docker and GitHub Actions.
 
-![Deployment Diagram](/myanimeapi/resources/deployment_diagram.png)
+![Deployment Diagram](./assets/deployment_diagram.png)
 
 ---
 
 ### **5. Client Request Flow**
 The flow of a typical client request through the API, including middleware and handlers.
 
-![Client Request Flow](/myanimeapi/resources/client_request_flow.png)
+![Client Request Flow](./assets/client_request_flow.png)
 
 ---
 
 ### **6. Authentication Flow**
 The JWT-based authentication flow, detailing how users authenticate and access protected routes.
 
-![Authentication Flow](/myanimeapi/resources/flow_diagram_for_auth.png)
+![Authentication Flow](./assets/flow_diagram_for_auth.png)
 
 ---
 
 ### **7. Rate Limiting Flow**
 The rate-limiting mechanism, showing how requests are throttled to prevent abuse.
 
-![Rate Limiting Flow](/myanimeapi/resources/flow_diagram_for_rate_limiting.png)
+![Rate Limiting Flow](./assets/flow_diagram_for_rate_limiting.png)
 
 ---
 
 ### **8. User Registration Sequence**
 The sequence of steps involved in registering a new user.
 
-![User Registration Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_user_registration.png)
+![User Registration Sequence Diagram](./assets/sequence_diagram_for_user_registration.png)
 
 ---
 
 ### **9. User Authentication Sequence**
 The sequence of steps involved in authenticate an user.
 
-![User Authentication Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_user_authentication.png)
+![User Authentication Sequence Diagram](./assets/sequence_diagram_for_user_authentication.png)
 
 ---
 
 ### **10. Anime Creation Sequence**
 The sequence of steps involved in creating a new anime entry.
 
-![Anime Creation Sequence Diagram](/myanimeapi/resources/sequence_diagram_for_anime_creation.png)
+![Anime Creation Sequence Diagram](./assets/sequence_diagram_for_anime_creation.png)
 
 ---
 
 ### **How to Generate Diagrams**
 1. Use tools like [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) or [dbdiagram.io](https://dbdiagram.io/) to create the diagrams.
 2. Export the diagrams as `.png` or `.svg` files.
-3. Save the images in the `/myanimeapi/resources/` directory.
+3. Save the images in the `./assets/` directory.
 4. Reference the images in the `README.md` as shown above.
 
 ---
 
 ### **Notes**
-- Ensure all diagram images are stored in the `/myanimeapi/resources/` directory.
+- Ensure all diagram images are stored in the `./assets/` directory.
 - Use consistent naming conventions for the diagram files (e.g., `architecture_diagram.png`, `entity_model_relationship.png`).
 - If you update the diagrams, make sure to update the corresponding images in the `resources` folder.
 

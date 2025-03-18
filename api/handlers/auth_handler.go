@@ -18,10 +18,10 @@ import (
 	"log"
 	"net/http"
 
+	"myanimeapi/api/auth"
+	"myanimeapi/api/middleware"
+	"myanimeapi/api/models"
 	"myanimeapi/internal/db"
-	"myanimeapi/pkg/auth"
-	"myanimeapi/pkg/middleware"
-	"myanimeapi/pkg/models"
 
 	"github.com/gorilla/mux"
 )
