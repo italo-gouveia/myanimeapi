@@ -28,11 +28,12 @@ import (
 //   - userHandler: A pointer to a `UserHandler` instance for user-related routes.
 //   - reviewHandler: A pointer to a `ReviewHandler` instance for review-related routes.
 //   - authHandler: A pointer to an `AuthHandler` instance for authentication-related routes.
+//   - version: The current version of the API.
 //
 // Example usage:
 //
 //	router := mux.NewRouter()
-//	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler)
+//	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler, version)
 //	http.ListenAndServe(":8080", router)
 func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler, version string) {
 	// Create a new rate limiter with a limit of 100 requests per minute
@@ -49,11 +50,36 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	v1Router := router.PathPrefix("/v1").Subrouter()
 
 	// Health check endpoint
+	// @Summary Health check
+	// @Description Check the health of the API and its dependencies
+	// @Tags health
+	// @Produce json
+	// @Success 200 {string} string "OK"
+	// @Failure 503 {string} string "Service Unavailable"
+	// @Router /v1/health [get]
 	v1Router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		db := handlers.GetDB(r.Context())
+		if db == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			if _, err := w.Write([]byte("Database instance not initialized")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
 			return
+		}
+
+		if db.IsHealthy() {
+			w.WriteHeader(http.StatusOK)
+			if _, err := w.Write([]byte("OK")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			if _, err := w.Write([]byte("Database connection failed")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
 		}
 	}).Methods("GET")
 	log.Println("Health check endpoint registered")

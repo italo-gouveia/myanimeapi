@@ -21,6 +21,9 @@ import (
 // database is the global database instance used by the handlers.
 var database db.DBInterface
 
+// DBContextKey is the key used to store the database instance in the context.
+var DBContextKey = struct{}{}
+
 // InitializeDB sets the global database instance to the provided dbInstance.
 // This function should be called during application startup to ensure the database instance is available globally.
 //
@@ -41,5 +44,8 @@ func InitializeDB(dbInstance db.DBInterface) {
 //
 //	dbInstance := handlers.GetDB(context.Background())
 func GetDB(ctx context.Context) db.DBInterface {
-	return database
+	if db, ok := ctx.Value(DBContextKey).(db.DBInterface); ok {
+		return db
+	}
+	return nil
 }
