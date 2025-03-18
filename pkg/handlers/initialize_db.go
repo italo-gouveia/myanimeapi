@@ -13,7 +13,6 @@
 package handlers
 
 import (
-	"context"
 	"log"
 	"myanimeapi/internal/db"
 )
@@ -34,12 +33,6 @@ func InitializeDB(dbInstance db.DBInterface) {
 }
 
 // GetDB returns the global database instance.
-// It accepts a context and returns the database instance set by InitializeDB.
-// This function is used by handlers to interact with the database.
-//
-// Example:
-//
-//	dbInstance := handlers.GetDB(context.Background())
-func GetDB(ctx context.Context) db.DBInterface {
+func GetDB() db.DBInterface {
 	return database
 }

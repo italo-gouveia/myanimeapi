@@ -138,3 +138,10 @@ func (m *MockDB) GetError() error {
 	args := m.Called()
 	return args.Error(0)
 }
+
+// IsHealthy mocks the IsHealthy method of the DBInterface.
+// It simulates checking the health of the database connection.
+func (m *MockDB) IsHealthy() bool {
+	args := m.Called()
+	return args.Bool(0)
+}

@@ -14,50 +14,30 @@ import (
 	gorm "gorm.io/gorm"
 )
 
-// MockDBInterface is a mock implementation of the DBInterface.
-// It is used to simulate database operations in unit tests.
+// MockDBInterface is a mock of DBInterface interface.
 type MockDBInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockDBInterfaceMockRecorder
 }
 
 // MockDBInterfaceMockRecorder is the mock recorder for MockDBInterface.
-// It records method calls and allows setting expected return values.
 type MockDBInterfaceMockRecorder struct {
 	mock *MockDBInterface
 }
 
-// NewMockDBInterface creates a new mock instance of DBInterface.
-// It initializes the mock with the provided gomock.Controller.
+// NewMockDBInterface creates a new mock instance.
 func NewMockDBInterface(ctrl *gomock.Controller) *MockDBInterface {
 	mock := &MockDBInterface{ctrl: ctrl}
 	mock.recorder = &MockDBInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use of the mock.
-// It is used to set expectations for method calls and define their behavior.
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDBInterface) EXPECT() *MockDBInterfaceMockRecorder {
 	return m.recorder
 }
 
-// WithContext mocks the WithContext method of DBInterface.
-// It simulates attaching a context to the database instance.
-func (m *MockDBInterface) WithContext(ctx context.Context) *gorm.DB {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithContext", ctx)
-	ret0, _ := ret[0].(*gorm.DB)
-	return ret0
-}
-
-// WithContext indicates an expected call of WithContext.
-func (mr *MockDBInterfaceMockRecorder) WithContext(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithContext", reflect.TypeOf((*MockDBInterface)(nil).WithContext), ctx)
-}
-
-// Begin mocks the Begin method of DBInterface.
-// It simulates starting a new database transaction.
+// Begin mocks base method.
 func (m *MockDBInterface) Begin(ctx context.Context) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Begin", ctx)
@@ -71,8 +51,7 @@ func (mr *MockDBInterfaceMockRecorder) Begin(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Begin", reflect.TypeOf((*MockDBInterface)(nil).Begin), ctx)
 }
 
-// Commit mocks the Commit method of DBInterface.
-// It simulates committing the current database transaction.
+// Commit mocks base method.
 func (m *MockDBInterface) Commit(ctx context.Context) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Commit", ctx)
@@ -86,8 +65,7 @@ func (mr *MockDBInterfaceMockRecorder) Commit(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockDBInterface)(nil).Commit), ctx)
 }
 
-// Create mocks the Create method of DBInterface.
-// It simulates inserting a new record into the database.
+// Create mocks base method.
 func (m *MockDBInterface) Create(ctx context.Context, value interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, value)
@@ -101,8 +79,7 @@ func (mr *MockDBInterfaceMockRecorder) Create(ctx, value interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDBInterface)(nil).Create), ctx, value)
 }
 
-// Delete mocks the Delete method of DBInterface.
-// It simulates deleting a record from the database.
+// Delete mocks base method.
 func (m *MockDBInterface) Delete(ctx context.Context, value interface{}, conds ...interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, value}
@@ -121,8 +98,7 @@ func (mr *MockDBInterfaceMockRecorder) Delete(ctx, value interface{}, conds ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDBInterface)(nil).Delete), varargs...)
 }
 
-// Find mocks the Find method of DBInterface.
-// It simulates retrieving records from the database.
+// Find mocks base method.
 func (m *MockDBInterface) Find(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, dest}
@@ -141,8 +117,7 @@ func (mr *MockDBInterfaceMockRecorder) Find(ctx, dest interface{}, conds ...inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockDBInterface)(nil).Find), varargs...)
 }
 
-// First mocks the First method of DBInterface.
-// It simulates retrieving the first record matching the given conditions.
+// First mocks base method.
 func (m *MockDBInterface) First(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, dest}
@@ -161,8 +136,7 @@ func (mr *MockDBInterfaceMockRecorder) First(ctx, dest interface{}, conds ...int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "First", reflect.TypeOf((*MockDBInterface)(nil).First), varargs...)
 }
 
-// GetError mocks the GetError method of DBInterface.
-// It simulates retrieving the last error encountered during database operations.
+// GetError mocks base method.
 func (m *MockDBInterface) GetError() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetError")
@@ -176,8 +150,21 @@ func (mr *MockDBInterfaceMockRecorder) GetError() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetError", reflect.TypeOf((*MockDBInterface)(nil).GetError))
 }
 
-// Limit mocks the Limit method of DBInterface.
-// It simulates limiting the number of records returned in the result set.
+// IsHealthy mocks base method.
+func (m *MockDBInterface) IsHealthy() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsHealthy")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsHealthy indicates an expected call of IsHealthy.
+func (mr *MockDBInterfaceMockRecorder) IsHealthy() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealthy", reflect.TypeOf((*MockDBInterface)(nil).IsHealthy))
+}
+
+// Limit mocks base method.
 func (m *MockDBInterface) Limit(limit int) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Limit", limit)
@@ -191,8 +178,7 @@ func (mr *MockDBInterfaceMockRecorder) Limit(limit interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Limit", reflect.TypeOf((*MockDBInterface)(nil).Limit), limit)
 }
 
-// Offset mocks the Offset method of DBInterface.
-// It simulates skipping a specified number of records in the result set.
+// Offset mocks base method.
 func (m *MockDBInterface) Offset(offset int) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Offset", offset)
@@ -206,8 +192,7 @@ func (mr *MockDBInterfaceMockRecorder) Offset(offset interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Offset", reflect.TypeOf((*MockDBInterface)(nil).Offset), offset)
 }
 
-// Preload mocks the Preload method of DBInterface.
-// It simulates eagerly loading related records.
+// Preload mocks base method.
 func (m *MockDBInterface) Preload(column string, ctx context.Context, conditions ...interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{column, ctx}
@@ -226,8 +211,7 @@ func (mr *MockDBInterfaceMockRecorder) Preload(column, ctx interface{}, conditio
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Preload", reflect.TypeOf((*MockDBInterface)(nil).Preload), varargs...)
 }
 
-// Rollback mocks the Rollback method of DBInterface.
-// It simulates rolling back the current database transaction.
+// Rollback mocks base method.
 func (m *MockDBInterface) Rollback(ctx context.Context) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Rollback", ctx)
@@ -241,8 +225,7 @@ func (mr *MockDBInterfaceMockRecorder) Rollback(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockDBInterface)(nil).Rollback), ctx)
 }
 
-// Save mocks the Save method of DBInterface.
-// It simulates updating or inserting a record in the database.
+// Save mocks base method.
 func (m *MockDBInterface) Save(ctx context.Context, value interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", ctx, value)
@@ -256,8 +239,7 @@ func (mr *MockDBInterfaceMockRecorder) Save(ctx, value interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockDBInterface)(nil).Save), ctx, value)
 }
 
-// Unscoped mocks the Unscoped method of DBInterface.
-// It simulates including soft-deleted records in the query results.
+// Unscoped mocks base method.
 func (m *MockDBInterface) Unscoped(ctx context.Context) *gorm.DB {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unscoped", ctx)
@@ -271,8 +253,7 @@ func (mr *MockDBInterfaceMockRecorder) Unscoped(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unscoped", reflect.TypeOf((*MockDBInterface)(nil).Unscoped), ctx)
 }
 
-// Where mocks the Where method of DBInterface.
-// It simulates filtering records based on the given query and arguments.
+// Where mocks base method.
 func (m *MockDBInterface) Where(ctx context.Context, query interface{}, args ...interface{}) *gorm.DB {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, query}
@@ -289,4 +270,18 @@ func (mr *MockDBInterfaceMockRecorder) Where(ctx, query interface{}, args ...int
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, query}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Where", reflect.TypeOf((*MockDBInterface)(nil).Where), varargs...)
+}
+
+// WithContext mocks base method.
+func (m *MockDBInterface) WithContext(ctx context.Context) *gorm.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithContext", ctx)
+	ret0, _ := ret[0].(*gorm.DB)
+	return ret0
+}
+
+// WithContext indicates an expected call of WithContext.
+func (mr *MockDBInterfaceMockRecorder) WithContext(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithContext", reflect.TypeOf((*MockDBInterface)(nil).WithContext), ctx)
 }

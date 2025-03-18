@@ -27,6 +27,8 @@ jobs:
       - name: Run Pre-Build Validation
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
         run: |
           python3 - <<EOF
           import os
@@ -34,9 +36,16 @@ jobs:
           import json
 
           def analyze_changes():
-              # Get the list of changed files
+              # Get the base and head SHAs for the PR
+              base_sha = os.getenv("BASE_SHA")
+              head_sha = os.getenv("HEAD_SHA")
+
+              if not base_sha or not head_sha:
+                  raise ValueError("BASE_SHA and HEAD_SHA environment variables are required")
+
+              # Get the list of all changed files in the PR
               changed_files = subprocess.check_output(
-                  ["git", "diff", "--name-only", "HEAD^", "HEAD"]
+                  ["git", "diff", "--name-only", base_sha, head_sha]
               ).decode("utf-8").splitlines()
 
               # Analyze changes (example logic)
@@ -53,7 +62,10 @@ jobs:
 
               return feedback
 
-          def update_pr_description(description):
+          def update_pr_description(existing_description, feedback):
+              # Combine the existing description with the new feedback
+              updated_description = f"{existing_description}\n\n---\n{feedback}"
+
               # Update the PR description using the GitHub API
               pr_number = os.getenv("GITHUB_REF").split("/")[-2]
               repo = os.getenv("GITHUB_REPOSITORY")
@@ -64,7 +76,7 @@ jobs:
                   "Authorization": f"Bearer {github_token}",
                   "Accept": "application/vnd.github.v3+json",
               }
-              data = {"body": description}
+              data = {"body": updated_description}
 
               # Use `json.dumps` to properly format the JSON payload
               json_data = json.dumps(data)
@@ -81,11 +93,43 @@ jobs:
                   check=True,
               )
 
-          if __name__ == "__main__":
-              feedback = analyze_changes()
-              update_pr_description(feedback)
-          EOF
+          def get_existing_pr_description():
+              # Fetch the current PR description using the GitHub API
+              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+              repo = os.getenv("GITHUB_REPOSITORY")
+              github_token = os.getenv("GITHUB_TOKEN")
 
+              pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+              headers = {
+                  "Authorization": f"Bearer {github_token}",
+                  "Accept": "application/vnd.github.v3+json",
+              }
+
+              # Fetch the PR details
+              pr_details = subprocess.check_output(
+                  [
+                      "curl",
+                      "-H", f"Authorization: Bearer {github_token}",
+                      "-H", "Accept: application/vnd.github.v3+json",
+                      pr_url,
+                  ]
+              ).decode("utf-8")
+
+              # Parse the JSON response to get the current description
+              pr_data = json.loads(pr_details)
+              return pr_data.get("body", "")
+
+          if __name__ == "__main__":
+              # Get the existing PR description
+              existing_description = get_existing_pr_description()
+
+              # Generate the feedback
+              feedback = analyze_changes()
+
+              # Update the PR description by appending the feedback
+              update_pr_description(existing_description, feedback)
+          EOF
+          
   lint:
     name: Lint
     runs-on: ubuntu-latest
