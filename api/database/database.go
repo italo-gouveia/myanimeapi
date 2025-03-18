@@ -18,7 +18,7 @@ package database
 
 import (
 	"log"
-	"myanimeapi/pkg/models"
+	"myanimeapi/api/models"
 
 	"gorm.io/gorm"
 )
