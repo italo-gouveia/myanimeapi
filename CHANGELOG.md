@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.0.0...v1.0.1) (2025-03-18)
+
+
+### Bug Fixes
+
+* GITISSUE-50 Resolve linting and CI workflow issues ([3ae6db2](https://github.com/italo-gouveia/myanimeapi/commit/3ae6db2001418e52b12584e260488909b9c48938))
+
 # 1.0.0 (2025-03-17)
 
 
