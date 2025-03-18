@@ -9,126 +9,126 @@ on:
       - main
 
 jobs:
-  pre-build-validation:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write  # Allow updating PR descriptions
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Fetch full Git history
+#  pre-build-validation:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      pull-requests: write  # Allow updating PR descriptions
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0  # Fetch full Git history
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
+#      - name: Set up Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.9'
 
-      - name: Run Pre-Build Validation
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
-        run: |
-          python3 - <<EOF
-          import os
-          import subprocess
-          import json
+#      - name: Run Pre-Build Validation
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+#          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
+#        run: |
+#          python3 - <<EOF
+#          import os
+#          import subprocess
+#          import json
 
-          def analyze_changes():
-              # Get the base and head SHAs for the PR
-              base_sha = os.getenv("BASE_SHA")
-              head_sha = os.getenv("HEAD_SHA")
+#          def analyze_changes():
+#              # Get the base and head SHAs for the PR
+#              base_sha = os.getenv("BASE_SHA")
+#              head_sha = os.getenv("HEAD_SHA")
 
-              if not base_sha or not head_sha:
-                  raise ValueError("BASE_SHA and HEAD_SHA environment variables are required")
+#              if not base_sha or not head_sha:
+#                  raise ValueError("BASE_SHA and HEAD_SHA environment variables are required")
 
               # Get the list of all changed files in the PR
-              changed_files = subprocess.check_output(
-                  ["git", "diff", "--name-only", base_sha, head_sha]
-              ).decode("utf-8").splitlines()
+#              changed_files = subprocess.check_output(
+#                  ["git", "diff", "--name-only", base_sha, head_sha]
+#              ).decode("utf-8").splitlines()
 
               # Analyze changes (example logic)
-              feedback = "## Pre-Build Validation Feedback\n"
-              feedback += "The following files were modified:\n"
-              for file in changed_files:
-                  feedback += f"- **{file}**: Modified\n"
+#              feedback = "## Pre-Build Validation Feedback\n"
+#              feedback += "The following files were modified:\n"
+#              for file in changed_files:
+#                  feedback += f"- **{file}**: Modified\n"
 
               # Add a summary
-              feedback += "\n### Recommendations\n"
-              feedback += "1. Ensure all changes are properly tested.\n"
-              feedback += "2. Verify that no sensitive data is exposed.\n"
-              feedback += "3. Check for any potential build issues.\n"
+#              feedback += "\n### Recommendations\n"
+#              feedback += "1. Ensure all changes are properly tested.\n"
+#              feedback += "2. Verify that no sensitive data is exposed.\n"
+#              feedback += "3. Check for any potential build issues.\n"
 
-              return feedback
+#              return feedback
 
-          def update_pr_description(existing_description, feedback):
+#          def update_pr_description(existing_description, feedback):
               # Combine the existing description with the new feedback
-              updated_description = f"{existing_description}\n\n---\n{feedback}"
+#              updated_description = f"{existing_description}\n\n---\n{feedback}"
 
               # Update the PR description using the GitHub API
-              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
-              repo = os.getenv("GITHUB_REPOSITORY")
-              github_token = os.getenv("GITHUB_TOKEN")
+#              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+#              repo = os.getenv("GITHUB_REPOSITORY")
+#              github_token = os.getenv("GITHUB_TOKEN")
 
-              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-              headers = {
-                  "Authorization": f"Bearer {github_token}",
-                  "Accept": "application/vnd.github.v3+json",
-              }
-              data = {"body": updated_description}
+#              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+#              headers = {
+#                  "Authorization": f"Bearer {github_token}",
+#                  "Accept": "application/vnd.github.v3+json",
+#              }
+#              data = {"body": updated_description}
 
               # Use `json.dumps` to properly format the JSON payload
-              json_data = json.dumps(data)
+#              json_data = json.dumps(data)
 
-              subprocess.run(
-                  [
-                      "curl",
-                      "-X", "PATCH",
-                      "-H", f"Authorization: Bearer {github_token}",
-                      "-H", "Content-Type: application/json",
-                      "-d", json_data,
-                      update_url,
-                  ],
-                  check=True,
-              )
+#              subprocess.run(
+#                  [
+#                      "curl",
+#                      "-X", "PATCH",
+#                      "-H", f"Authorization: Bearer {github_token}",
+#                      "-H", "Content-Type: application/json",
+#                      "-d", json_data,
+#                      update_url,
+#                  ],
+#                  check=True,
+#              )
 
-          def get_existing_pr_description():
+#          def get_existing_pr_description():
               # Fetch the current PR description using the GitHub API
-              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
-              repo = os.getenv("GITHUB_REPOSITORY")
-              github_token = os.getenv("GITHUB_TOKEN")
+#              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
+#              repo = os.getenv("GITHUB_REPOSITORY")
+#              github_token = os.getenv("GITHUB_TOKEN")
 
-              pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-              headers = {
-                  "Authorization": f"Bearer {github_token}",
-                  "Accept": "application/vnd.github.v3+json",
-              }
+#              pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+#              headers = {
+#                  "Authorization": f"Bearer {github_token}",
+#                  "Accept": "application/vnd.github.v3+json",
+#              }
 
               # Fetch the PR details
-              pr_details = subprocess.check_output(
-                  [
-                      "curl",
-                      "-H", f"Authorization: Bearer {github_token}",
-                      "-H", "Accept: application/vnd.github.v3+json",
-                      pr_url,
-                  ]
-              ).decode("utf-8")
+#              pr_details = subprocess.check_output(
+#                  [
+#                      "curl",
+#                      "-H", f"Authorization: Bearer {github_token}",
+#                      "-H", "Accept: application/vnd.github.v3+json",
+#                      pr_url,
+#                  ]
+#              ).decode("utf-8")
 
               # Parse the JSON response to get the current description
-              pr_data = json.loads(pr_details)
-              return pr_data.get("body", "")
+#              pr_data = json.loads(pr_details)
+#              return pr_data.get("body", "")
 
-          if __name__ == "__main__":
-              # Get the existing PR description
-              existing_description = get_existing_pr_description()
+#          if __name__ == "__main__":
+#              # Get the existing PR description
+#              existing_description = get_existing_pr_description()
 
               # Generate the feedback
-              feedback = analyze_changes()
+#              feedback = analyze_changes()
 
               # Update the PR description by appending the feedback
-              update_pr_description(existing_description, feedback)
-          EOF
+#              update_pr_description(existing_description, feedback)
+#          EOF
           
   lint:
     name: Lint
@@ -275,7 +275,7 @@ jobs:
         run: go install github.com/swaggo/swag/cmd/swag@latest
 
       - name: Generate Swagger docs
-        run: swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
+        run: swag init --dir ./cmd,./api/handlers,./api/models --output ./cmd/docs
 
       - name: Check for changes in Swagger docs
         run: git diff --exit-code
