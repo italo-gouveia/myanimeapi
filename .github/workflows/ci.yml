@@ -120,12 +120,14 @@ jobs:
         run: |
           go test -v -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
+          gocov convert coverage.out > coverage.json
+          gocov-xml < coverage.json > coverage.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.out
+          path: coverage.xml
 
   release:
     name: Release
@@ -178,7 +180,7 @@ jobs:
           SONAR_PULLREQUEST_KEY: ${{ github.event.pull_request.number }}  # Pull request number
           SONAR_PULLREQUEST_BRANCH: ${{ github.head_ref }}                # Source branch
           SONAR_PULLREQUEST_BASE: ${{ github.base_ref }}                  # Target branch
-          SONAR_GOLANG_COVERAGE_REPORT_PATHS: coverage.out  # Pass the coverage report to SonarCloud
+          SONAR_GOLANG_COVERAGE_REPORT_PATHS: coverage.xml
 
   security:
     name: Security Analysis
