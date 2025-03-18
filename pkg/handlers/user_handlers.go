@@ -21,7 +21,7 @@ import (
 	"myanimeapi/internal/db"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
-	"myanimeapi/pkg/validation"
+	"myanimeapi/pkg/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -82,7 +82,7 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 	// Validate pagination
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
-	page, limit, err := validation.ValidatePagination(pageStr, limitStr, 1, 10)
+	page, limit, err := utils.ValidatePagination(pageStr, limitStr, 1, 10)
 	if err != nil {
 		log.Printf("Invalid pagination parameters: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -139,7 +139,7 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := vars["id"]
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -277,7 +277,7 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	idStr := vars["id"]
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -342,7 +342,7 @@ func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 	idStr := vars["id"]
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
