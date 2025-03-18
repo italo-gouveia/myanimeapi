@@ -31,3 +31,8 @@ func InitializeDB(dbInstance db.DBInterface) {
 	log.Println("Initializing global database instance")
 	database = dbInstance
 }
+
+// GetDB returns the global database instance.
+func GetDB() db.DBInterface {
+	return database
+}

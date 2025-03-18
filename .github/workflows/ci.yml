@@ -27,6 +27,8 @@ jobs:
       - name: Run Pre-Build Validation
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
         run: |
           python3 - <<EOF
           import os
@@ -37,6 +39,9 @@ jobs:
               # Get the base and head SHAs for the PR
               base_sha = os.getenv("BASE_SHA")
               head_sha = os.getenv("HEAD_SHA")
+
+              if not base_sha or not head_sha:
+                  raise ValueError("BASE_SHA and HEAD_SHA environment variables are required")
 
               # Get the list of all changed files in the PR
               changed_files = subprocess.check_output(
@@ -124,7 +129,7 @@ jobs:
               # Update the PR description by appending the feedback
               update_pr_description(existing_description, feedback)
           EOF
-
+          
   lint:
     name: Lint
     runs-on: ubuntu-latest
