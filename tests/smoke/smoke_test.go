@@ -66,34 +66,78 @@ func TestMain(m *testing.M) {
 }
 
 func TestHealthCheck(t *testing.T) {
-	req, err := http.NewRequest("GET", "/health", nil)
+	// Initialize the mock controller
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	// Create the mock DB
+	mockDB := mocks.NewMockDBInterface(mockCtrl)
+
+	// Set up the expectation for IsHealthy
+	mockDB.EXPECT().IsHealthy().Return(true)
+
+	// Create a request to the health check endpoint
+	req, err := http.NewRequest("GET", "/v1/health", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
+
+	// Call the handler with the mock database instance
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		if mockDB == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			if _, err := w.Write([]byte("Database instance not initialized")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
 			return
+		}
+
+		if mockDB.IsHealthy() {
+			w.WriteHeader(http.StatusOK)
+			if _, err := w.Write([]byte("OK")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			if _, err := w.Write([]byte("Database connection failed")); err != nil {
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				return
+			}
 		}
 	})
 
+	// Serve the HTTP request
 	handler.ServeHTTP(rr, req)
 
+	// Check the status code
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
+	// Check the response body
 	expected := "OK"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 	}
+
+	// Verify that all expectations were met
+	mockCtrl.Finish()
 }
 
 // TestRegisterUser tests the user registration endpoint
 /*func TestRegisterUser(t *testing.T) {
+	// Initialize the mock controller
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	// Create the mock DB
+	mockDB := mocks.NewMockDBInterface(mockCtrl)
+
 	// Define the test user
 	user := models.User{
 		Username: "testuser",
@@ -114,45 +158,46 @@ func TestHealthCheck(t *testing.T) {
 	ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &user)
 	req = req.WithContext(ctx)
 
-	// Create a valid gorm.DB object for the mock to return
-	mockDBInstance := &gorm.DB{}
+	// Create a *gorm.DB instance to return from the mock
+	gormDB := &gorm.DB{}
 
-	// Set up mock expectations
-	// Simulate "user not found" for username check
+	// Set up mock expectations for username check
 	mockDB.EXPECT().
-		Where(gomock.Any(), "username = ?", user.Username).
-		Return(mockDBInstance)
-
-	mockDB.EXPECT().
-		First(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
-		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate "record not found" error
-			mockDBInstance.Error = gorm.ErrRecordNotFound
-		})
-
-	// Simulate "user not found" for email check
-	mockDB.EXPECT().
-		Where(gomock.Any(), "email = ?", user.Email).
-		Return(mockDBInstance)
+		Where("username = ?", user.Username).
+		Return(gormDB) // Return a *gorm.DB instance
 
 	mockDB.EXPECT().
 		First(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
 		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate "record not found" error
-			mockDBInstance.Error = gorm.ErrRecordNotFound
-		})
+			// Simulate "user not found" by setting dest to an empty User
+			destUser := dest.(*models.User)
+			*destUser = models.User{}
+		}).
+		Return(gormDB) // Return gormDB (one value)
 
-	// Simulate successful user creation
+	// Set up mock expectations for email check
+	mockDB.EXPECT().
+		Where("email = ?", user.Email).
+		Return(gormDB) // Return a *gorm.DB instance
+
+	mockDB.EXPECT().
+		First(gomock.Any(), gomock.Any()).
+		Do(func(dest interface{}, conds ...interface{}) {
+			// Simulate "user not found" by setting dest to an empty User
+			destUser := dest.(*models.User)
+			*destUser = models.User{}
+		}).
+		Return(gormDB) // Return gormDB (one value)
+
+	// Set up mock expectations for user creation
 	mockDB.EXPECT().
 		Create(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
 		Do(func(value interface{}, conds ...interface{}) {
-			// Simulate successful creation
-			dest := value.(*models.User)
-			*dest = user
-		})
+			// Simulate successful user creation by setting value to the test user
+			destUser := value.(*models.User)
+			*destUser = user
+		}).
+		Return(gormDB) // Return gormDB (one value)
 
 	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
@@ -163,8 +208,7 @@ func TestHealthCheck(t *testing.T) {
 
 	// Check the status code
 	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
 	}
 
 	// Check the response body
@@ -173,8 +217,7 @@ func TestHealthCheck(t *testing.T) {
 		t.Fatalf("failed to decode response body: %v", err)
 	}
 	if responseUser.Username != user.Username {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			responseUser.Username, user.Username)
+		t.Errorf("handler returned unexpected body: got %v want %v", responseUser.Username, user.Username)
 	}
 }*/
 

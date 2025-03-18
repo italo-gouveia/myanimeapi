@@ -7,9 +7,32 @@ package db
 
 import (
 	"context"
+	"log"
 
 	"gorm.io/gorm"
 )
+
+// IsHealthy checks if the database connection is healthy.
+// It retrieves the underlying *sql.DB instance and pings the database to verify connectivity.
+// If the ping fails, it logs the error and returns false.
+// Otherwise, it returns true.
+func (g *GormDB) IsHealthy() bool {
+	// Get the underlying *sql.DB instance
+	sqlDB, err := g.db.DB()
+	if err != nil {
+		log.Printf("Failed to get database instance: %v", err)
+		return false
+	}
+
+	// Ping the database to check connectivity
+	err = sqlDB.Ping()
+	if err != nil {
+		log.Printf("Database health check failed: %v", err)
+		return false
+	}
+
+	return true
+}
 
 // GormDB wraps a *gorm.DB instance to implement the DBInterface interface.
 // It provides methods for CRUD operations, transactions, and context handling.

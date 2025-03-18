@@ -72,4 +72,9 @@ type DBInterface interface {
 
 	// GetError returns the last error encountered during database operations.
 	GetError() error
+
+	// IsHealthy checks if the database connection is healthy.
+	// It pings the database to verify connectivity and returns true if successful.
+	// If the connection is unhealthy, it logs the error and returns false.
+	IsHealthy() bool
 }
