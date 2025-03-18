@@ -116,6 +116,11 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Install gocov and gocov-xml
+        run: |
+          go install github.com/axw/gocov/gocov@latest
+          go install github.com/AlekSi/gocov-xml@latest
+
       - name: Run tests and generate coverage report
         run: |
           go test -v -coverprofile=coverage.out ./...
