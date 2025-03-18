@@ -58,7 +58,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	// @Failure 503 {string} string "Service Unavailable"
 	// @Router /v1/health [get]
 	v1Router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		db := handlers.GetDB(r.Context())
+		db := animeHandler.DB // Use the database instance from the animeHandler
 		if db == nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			if _, err := w.Write([]byte("Database instance not initialized")); err != nil {
