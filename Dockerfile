@@ -17,7 +17,7 @@ COPY . .
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Generate Swagger documentation
-RUN swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
+RUN swag init --dir ./cmd,./api/handlers,./api/models --output ./cmd/docs
 
 # Build the Go binary (statically linked)
 RUN CGO_ENABLED=0 go build -o main ./cmd

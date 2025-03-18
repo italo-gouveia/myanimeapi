@@ -28,8 +28,8 @@
 package main
 
 import (
-	"myanimeapi/pkg/handlers"
-	"myanimeapi/pkg/mocks"
+	"myanimeapi/api/handlers"
+	"myanimeapi/api/mocks"
 	"net/http"
 	"net/http/httptest"
 	"os"

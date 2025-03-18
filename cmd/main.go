@@ -24,11 +24,11 @@ import (
 	"syscall"
 	"time"
 
+	"myanimeapi/api/database"
+	myhandlers "myanimeapi/api/handlers" // Alias for your custom handlers package
+	"myanimeapi/api/routes"
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/db"
-	"myanimeapi/internal/routes"
-	"myanimeapi/pkg/database"
-	myhandlers "myanimeapi/pkg/handlers" // Alias for your custom handlers package
 
 	gorillahandlers "github.com/gorilla/handlers" // Alias for Gorilla's handlers package
 	"github.com/gorilla/mux"
