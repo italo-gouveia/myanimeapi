@@ -21,7 +21,7 @@ import (
 	"myanimeapi/internal/db"
 	"myanimeapi/pkg/middleware"
 	"myanimeapi/pkg/models"
-	"myanimeapi/pkg/validation"
+	"myanimeapi/pkg/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -78,7 +78,7 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	log.Printf("Raw ID string: %s", idStr)
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -253,7 +253,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -339,7 +339,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 
 	// Validate ID
-	id, err := validation.ValidateID(idStr)
+	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
