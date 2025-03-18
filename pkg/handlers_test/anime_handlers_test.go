@@ -1,4 +1,7 @@
 // pkg/handlers_test/anime_handlers_test.go
+// Package handlers_test provides unit tests for the anime-related handlers in the MyAnimeAPI application.
+// It uses the gomock package to mock database interactions and the httptest package to simulate HTTP requests.
+// The tests cover various scenarios, including success cases, error cases, and edge cases.
 package handlers_test
 
 import (
@@ -201,6 +204,8 @@ import (
 		t.Errorf("Expected %d reviews, got %d", len(testReviews), len(responseReviews))
 	}
 }*/
+
+// TestGetPaginatedReviewsForAnimeHandler_InvalidPagination tests the handler for invalid pagination parameters.
 func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -225,6 +230,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	}
 }
 
+// TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit tests the handler for negative page and limit values.
 func TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -249,6 +255,7 @@ func TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit(t *testing.T) {
 	}
 }
 
+// TestGetPaginatedReviewsForAnimeHandler_ZeroLimit tests the handler for a zero limit value.
 func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -387,6 +394,7 @@ func TestGetPaginatedReviewsForAnimeHandler_DBError(t *testing.T) {
 	}
 }*/
 
+// TestGetPaginatedReviewsForAnimeHandler_InvalidAnimeID tests the handler for an invalid anime ID.
 func TestGetPaginatedReviewsForAnimeHandler_InvalidAnimeID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -411,6 +419,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidAnimeID(t *testing.T) {
 	}
 }
 
+// TestGetPaginatedReviewsForAnimeHandler_NoAnimeID tests the handler for a missing anime ID.
 func TestGetPaginatedReviewsForAnimeHandler_NoAnimeID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -430,6 +439,7 @@ func TestGetPaginatedReviewsForAnimeHandler_NoAnimeID(t *testing.T) {
 	}
 }
 
+// TestGetPaginatedReviewsForAnimeHandler_InvalidPage tests the handler for an invalid page value.
 func TestGetPaginatedReviewsForAnimeHandler_InvalidPage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -454,6 +464,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPage(t *testing.T) {
 	}
 }
 
+// TestGetPaginatedReviewsForAnimeHandler_InvalidLimit tests the handler for an invalid limit value.
 func TestGetPaginatedReviewsForAnimeHandler_InvalidLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -573,6 +584,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidLimit(t *testing.T) {
 	}
 }*/
 
+// TestGetAnimeHandler_InvalidID tests the handler for an invalid anime ID.
 func TestGetAnimeHandler_InvalidID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -625,6 +637,7 @@ func TestGetAnimeHandler_InvalidID(t *testing.T) {
 	}
 }*/
 
+// TestGetAllAnimesHandler_Empty tests the handler for retrieving all animes when the database is empty.
 func TestGetAllAnimesHandler_Empty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -662,6 +675,7 @@ func TestGetAllAnimesHandler_Empty(t *testing.T) {
 	}
 }
 
+// TestGetAllAnimesHandler_DBError tests the handler for retrieving all animes when the database returns an error.
 func TestGetAllAnimesHandler_DBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -686,6 +700,7 @@ func TestGetAllAnimesHandler_DBError(t *testing.T) {
 	}
 }
 
+// TestCreateAnimeHandler_Success tests the handler for successfully creating a new anime.
 func TestCreateAnimeHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -767,6 +782,7 @@ func TestCreateAnimeHandler_Success(t *testing.T) {
 	}
 }*/
 
+// TestCreateAnimeHandler_InvalidInput tests the handler for creating an anime with invalid input.
 func TestCreateAnimeHandler_InvalidInput(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -793,6 +809,7 @@ func TestCreateAnimeHandler_InvalidInput(t *testing.T) {
 	}
 }
 
+// TestCreateAnimeHandler_DBError tests the handler for creating an anime when the database returns an error.
 func TestCreateAnimeHandler_DBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -834,6 +851,7 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 	}
 }
 
+// TestCreateAnimeHandler_InvalidJSON tests the handler for creating an anime with invalid JSON input.
 func TestCreateAnimeHandler_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -860,6 +878,7 @@ func TestCreateAnimeHandler_InvalidJSON(t *testing.T) {
 	}
 }
 
+// TestUpdateAnimeHandler_Success tests the handler for successfully updating an anime.
 func TestUpdateAnimeHandler_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -932,6 +951,7 @@ func TestUpdateAnimeHandler_Success(t *testing.T) {
 	}
 }
 
+// TestUpdateAnimeHandler_InvalidInput tests the handler for updating an anime with invalid input.
 func TestUpdateAnimeHandler_InvalidInput(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -958,6 +978,7 @@ func TestUpdateAnimeHandler_InvalidInput(t *testing.T) {
 	}
 }
 
+// TestUpdateAnimeHandler_DBError tests the handler for updating an anime when the database returns an error.
 func TestUpdateAnimeHandler_DBError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1017,6 +1038,7 @@ func TestUpdateAnimeHandler_DBError(t *testing.T) {
 	}
 }
 
+// TestUpdateAnimeHandler_InvalidJSON tests the handler for updating an anime with invalid JSON input.
 func TestUpdateAnimeHandler_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1043,6 +1065,7 @@ func TestUpdateAnimeHandler_InvalidJSON(t *testing.T) {
 	}
 }
 
+// TestUpdateAnimeHandler_NotFound tests the handler for updating an anime that does not exist.
 func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

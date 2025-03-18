@@ -28,6 +28,7 @@
 package main
 
 import (
+	"context"
 	"myanimeapi/internal/mocks"
 	"myanimeapi/pkg/handlers"
 	"net/http"
@@ -66,30 +67,62 @@ func TestMain(m *testing.M) {
 }
 
 func TestHealthCheck(t *testing.T) {
-	req, err := http.NewRequest("GET", "/health", nil)
+	// Initialize the mock controller
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	// Create the mock DB
+	mockDB := mocks.NewMockDBInterface(mockCtrl)
+
+	// Set up the expectation for IsHealthy
+	mockDB.EXPECT().IsHealthy().Return(true)
+
+	// Create a request to the health check endpoint
+	req, err := http.NewRequest("GET", "/v1/health", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Set the mock database instance in the request context
+	ctx := context.WithValue(req.Context(), handlers.DBContextKey, mockDB)
+	req = req.WithContext(ctx)
+
+	// Create a ResponseRecorder to record the response
 	rr := httptest.NewRecorder()
+
+	// Call the handler
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte("OK")); err != nil {
-			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		db := handlers.GetDB(r.Context())
+		if db == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Database instance not initialized"))
 			return
+		}
+
+		if db.IsHealthy() {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Database connection failed"))
 		}
 	})
 
 	handler.ServeHTTP(rr, req)
 
+	// Check the status code
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
+	// Check the response body
 	expected := "OK"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 	}
+
+	// Verify that all expectations were met
+	mockCtrl.Finish()
 }
 
 // TestRegisterUser tests the user registration endpoint
