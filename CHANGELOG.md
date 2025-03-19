@@ -1,3 +1,51 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2025-03-18
+
+### Added
+- **Project Restructuring**:
+  - Moved `pkg/` to `api/` to better reflect the purpose of the package as API-related code.
+  - Renamed `resources/` to `assets/` for consistency and clarity.
+  - Updated references to diagram images in `README.md` to point to the new `assets/` directory.
+
+### Changed
+- **Swagger Documentation**:
+  - Updated the `swag init` command in the Dockerfile to reflect the new project structure (`./api/handlers` and `./api/models` instead of `./pkg/handlers` and `./pkg/models`).
+  - Ensured Swagger documentation is generated correctly during the Docker image build process.
+  - Updated the Swagger docs generation path in the CI workflow to match the new structure.
+
+- **Validation and Mocks**:
+  - Consolidated validation functions from `pkg/validation` to `pkg/utils` to centralize utility functions.
+  - Updated all handlers to use `utils.ValidateID` and `utils.ValidatePagination` instead of the deprecated `validation` package.
+  - Relocated `mocks` package from `internal/mocks` to `pkg/mocks` for better organization and accessibility across the project.
+  - Renamed `pkg/validation/validation.go` to `pkg/utils/validation.go` to align with the new structure.
+
+### Fixed
+- **CI Workflow**:
+  - Disabled the `pre-build-validation` job in the CI workflow as it is no longer needed.
+  - Ensured Swagger docs are generated correctly and checked for changes in the CI pipeline.
+
+### Refactor
+- **Project Layout**:
+  - Updated all import paths to reflect the new directory structure.
+  - Adjusted import paths in `cmd/main.go` and `tests/smoke/smoke_test.go` to match the new structure.
+  - No functional changes were made; this is purely a structural refactor.
+
+### Removed
+- **Deprecated Code**:
+  - Removed the `pkg/validation` package as its functionality has been consolidated into `pkg/utils`.
+  - Removed the `internal/mocks` package as it has been relocated to `pkg/mocks`.
+
+### Issues Closed
+- **[GITISSUE-112]**: Restructured project layout and updated paths.
+- **[GITISSUE-112]**: Consolidated validation and mocks into `pkg/utils`.
+
+
 ## [1.0.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.0.0...v1.0.1) (2025-03-18)
 
 
@@ -21,13 +69,6 @@
 * [GITISSUE-104] Add test coverage report and Semantic Release automation ([af963bd](https://github.com/italo-gouveia/myanimeapi/commit/af963bd92581412647fdd903b666e6e9cbfb2989)), closes [#104](https://github.com/italo-gouveia/myanimeapi/issues/104)
 * [GITISSUE-104] using another pload-artifact version ([c4d5cbf](https://github.com/italo-gouveia/myanimeapi/commit/c4d5cbf2db92b924724c79a6e8ee4c66864dd4c8))
 * [GITISSUE-104] using latest upload-artifact version ([00318d6](https://github.com/italo-gouveia/myanimeapi/commit/00318d63bc548aef88bb70c85305520e4eda814e))
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## [1.0.0] - 2025-03-17
