@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	VERSION = "1.0.0" // Current version of the API
+	VERSION = "1.2.0" // Current version of the API
 )
 
 // @title MyAnimeAPI
