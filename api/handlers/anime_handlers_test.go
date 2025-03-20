@@ -1,15 +1,14 @@
-// pkg/handlers_test/anime_handlers_test.go
+// api/handlers/anime_handlers_test.go
 // Package handlers_test provides unit tests for the anime-related handlers in the MyAnimeAPI application.
 // It uses the gomock package to mock database interactions and the httptest package to simulate HTTP requests.
 // The tests cover various scenarios, including success cases, error cases, and edge cases.
-package handlers_test
+package handlers
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"myanimeapi/api/handlers"
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
@@ -21,6 +20,7 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	_ "modernc.org/sqlite" // modernc.org/sqlite driver
 )
 
 // FAILING NOW
@@ -29,24 +29,29 @@ import (
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnime := models.Anime{
 		ID:    1,
 		Title: "Naruto",
 	}
 
-	// Mock the WithContext method to return the same mockDB
+	// Create a minimal *gorm.DB instance
+	mockGormDB := &gorm.DB{
+		Error: nil, // Simulate no error
+	}
+
+	// Mock the WithContext method to return the mockGormDB
 	mockDB.EXPECT().
 		WithContext(gomock.Any()). // Mock WithContext
-		Return(mockDB)             // Return the mockDB itself
+		Return(mockGormDB)         // Return a *gorm.DB instance
 
-	// Mock the First method
+	// Mock the First method to set the dest to testAnime and return the mockGormDB
 	mockDB.EXPECT().
 		First(gomock.Any(), gomock.Any(), uint(1)).
 		DoAndReturn(func(dest interface{}, conds ...interface{}) *gorm.DB {
 			*dest.(*models.Anime) = testAnime
-			return &gorm.DB{Error: nil}
+			return mockGormDB // Return the *gorm.DB instance
 		})
 
 	// Create a request with the ID in the URL
@@ -82,7 +87,7 @@ import (
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnimes := []models.Anime{
 		{ID: 1, Title: "Naruto"},
@@ -128,7 +133,7 @@ import (
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testReviews := []models.Review{
 		{ID: 1, AnimeID: 1, Content: "Great anime!"},
@@ -211,7 +216,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPagination(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=invalid&limit=invalid", nil)
 	vars := map[string]string{
@@ -236,7 +241,7 @@ func TestGetPaginatedReviewsForAnimeHandler_NegativePageLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=-1&limit=-10", nil)
 	vars := map[string]string{
@@ -261,7 +266,7 @@ func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=1&limit=0", nil)
 	vars := map[string]string{
@@ -286,7 +291,7 @@ func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=1&limit=1000", nil)
 	vars := map[string]string{
@@ -311,7 +316,7 @@ func TestGetPaginatedReviewsForAnimeHandler_ZeroLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to return an empty slice of reviews
 	mockDB.EXPECT().
@@ -361,7 +366,7 @@ func TestGetPaginatedReviewsForAnimeHandler_DBError(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to return an error
 	mockDB.EXPECT().
@@ -400,7 +405,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidAnimeID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/invalid/reviews?page=1&limit=10", nil)
 	vars := map[string]string{
@@ -425,7 +430,7 @@ func TestGetPaginatedReviewsForAnimeHandler_NoAnimeID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime//reviews?page=1&limit=10", nil)
 	rec := httptest.NewRecorder()
@@ -445,7 +450,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidPage(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=invalid&limit=10", nil)
 	vars := map[string]string{
@@ -470,7 +475,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/1/reviews?page=1&limit=invalid", nil)
 	vars := map[string]string{
@@ -495,7 +500,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testReviews := []models.Review{
 		{ID: 1, AnimeID: 1, Content: "Great anime!"},
@@ -549,7 +554,7 @@ func TestGetPaginatedReviewsForAnimeHandler_InvalidLimit(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a mock *gorm.DB object
 	mockGormDB := &gorm.DB{}
@@ -590,7 +595,7 @@ func TestGetAnimeHandler_InvalidID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	req := httptest.NewRequest("GET", "/anime/invalid", nil)
 	rec := httptest.NewRecorder()
@@ -610,7 +615,7 @@ func TestGetAnimeHandler_InvalidID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to return an error
 	mockDB.EXPECT().
@@ -643,7 +648,7 @@ func TestGetAllAnimesHandler_Empty(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to return an empty slice
 	mockDB.EXPECT().
@@ -681,7 +686,7 @@ func TestGetAllAnimesHandler_DBError(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to return an error
 	mockDB.EXPECT().
@@ -706,7 +711,7 @@ func TestCreateAnimeHandler_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnime := models.Anime{
 		Title: "Naruto",
@@ -750,7 +755,7 @@ func TestCreateAnimeHandler_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a request with an empty title
 	anime := models.Anime{
@@ -788,7 +793,7 @@ func TestCreateAnimeHandler_InvalidInput(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a request with invalid JSON (e.g., incorrect data type for Title)
 	reqBody := []byte(`{"title": 123}`) // Invalid JSON (Title should be a string)
@@ -815,7 +820,7 @@ func TestCreateAnimeHandler_DBError(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnime := models.Anime{
 		Title: "Naruto",
@@ -857,7 +862,7 @@ func TestCreateAnimeHandler_InvalidJSON(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a request with invalid JSON (e.g., malformed JSON)
 	reqBody := []byte(`{"title": "Naruto", "description":}`) // Invalid JSON
@@ -884,7 +889,7 @@ func TestUpdateAnimeHandler_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnime := models.Anime{
 		ID:    1,
@@ -957,7 +962,7 @@ func TestUpdateAnimeHandler_InvalidInput(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a request with invalid input (e.g., incorrect data type for Title)
 	reqBody := []byte(`{"title": 123}`) // Invalid input (Title should be a string)
@@ -984,7 +989,7 @@ func TestUpdateAnimeHandler_DBError(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	testAnime := models.Anime{
 		ID:    1,
@@ -1044,7 +1049,7 @@ func TestUpdateAnimeHandler_InvalidJSON(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Create a request with invalid JSON (e.g., malformed JSON)
 	reqBody := []byte(`{"title": "Naruto Shippuden", "description":}`) // Invalid JSON
@@ -1071,7 +1076,7 @@ func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to find the anime, returning an error
 	mockDB.EXPECT().
@@ -1107,7 +1112,7 @@ func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to find the anime
 	mockDB.EXPECT().
@@ -1146,7 +1151,7 @@ func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to find the anime
 	mockDB.EXPECT().
@@ -1184,7 +1189,7 @@ func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to find the anime, returning an error
 	mockDB.EXPECT().
@@ -1214,7 +1219,7 @@ func TestUpdateAnimeHandler_NotFound(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDBInterface(ctrl)
-	handler := handlers.AnimeHandler{DB: mockDB}
+	handler := AnimeHandler{DB: mockDB}
 
 	// Mock the DB call to find the anime
 	mockDB.EXPECT().

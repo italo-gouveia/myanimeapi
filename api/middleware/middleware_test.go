@@ -1,4 +1,4 @@
-// pkg/middleware/middleware_test.go
+// api/middleware/middleware_test.go
 // Package middleware provides HTTP middleware utilities for handling requests.
 // This file contains tests for the middleware functions defined in the package.
 package middleware
@@ -6,6 +6,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"myanimeapi/internal/errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +22,14 @@ const (
 	testSecretKey = "test-secret-key" // Secret key for testing JWT
 )
 
+// ErrorResponse represents the structure of error responses
+type ErrorResponse struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
 // setup initializes the environment for testing.
 func setup() {
 	os.Setenv("JWT_SECRET_KEY", testSecretKey)
@@ -30,76 +39,6 @@ func setup() {
 func teardown() {
 	os.Unsetenv("JWT_SECRET_KEY")
 }
-
-// TestHTTPSRedirectMiddleware tests the HTTPSRedirectMiddleware function.
-/*func TestHTTPSRedirectMiddleware(t *testing.T) {
-	t.Run("Trusted Domain - Redirect to HTTPS", func(t *testing.T) {
-		// Create a request with a trusted domain
-		req, err := http.NewRequest("GET", "http://myanimeapi.com/", nil)
-		assert.NoError(t, err)
-		req.Header.Set("X-Forwarded-Proto", "http") // Simulate HTTP request
-
-		// Create a response recorder
-		rr := httptest.NewRecorder()
-
-		// Create a handler to use the middleware
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("Should not reach this point")
-		})
-
-		// Apply the middleware
-		middleware := HTTPSRedirectMiddleware(handler)
-		middleware.ServeHTTP(rr, req)
-
-		// Check the status code and redirect location
-		assert.Equal(t, http.StatusMovedPermanently, rr.Code, "Status code should be 301")
-		assert.Equal(t, "https://myanimeapi.com", rr.Header().Get("Location"), "Redirect location should match")
-	})
-
-	t.Run("Untrusted Domain - Forbidden", func(t *testing.T) {
-		// Create a request with an untrusted domain
-		req, err := http.NewRequest("GET", "http://malicious.com/", nil)
-		assert.NoError(t, err)
-		req.Header.Set("X-Forwarded-Proto", "http") // Simulate HTTP request
-
-		// Create a response recorder
-		rr := httptest.NewRecorder()
-
-		// Create a handler to use the middleware
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Fatal("Should not reach this point")
-		})
-
-		// Apply the middleware
-		middleware := HTTPSRedirectMiddleware(handler)
-		middleware.ServeHTTP(rr, req)
-
-		// Check the status code
-		assert.Equal(t, http.StatusForbidden, rr.Code, "Status code should be 403")
-	})
-
-	t.Run("Already HTTPS - Proceed", func(t *testing.T) {
-		// Create a request with HTTPS
-		req, err := http.NewRequest("GET", "https://myanimeapi.com/", nil)
-		assert.NoError(t, err)
-		req.Header.Set("X-Forwarded-Proto", "https") // Simulate HTTPS request
-
-		// Create a response recorder
-		rr := httptest.NewRecorder()
-
-		// Create a handler to use the middleware
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		// Apply the middleware
-		middleware := HTTPSRedirectMiddleware(handler)
-		middleware.ServeHTTP(rr, req)
-
-		// Check the status code
-		assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
-	})
-}*/
 
 // TestAuthenticateMiddleware tests the Authenticate middleware with a valid token.
 func TestAuthenticateMiddleware(t *testing.T) {
@@ -147,6 +86,38 @@ func TestAuthenticateMiddleware(t *testing.T) {
 		req, err := http.NewRequest("GET", "/protected", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Authorization", "Bearer invalid-token")
+
+		// Create a response recorder
+		rr := httptest.NewRecorder()
+
+		// Create a handler to use the middleware
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("Should not reach this point")
+		})
+
+		// Apply the middleware
+		middleware := Authenticate(handler)
+		middleware.ServeHTTP(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusUnauthorized, rr.Code, "Status code should be 401")
+	})
+
+	t.Run("Expired Token", func(t *testing.T) {
+		// Generate an expired token
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, CustomClaims{
+			UserID:  1,
+			IsAdmin: true,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour * 1)), // Expired 1 hour ago
+			},
+		})
+		tokenString, _ := token.SignedString([]byte(testSecretKey))
+
+		// Create a request with the expired token
+		req, err := http.NewRequest("GET", "/protected", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer "+tokenString)
 
 		// Create a response recorder
 		rr := httptest.NewRecorder()
@@ -314,48 +285,33 @@ func TestValidateAndSanitizePayloadMiddleware(t *testing.T) {
 	})
 }
 
-// TestRateLimiterMiddleware tests the RateLimiter middleware.
-/*func TestRateLimiterMiddleware(t *testing.T) {
-	rl := NewRateLimiter()
+// TestErrorHandlingMiddleware tests the ErrorHandlingMiddleware function.
+func TestErrorHandlingMiddleware(t *testing.T) {
+	t.Run("Panic Recovery", func(t *testing.T) {
+		// Create a request
+		req, err := http.NewRequest("GET", "/", nil)
+		assert.NoError(t, err)
 
-	// Create a custom clock to control time in the test
-	now := time.Now()
-	rl.SetClock(func() time.Time {
-		return now
-	})
+		// Create a response recorder
+		rr := httptest.NewRecorder()
 
-	// Create a request for an authentication endpoint (stricter rate limit)
-	req, err := http.NewRequest("GET", "/auth/authenticate", nil)
-	assert.NoError(t, err)
+		// Create a handler that panics
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			panic("test panic")
+		})
 
-	// Simulate a client IP address
-	req.RemoteAddr = "127.0.0.1:12345"
-
-	// Create a response recorder
-	rr := httptest.NewRecorder()
-
-	// Create a handler to use the middleware
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	// Apply the middleware
-	middleware := rl.RateLimitMiddleware(handler)
-
-	// Make requests within the limit (5 requests allowed)
-	for i := 0; i < 5; i++ {
+		// Apply the middleware
+		middleware := ErrorHandlingMiddleware(handler)
 		middleware.ServeHTTP(rr, req)
-		assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
-	}
 
-	// Make one more request to exceed the limit
-	middleware.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusTooManyRequests, rr.Code, "Status code should be 429")
+		// Check the status code
+		assert.Equal(t, http.StatusInternalServerError, rr.Code, "Status code should be 500")
 
-	// Advance the clock by 1 minute to reset the rate limit
-	now = now.Add(time.Minute)
-
-	// Make another request (should be allowed again)
-	middleware.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
-}*/
+		// Check the error response
+		var errResp errors.ErrorResponse
+		err = json.NewDecoder(rr.Body).Decode(&errResp)
+		assert.NoError(t, err, "Error response should be valid JSON")
+		assert.Equal(t, "ERR-004", errResp.Error.Code, "Error code should match")
+		assert.Equal(t, "Internal Server Error", errResp.Error.Message, "Error message should match")
+	})
+}
