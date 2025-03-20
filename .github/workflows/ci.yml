@@ -275,7 +275,7 @@ jobs:
         run: go install github.com/swaggo/swag/cmd/swag@latest
 
       - name: Generate Swagger docs
-        run: swag init --dir ./cmd,./api/handlers,./api/models --output ./cmd/docs
+        run: swag init --dir ./cmd,./api/handlers,./api/models,./internal/errors --output ./cmd/docs
 
       - name: Check for changes in Swagger docs
         run: git diff --exit-code
