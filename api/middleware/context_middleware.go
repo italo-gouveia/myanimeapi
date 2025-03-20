@@ -1,4 +1,4 @@
-// pkg/middleware/context.go
+// api/middleware/context_middleware.go
 // Package middleware defines a custom context key type and functions to retrieve user and admin status from the context.
 // It is used by the authentication middleware to store and retrieve user and admin information in the request context.
 package middleware

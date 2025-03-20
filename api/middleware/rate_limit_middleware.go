@@ -1,4 +1,4 @@
-// pkg/middleware/rate_limit.go
+// api/middleware/rate_limit_middleware.go
 // Package middleware provides HTTP middleware utilities for handling requests.
 // This file defines a rate-limiting middleware that restricts the number of requests a client can make within a specified time window.
 package middleware

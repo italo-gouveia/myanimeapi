@@ -1,5 +1,20 @@
 basePath: /v1
 definitions:
+  errors.ErrorResponse:
+    properties:
+      error:
+        properties:
+          code:
+            description: A unique error code for categorization.
+            type: string
+          details:
+            description: Additional context or details about the error.
+            type: string
+          message:
+            description: A human-readable error message.
+            type: string
+        type: object
+    type: object
   models.Anime:
     properties:
       created_at:
@@ -329,15 +344,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            type: string
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Review not found
           schema:
-            type: string
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to delete review
           schema:
-            type: string
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete a review by ID
@@ -358,9 +373,7 @@ paths:
         "500":
           description: Failed to retrieve anime
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -388,15 +401,11 @@ paths:
         "400":
           description: Invalid input or missing required fields
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to create anime
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create a new anime
@@ -417,21 +426,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Anime not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to delete anime
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete an anime
@@ -455,21 +458,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Anime not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve anime
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -502,21 +499,15 @@ paths:
         "400":
           description: Invalid input or ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Anime not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to update anime
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update an anime
@@ -551,15 +542,11 @@ paths:
         "400":
           description: Invalid ID format or pagination parameters
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve reviews
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -590,21 +577,15 @@ paths:
         "400":
           description: Invalid input
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "401":
           description: User not found or invalid credentials
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to generate token
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -633,21 +614,15 @@ paths:
         "400":
           description: Invalid input or missing required fields
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "409":
           description: User with this username or email already exists
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to hash password or create user
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -676,21 +651,15 @@ paths:
         "400":
           description: Invalid input or missing required fields
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Anime or user not found
+          description: Anime not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to create review
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create a new review
@@ -715,21 +684,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Review not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve review
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -762,21 +725,15 @@ paths:
         "400":
           description: Invalid input or ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Review not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to update review
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update a review by ID
@@ -806,21 +763,15 @@ paths:
         "400":
           description: Invalid pagination parameters
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "403":
           description: Access denied
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve users
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       - ApiKeyAuth: []
@@ -848,21 +799,15 @@ paths:
         "400":
           description: Invalid input or missing required fields
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "409":
           description: User with this username or email already exists
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to create user
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - "":
         - ""
@@ -884,21 +829,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to delete user
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       - ApiKeyAuth: []
@@ -923,21 +862,15 @@ paths:
         "400":
           description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve user
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       - ApiKeyAuth: []
@@ -970,21 +903,15 @@ paths:
         "400":
           description: Invalid input or ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to update user
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
       - ApiKeyAuth: []

@@ -33,9 +33,15 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [**How to Generate Diagrams**](#how-to-generate-diagrams)
     - [**Notes**](#notes)
   - [Testing](#testing)
+    - [Unit Tests](#unit-tests)
+    - [Integration Tests](#integration-tests)
+    - [End-to-End Tests](#end-to-end-tests)
+    - [Generating Test Coverage](#generating-test-coverage)
   - [Contributing](#contributing)
+  - [Changelog](#changelog)
     - [Git Semantic Versioning](#git-semantic-versioning)
     - [Tagging Releases with Git](#tagging-releases-with-git)
+  - [Badges](#badges)
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
   - [Contact](#contact)
@@ -94,10 +100,10 @@ go run cmd/main.go
 The API will be available at `http://localhost:8080/v1`.
 
 -------
-Generate the swagger documentation:
+How do I generate Swagger documentation?
 
 ```bash
-swag init --dir ./cmd,./pkg/handlers,./pkg/models --output ./cmd/docs
+swag init --dir ./cmd,./pkg/handlers,./pkg/models,./internal/errors --output ./cmd/docs
 ```
 
 This command it will generate the swagger docs. And then, after you run the application locally, you will be abble to go to `http://localhost:8080/swagger/index.html`.
@@ -115,7 +121,8 @@ http://localhost:6060/pkg/myanimeapi/
 ```
 
 ----------
-Generate Mocks for DBInterface:
+How do I generate mocks for testing?
+
 Run the following command to generate a mock for the DBInterface:
 
 ```bash
@@ -276,6 +283,35 @@ To run the tests, use the following command:
 go test ./...
 ```
 
+### Unit Tests
+Run unit tests for the handlers:
+```bash
+go test -v ./pkg/handlers
+```
+
+### Integration Tests
+Run integration tests to test database interactions:
+
+```bash
+go test -v ./tests/integration
+```
+
+### End-to-End Tests
+Run end-to-end tests to test the API as a whole:
+
+```bash
+go test -v ./tests/e2e
+```
+
+### Generating Test Coverage
+Generate a test coverage report:
+
+```bash
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+
 ## Contributing
 
 Contributions are welcome! Please follow these steps:
@@ -287,6 +323,10 @@ Contributions are welcome! Please follow these steps:
 3. Commit your changes with clear and descriptive messages.
 
 4. Submit a pull request.
+
+## Changelog
+
+See the [CHANGELOG.md](CHANGELOG.md) file for a detailed list of changes.
 
    
 ### Git Semantic Versioning
@@ -320,6 +360,19 @@ git push origin v1.0.0
 
 **3. Create a GitHub Release:**
 Go to your repository on GitHub, navigate to Releases, and create a new release for the tag. Include the changelog entries for that version.
+
+## Badges
+[![Build Status](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/italo-gouveia/myAnimeAPI/actions)
+[![Swagger](https://img.shields.io/badge/docs-swagger-blue)](https://github.com/italo-gouveia/myAnimeAPI/blob/main/cmd/docs/swagger.yaml)
+[![GitHub release](https://img.shields.io/github/release/italo-gouveia/myAnimeAPI.svg)](https://github.com/italo-gouveia/myAnimeAPI/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI)
+[![GitHub stars](https://img.shields.io/github/stars/italo-gouveia/myAnimeAPI.svg?style=social)](https://github.com/italo-gouveia/myAnimeAPI/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/italo-gouveia/myAnimeAPI.svg?style=social)](https://github.com/italo-gouveia/myAnimeAPI/network/members)
+[![GitHub last commit](https://img.shields.io/github/last-commit/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/pulls)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 
 ## License
 

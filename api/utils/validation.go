@@ -1,4 +1,4 @@
-// pkg/utils/validation.go
+// api/utils/validation.go
 // Package validation provides utility functions for validating and parsing input data.
 // It includes functions for validating IDs and pagination parameters.
 package utils

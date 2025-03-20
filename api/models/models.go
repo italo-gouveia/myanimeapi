@@ -1,4 +1,4 @@
-// pkg/models/models.go
+// api/models/models.go
 // Package models defines the data structures used in the MyAnimeAPI application.
 // It includes models for users, anime, reviews, and related responses.
 // These models are used for database interactions, request/response payloads, and JWT claims.
@@ -175,7 +175,7 @@ type UserResponse struct {
 //	  "rating": 8.5
 //	}
 type AnimeResponse struct {
-  ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
+	ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
 	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was created
 	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
 	Title       string    `json:"title" example:"Naruto"`                      // Title of the anime
@@ -231,7 +231,7 @@ type ReviewCreateRequest struct {
 //	  "password": "password123"
 //	}
 type UserCreateRequest struct {
-  Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`             // Username for the new user (required, 3-50 characters)
+	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`             // Username for the new user (required, 3-50 characters)
 	Email    string `json:"email" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email address for the new user (required, valid email format, 5-100 characters)
 	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`         // Password for the new user (required, 5-100 characters)
 }

@@ -1,4 +1,4 @@
-// pkg/middleware/sanitize_payload.go
+// api/middleware/sanitize_payload_middleware.go
 // Package middleware provides HTTP middleware utilities for handling requests.
 // This file defines a middleware for validating and sanitizing request payloads.
 // It uses the `validator` package for validation and `bluemonday` for sanitization.
