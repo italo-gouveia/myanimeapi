@@ -1,4 +1,4 @@
-// pkg/handlers/mock_db.go
+// api/handlers/mock_db.go
 // Package handlers provides a mock implementation of the DBInterface for testing purposes.
 // It uses the testify/mock package to simulate database interactions in unit tests.
 // The mock implementation allows developers to test handlers without requiring a real database connection.
@@ -10,6 +10,7 @@
 //	handlers.InitializeDB(mockDB)
 package handlers
 
+/*
 import (
 	"context"
 
@@ -145,3 +146,4 @@ func (m *MockDB) IsHealthy() bool {
 	args := m.Called()
 	return args.Bool(0)
 }
+*/

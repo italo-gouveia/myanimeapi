@@ -1,4 +1,4 @@
-// pkg/handlers/anime_handlers.go
+// api/handlers/anime_handlers.go
 // Package handlers provides HTTP handlers for anime-related routes in the MyAnimeAPI application.
 // It defines methods to handle requests for retrieving, creating, updating, and deleting anime entries.
 // The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
@@ -15,12 +15,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/internal/db"
+	"myanimeapi/internal/errors"
 
 	"myanimeapi/api/utils"
 
@@ -54,9 +56,9 @@ func NewAnimeHandler(db db.DBInterface) *AnimeHandler {
 // @Produce json
 // @Param id path int true "Anime ID"
 // @Success 200 {object} models.Anime
-// @Failure 400 {object} map[string]string "Invalid ID format"
-// @Failure 404 {object} map[string]string "Anime not found"
-// @Failure 500 {object} map[string]string "Failed to retrieve anime"
+// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
 // @Router /v1/anime/{id} [get]
 // @ExampleResponse
 //
@@ -78,7 +80,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
 		return
 	}
 
@@ -86,14 +88,14 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	result := h.DB.WithContext(r.Context()).First(&anime, id)
 	if result.Error != nil {
 		log.Printf("Anime not found: %v", result.Error)
-		http.Error(w, "Anime not found", http.StatusNotFound)
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Anime not found", fmt.Sprintf("Anime with ID '%d' not found.", id))
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(anime); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -107,7 +109,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags anime
 // @Produce json
 // @Success 200 {array} models.Anime
-// @Failure 500 {object} map[string]string "Failed to retrieve anime"
+// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
 // @Router /v1/anime [get]
 // @ExampleResponse
 // [
@@ -129,14 +131,14 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	result := h.DB.Find(r.Context(), &animes)
 	if result.Error != nil {
 		log.Printf("Failed to retrieve animes: %v", result.Error)
-		http.Error(w, "Failed to retrieve animes", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve animes", "An internal server error occurred while retrieving anime entries.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(animes); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -153,8 +155,8 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 // @Param page query int false "Page number (default: 1)"
 // @Param limit query int false "Number of items per page (default: 10)"
 // @Success 200 {array} models.Review
-// @Failure 400 {object} map[string]string "Invalid ID format or pagination parameters"
-// @Failure 500 {object} map[string]string "Failed to retrieve reviews"
+// @Failure 400 {object} errors.ErrorResponse "Invalid ID format or pagination parameters"
+// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve reviews"
 // @Router /v1/anime/{id}/reviews [get]
 // @ExampleResponse
 // [
@@ -179,7 +181,7 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
 		return
 	}
 
@@ -189,7 +191,7 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	page, limit, err := utils.ValidatePagination(pageStr, limitStr, 1, 10)
 	if err != nil {
 		log.Printf("Invalid pagination parameters: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error())
 		return
 	}
 
@@ -199,14 +201,14 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 	result := h.DB.WithContext(r.Context()).Where("anime_id = ?", id).Offset(offset).Limit(limit).Find(&reviews)
 	if result.Error != nil {
 		log.Printf("Failed to retrieve reviews: %v", result.Error)
-		http.Error(w, "Failed to retrieve reviews", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve reviews", "An internal server error occurred while retrieving reviews.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(reviews); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -222,8 +224,8 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 // @Produce json
 // @Param anime body models.AnimeCreateRequest true "Anime data"
 // @Success 201 {object} models.AnimeResponse
-// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
-// @Failure 500 {object} map[string]string "Failed to create anime"
+// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
+// @Failure 500 {object} errors.ErrorResponse "Failed to create anime"
 // @Router /v1/anime [post]
 // @Example
 //
@@ -249,7 +251,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Anime)
 	if !ok {
-		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
@@ -257,7 +259,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	result := h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to create anime: %v", result.Error)
-		http.Error(w, "Failed to create anime", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create anime", "An internal server error occurred while creating the anime.")
 		return
 	}
 
@@ -265,7 +267,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -282,9 +284,9 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 // @Param id path int true "Anime ID"
 // @Param anime body models.Anime true "Updated anime data"
 // @Success 200 {object} models.Anime
-// @Failure 400 {object} map[string]string "Invalid input or ID format"
-// @Failure 404 {object} map[string]string "Anime not found"
-// @Failure 500 {object} map[string]string "Failed to update anime"
+// @Failure 400 {object} errors.ErrorResponse "Invalid input or ID format"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to update anime"
 // @Router /v1/anime/{id} [put]
 // @Example
 //
@@ -314,21 +316,21 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
 		return
 	}
 
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Anime)
 	if !ok {
-		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
 	result := h.DB.First(r.Context(), &payload, uint(id))
 	if result.Error != nil {
 		log.Printf("Anime not found: %v", result.Error)
-		http.Error(w, "Anime not found", http.StatusNotFound)
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Anime not found", fmt.Sprintf("Anime with ID '%d' not found.", id))
 		return
 	}
 
@@ -339,7 +341,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	result = h.DB.Save(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Failed to update anime: %v", result.Error)
-		http.Error(w, "Failed to update anime", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update anime", "An internal server error occurred while updating the anime.")
 		return
 	}
 
@@ -347,7 +349,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -361,9 +363,9 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 // @Tags anime
 // @Param id path int true "Anime ID"
 // @Success 204 "No Content"
-// @Failure 400 {object} map[string]string "Invalid ID format"
-// @Failure 404 {object} map[string]string "Anime not found"
-// @Failure 500 {object} map[string]string "Failed to delete anime"
+// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to delete anime"
 // @Router /v1/anime/{id} [delete]
 // @Security ApiKeyAuth
 func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
@@ -374,7 +376,7 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
 		return
 	}
 
@@ -382,7 +384,7 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	result := h.DB.WithContext(r.Context()).Where("anime_id = ?", id).Delete(&models.Review{})
 	if result.Error != nil {
 		log.Printf("Failed to delete reviews: %v", result.Error)
-		http.Error(w, "Failed to delete reviews", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete reviews", "An internal server error occurred while deleting reviews.")
 		return
 	}
 
@@ -390,7 +392,7 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	result = h.DB.WithContext(r.Context()).Delete(&models.Anime{}, id)
 	if result.Error != nil {
 		log.Printf("Failed to delete anime: %v", result.Error)
-		http.Error(w, "Failed to delete anime", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete anime", "An internal server error occurred while deleting the anime.")
 		return
 	}
 

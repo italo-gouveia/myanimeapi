@@ -1,4 +1,4 @@
-// pkg/middleware/auth.go
+// api/middleware/auth_middleware.go
 // Package middleware provides middleware functions for authentication and authorization in the MyAnimeAPI application.
 // It includes functions for validating JWT tokens, checking admin privileges, and generating JWT tokens with custom claims.
 package middleware

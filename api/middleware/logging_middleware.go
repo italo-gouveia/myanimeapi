@@ -1,4 +1,4 @@
-// pkg/middleware/logging_middleware.go
+// api/middleware/logging_middleware.go
 // Package middleware provides HTTP middleware utilities for handling requests.
 // This file defines a logging middleware that logs incoming requests, including the method, path, and duration of the request.
 package middleware

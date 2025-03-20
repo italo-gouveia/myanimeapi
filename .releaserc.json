@@ -2,6 +2,14 @@
     "branches": ["main"],
     "repositoryUrl": "https://x-access-token:$GITHUB_TOKEN@github.com/italo-gouveia/myanimeapi.git",
     "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "releaseRules": [
+            { "type": "refactor", "release": "minor" }
+          ]
+        }
+      ],
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
