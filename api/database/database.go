@@ -1,4 +1,4 @@
-// pkg/database/database.go
+// api/database/database.go
 // Package database provides functionality to initialize and manage the database schema for the MyAnimeAPI application.
 // It uses GORM (Go Object-Relational Mapping) to automatically create or update the database schema based on the defined models.
 // The package is responsible for ensuring the database is properly set up when the application starts.

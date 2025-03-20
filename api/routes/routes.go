@@ -1,4 +1,4 @@
-// internal/routes/routes.go
+// api/routes/routes.go
 // Package routes provides the routing for the application.
 // It registers routes for different resources, such as anime, users, reviews, and authentication.
 // It also serves Swagger documentation for API endpoints.
@@ -19,7 +19,7 @@ import (
 
 // RegisterRoutes registers all routes for the application.
 // It sets up routes for health checks, anime, users, reviews, and authentication.
-// It also applies global middleware, such as logging and rate limiting.
+// It also applies global middleware, such as logging, error handling and rate limiting.
 //
 // Parameters:
 //   - router: A pointer to a `mux.Router` instance to register routes.
@@ -41,6 +41,9 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 
 	// Apply rate limiting middleware
 	router.Use(rateLimiter.RateLimitMiddleware)
+
+	// Apply error handling middleware
+	router.Use(middleware.ErrorHandlingMiddleware)
 
 	// Apply global middleware
 	router.Use(middleware.LoggingMiddleware)
@@ -110,13 +113,13 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 		httpSwagger.UIConfig(map[string]string{
 			"theme": "swagger-ui-dark.css", // Use the dark theme
 			"title": "MyAnimeAPI Documentation",
-			/*			"customStyle": `
-			    	.topbar-wrapper img {
-			        	content: url('https://example.com/logo.png');
-			        	width: 100px;
-			        	height: auto;
-			    	}
-				`,*/ // it will be generated later
+			//			"customStyle": `
+			//    	.topbar-wrapper img {
+			//        	content: url('https://example.com/logo.png');
+			//        	width: 100px;
+			//        	height: auto;
+			//    	}
+			//	`,*/ // it will be generated later
 			//"customFavicon": "https://example.com/favicon.ico", // Custom favicon(it will be generated later)
 		}),
 	))

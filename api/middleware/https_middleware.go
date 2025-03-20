@@ -1,4 +1,4 @@
-// pkg/middleware/https_middleware.go
+// api/middleware/https_middleware.go
 // Package middleware provides HTTP middleware functions for the MyAnimeAPI application.
 // This file contains middleware for enforcing HTTPS connections.
 package middleware

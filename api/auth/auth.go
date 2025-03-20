@@ -1,4 +1,4 @@
-// pkg/auth/auth.go
+// api/auth/auth.go
 // Package auth provides functions for securely hashing and comparing passwords using the Argon2 algorithm.
 // Argon2 is a modern, memory-hard password hashing algorithm designed to resist GPU-based attacks.
 // This package also includes a utility function to migrate legacy bcrypt hashes to Argon2.

@@ -1,4 +1,4 @@
-// pkg/handlers/auth_handler.go
+// api/handlers/auth_handler.go
 // Package handlers provides HTTP handlers for authentication-related routes in the MyAnimeAPI application.
 // It defines methods to handle user registration and authentication, including password hashing and JWT token generation.
 // The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and token generation.
@@ -22,6 +22,7 @@ import (
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/internal/db"
+	"myanimeapi/internal/errors"
 
 	"github.com/gorilla/mux"
 )
@@ -54,9 +55,9 @@ func NewAuthHandler(db db.DBInterface) *AuthHandler {
 // @Produce json
 // @Param user body models.User true "User registration data"
 // @Success 201 {object} models.User
-// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
-// @Failure 409 {object} map[string]string "User with this username or email already exists"
-// @Failure 500 {object} map[string]string "Failed to hash password or create user"
+// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
+// @Failure 409 {object} errors.ErrorResponse "User with this username or email already exists"
+// @Failure 500 {object} errors.ErrorResponse "Failed to hash password or create user"
 // @Router /v1/auth/register [post]
 // @Example
 //
@@ -81,7 +82,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
 	if !ok {
-		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
@@ -90,7 +91,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&existingUser)
 	if result.Error == nil {
 		log.Printf("User with username %s already exists", payload.Username)
-		http.Error(w, "User with this username already exists", http.StatusConflict)
+		errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "User with this username already exists", "The provided username is already in use.")
 		return
 	}
 
@@ -98,7 +99,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	result = h.DB.Where(r.Context(), "email = ?", payload.Email).First(&existingUser)
 	if result.Error == nil {
 		log.Printf("User with email %s already exists", payload.Email)
-		http.Error(w, "User with this email already exists", http.StatusConflict)
+		errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "User with this email already exists", "The provided email is already in use.")
 		return
 	}
 
@@ -106,7 +107,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	hashedPassword, err := auth.HashPassword(payload.Password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to hash password", "An internal server error occurred while hashing the password.")
 		return
 	}
 	payload.Password = hashedPassword
@@ -115,7 +116,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	result = h.DB.Create(r.Context(), payload)
 	if result.Error != nil {
 		log.Printf("Error creating user: %v", result.Error)
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create user", "An internal server error occurred while creating the user.")
 		return
 	}
 
@@ -123,7 +124,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }
@@ -139,9 +140,9 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 // @Produce json
 // @Param credentials body models.UserCredentials true "User credentials"
 // @Success 200 {object} map[string]string "Returns a JWT token"
-// @Failure 400 {object} map[string]string "Invalid input"
-// @Failure 401 {object} map[string]string "User not found or invalid credentials"
-// @Failure 500 {object} map[string]string "Failed to generate token"
+// @Failure 400 {object} errors.ErrorResponse "Invalid input"
+// @Failure 401 {object} errors.ErrorResponse "User not found or invalid credentials"
+// @Failure 500 {object} errors.ErrorResponse "Failed to generate token"
 // @Router /v1/auth/authenticate [post]
 // @Example
 //
@@ -161,7 +162,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.UserCredentials)
 	if !ok {
-		http.Error(w, "Invalid payload", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
@@ -169,7 +170,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&user)
 	if result.Error != nil {
 		log.Printf("User %s not found", payload.Username)
-		http.Error(w, "User not found", http.StatusUnauthorized)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not found", "The provided username or password is incorrect.")
 		return
 	}
 
@@ -177,7 +178,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	newHash, err := auth.MigrateHash(payload.Password, user.Password)
 	if err != nil {
 		log.Printf("Invalid credentials for user %s", payload.Username)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Invalid credentials", "The provided username or password is incorrect.")
 		return
 	}
 
@@ -187,7 +188,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		result = h.DB.Save(r.Context(), &user)
 		if result.Error != nil {
 			log.Printf("Failed to update user hash: %v", result.Error)
-			http.Error(w, "Failed to update user hash", http.StatusInternalServerError)
+			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update user hash", "An internal server error occurred while updating the user hash.")
 			return
 		}
 	}
@@ -196,7 +197,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	token, err := middleware.GenerateToken(user.ID, user.IsAdmin)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to generate token", "An internal server error occurred while generating the JWT token.")
 		return
 	}
 
@@ -204,7 +205,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
 		log.Printf("Failed to encode response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
 	}
 }

@@ -1,4 +1,4 @@
-// pkg/handlers/initialize_db.go
+// api/handlers/initialize_db.go
 // Package handlers provides functionality to initialize and manage the global database instance for the MyAnimeAPI application.
 // It defines a function to set the global database instance, which is used by the handlers to interact with the database.
 // The package ensures that the database instance is accessible globally within the application.
