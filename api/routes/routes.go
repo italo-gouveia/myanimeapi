@@ -105,7 +105,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 		httpSwagger.URL(swaggerURL), // Path to swagger.json
 		httpSwagger.UIConfig(map[string]string{
 			"theme": "swagger-ui-dark.css", // Use the dark theme
-			"title": "MyAnimeAPI Documentation",
+			"title": "MyAnimeAPI",
 			//			"customStyle": `
 			//    	.topbar-wrapper img {
 			//        	content: url('https://example.com/logo.png');
