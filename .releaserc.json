@@ -6,14 +6,22 @@
         "@semantic-release/commit-analyzer",
         {
           "releaseRules": [
-            { "type": "refactor", "release": "minor" }
+            { "type": "feat", "release": "minor" },
+            { "type": "fix", "release": "patch" },
+            { "type": "refactor", "release": "minor" },
+            { "type": "perf", "release": "patch" },
+            { "type": "docs", "release": false },
+            { "type": "chore", "release": false },
+            { "type": "test", "release": false },
+            { "type": "ci", "release": false },
+            { "type": "style", "release": false },
+            { "type": "build", "release": false }
           ]
         }
       ],
-      "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
       "@semantic-release/git",
       "@semantic-release/github"
     ]
-  }
+}
