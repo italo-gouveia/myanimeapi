@@ -42,11 +42,10 @@ package middleware
 				return
 			}
 			// If the domain is not allowed, return a 403 Forbidden error
-			http.Error(w, "Forbidden: Domain not allowed for HTTPS redirection", http.StatusForbidden)
+			errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Forbidden: Domain not allowed for HTTPS redirection", "The requested domain is not allowed for HTTPS redirection.")
 			return
 		}
 		// If the request is already HTTPS, proceed to the next handler
 		next.ServeHTTP(w, r)
 	})
-}
-*/
+}*/
