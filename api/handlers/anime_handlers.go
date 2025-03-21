@@ -100,15 +100,18 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAllAnimesHandler retrieves all anime entries from the database.
-// It returns a list of anime entries as a JSON response.
-// If the query fails, it returns an error response.
+// GetAllAnimesHandler retrieves paginated anime entries from the database.
+// It validates the pagination parameters, queries the database, and returns the anime entries as a JSON response.
+// If the pagination parameters are invalid or the query fails, it returns an error response.
 //
-// @Summary Get all anime entries
-// @Description Retrieve a list of all anime entries
+// @Summary Get paginated anime entries
+// @Description Retrieve a paginated list of anime entries
 // @Tags anime
 // @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Number of items per page (default: 10)"
 // @Success 200 {array} models.Anime
+// @Failure 400 {object} errors.ErrorResponse "Invalid pagination parameters"
 // @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
 // @Router /v1/anime [get]
 // @ExampleResponse
@@ -124,17 +127,31 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 //	}
 //
 // ]
-//
 // @Security []
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
+	// Validate pagination parameters
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+	page, limit, err := utils.ValidatePagination(pageStr, limitStr, 1, 100) // Max limit set to 100
+	if err != nil {
+		log.Printf("Invalid pagination parameters: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error())
+		return
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	// Query the database for paginated anime entries
 	var animes []models.Anime
-	result := h.DB.Find(r.Context(), &animes)
+	result := h.DB.WithContext(r.Context()).Offset(offset).Limit(limit).Find(&animes)
 	if result.Error != nil {
 		log.Printf("Failed to retrieve animes: %v", result.Error)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve animes", "An internal server error occurred while retrieving anime entries.")
 		return
 	}
 
+	// Return the paginated anime entries as a JSON response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(animes); err != nil {
 		log.Printf("Failed to encode response: %v", err)
