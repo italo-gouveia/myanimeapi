@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"myanimeapi/internal/errors" // Import the errors package
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -35,7 +37,7 @@ func Authenticate(next http.Handler) http.Handler {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			log.Println("Missing authorization header")
-			http.Error(w, "Missing authorization header", http.StatusUnauthorized)
+			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Missing authorization header", "The 'Authorization' header is required.")
 			return
 		}
 
@@ -46,14 +48,14 @@ func Authenticate(next http.Handler) http.Handler {
 
 		if err != nil || !token.Valid {
 			log.Printf("Invalid token: %v", err)
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Invalid token", "The provided token is invalid or expired.")
 			return
 		}
 
 		claims, ok := token.Claims.(*CustomClaims)
 		if !ok {
 			log.Println("Invalid token claims")
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Invalid token claims", "The token claims are invalid or malformed.")
 			return
 		}
 
@@ -77,7 +79,7 @@ func CheckAdmin(next http.Handler) http.Handler {
 		isAdmin, ok := r.Context().Value(IsAdminContextKey).(bool)
 		if !ok || !isAdmin {
 			log.Println("Access denied: user is not an admin")
-			http.Error(w, "Access denied", http.StatusForbidden)
+			errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Access denied", "You do not have permission to access this resource.")
 			return
 		}
 
