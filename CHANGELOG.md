@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-03-20
+
+### Added
+- **Structured Error Handling:** Introduced a new `ErrorResponse` type for consistent error responses across the application.
+- **Swagger Documentation Updates:** Enhanced Swagger annotations to reflect the new error response structure and added detailed error response examples for all endpoints.
+- **CI/CD Pipeline Improvements:** Added new steps for Swagger validation, security analysis (Semgrep, Gitleaks, Gosec), and Docker image scanning with Trivy.
+
+### Changed
+- **Error Handling Mechanism:** Updated all handlers to use the new error handling mechanism, replacing direct `http.Error` calls.
+- **Testing Framework:** Added new unit tests for the error handling middleware and updated existing tests to align with the new error response format.
+
+### Fixed
+- **Swagger Consistency:** Improved the readability and consistency of the Swagger documentation.
+
+### Impact
+- **Developers:** The new error handling mechanism provides a consistent way to handle and return errors, making it easier to debug and maintain the codebase.
+- **API Consumers:** The updated Swagger documentation offers clearer insights into the expected error responses, improving the overall API experience.
+- **Security:** The enhanced CI/CD pipeline ensures that security vulnerabilities are caught early in the development process.
+
 ## [1.2.0] - 2025-03-18
 
 ### Added

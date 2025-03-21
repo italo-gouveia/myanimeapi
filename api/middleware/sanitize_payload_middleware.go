@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"myanimeapi/internal/errors" // Import the errors package
+
 	"github.com/go-playground/validator/v10"
 	"github.com/microcosm-cc/bluemonday"
 )
@@ -50,7 +52,7 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 		if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
 			// Log the error
 			log.Printf("Middleware: Invalid input - %v", err)
-			http.Error(w, "Invalid input", http.StatusBadRequest)
+			errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "The request body could not be decoded.")
 			return
 		}
 
@@ -89,7 +91,7 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 			if err := json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages}); err != nil {
 				// Log the error
 				log.Printf("Middleware: Failed to encode error response - %v", err)
-				http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode error response", "An internal server error occurred while encoding the response.")
 				return
 			}
 			return

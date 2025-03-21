@@ -35,6 +35,8 @@ import (
 	"os"
 	"testing"
 
+	"myanimeapi/internal/errors" // Import the errors package
+
 	"github.com/golang/mock/gomock"
 )
 
@@ -88,26 +90,18 @@ func TestHealthCheck(t *testing.T) {
 	// Call the handler with the mock database instance
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if mockDB == nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			if _, err := w.Write([]byte("Database instance not initialized")); err != nil {
-				http.Error(w, "Failed to write response", http.StatusInternalServerError)
-				return
-			}
+			errors.WriteErrorResponse(w, http.StatusServiceUnavailable, errors.ErrServiceUnavailable, "Database instance not initialized", "The database instance is not initialized.")
 			return
 		}
 
 		if mockDB.IsHealthy() {
 			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("OK")); err != nil {
-				http.Error(w, "Failed to write response", http.StatusInternalServerError)
+				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to write response", "An internal server error occurred while writing the response.")
 				return
 			}
 		} else {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			if _, err := w.Write([]byte("Database connection failed")); err != nil {
-				http.Error(w, "Failed to write response", http.StatusInternalServerError)
-				return
-			}
+			errors.WriteErrorResponse(w, http.StatusServiceUnavailable, errors.ErrServiceUnavailable, "Database connection failed", "The database connection is not healthy.")
 		}
 	})
 
