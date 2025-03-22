@@ -84,14 +84,28 @@ const docTemplate = `{
                         ]
                     }
                 ],
-                "description": "Retrieve a list of all anime entries",
+                "description": "Retrieve a paginated list of anime entries",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "anime"
                 ],
-                "summary": "Get all anime entries",
+                "summary": "Get paginated anime entries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page (default: 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -100,6 +114,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/models.Anime"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid pagination parameters",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
