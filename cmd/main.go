@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	VERSION = "1.3.0" // Current version of the API
+	VERSION = "1.3.1" // Current version of the API
 )
 
 // @title MyAnimeAPI
@@ -91,6 +91,7 @@ func main() {
 	userHandler := myhandlers.NewUserHandler(dbWrapper)
 	reviewHandler := myhandlers.NewReviewHandler(dbWrapper)
 	authHandler := myhandlers.NewAuthHandler(dbWrapper)
+	favoriteHandler := myhandlers.NewFavoriteHandler(dbWrapper)
 	log.Println("Handlers initialized successfully")
 
 	// Create a new router
@@ -108,7 +109,7 @@ func main() {
 	// Serve Swagger UI
 	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler, VERSION)
+	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler, favoriteHandler, VERSION)
 	log.Println("Routes registered successfully")
 
 	// Configure CORS

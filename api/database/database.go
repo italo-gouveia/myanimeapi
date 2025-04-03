@@ -24,7 +24,7 @@ import (
 )
 
 // SetupDatabase initializes the database schema by automatically migrating the defined models.
-// It uses GORM's AutoMigrate function to create or update the database tables for the User, Anime, and Review models.
+// It uses GORM's AutoMigrate function to create or update the database tables for the User, Anime, Review, and Favorite models.
 // If the migration fails, an error is returned.
 //
 // Example:
@@ -35,7 +35,7 @@ import (
 //	}
 func SetupDatabase(db *gorm.DB) error {
 	// AutoMigrate to create/update schema
-	err := db.AutoMigrate(&models.User{}, &models.Anime{}, &models.Review{})
+	err := db.AutoMigrate(&models.User{}, &models.Anime{}, &models.Review{}, &models.Favorite{})
 	if err != nil {
 		log.Printf("Error setting up database schema: %v", err)
 		return err

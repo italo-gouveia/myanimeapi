@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "4bd4e381-5247-4e8d-8192-af6f3ed0ec00",
+		"_postman_id": "731fcd9e-6e59-458b-8d08-0e14c3df216d",
 		"name": "MyAnimeAPI",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "3319899"
@@ -32,7 +32,8 @@
 									"    }",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -50,13 +51,14 @@
 							"raw": "{\n    \"username\": \"italo\",\n    \"password\": \"italo\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/auth/authenticate",
+							"raw": "http://localhost:8080/v1/auth/authenticate",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8080",
 							"path": [
+								"v1",
 								"auth",
 								"authenticate"
 							]
@@ -950,7 +952,8 @@
 									"    pm.expect(response).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -958,12 +961,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/anime",
+							"raw": "localhost:8080/v1/anime",
 							"host": [
 								"localhost"
 							],
 							"port": "8080",
 							"path": [
+								"v1",
 								"anime"
 							]
 						}
@@ -1068,7 +1072,8 @@
 									"    }",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -1076,12 +1081,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "localhost:8080/anime/1",
+							"raw": "localhost:8080/v1/anime/1",
 							"host": [
 								"localhost"
 							],
 							"port": "8080",
 							"path": [
+								"v1",
 								"anime",
 								"1"
 							]
@@ -2303,6 +2309,354 @@
 							],
 							"cookie": [],
 							"body": ""
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Favorites",
+			"item": [
+				{
+					"name": "Add Favorite",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_JWT_TOKEN"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"anime_id\": \"123\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/favorites",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"favorites"
+							]
+						},
+						"description": "Generated from cURL: curl -X POST \\\n  http://localhost:8080/favorites \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \\\n  -d '{\n    \"anime_id\": \"123\"\n  }'"
+					},
+					"response": [
+						{
+							"name": "409 CONFLICT",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer YOUR_JWT_TOKEN"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"anime_id\": 1\n  }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/v1/favorites",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"v1",
+										"favorites"
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 03 Apr 2025 02:08:44 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "125"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": {\n        \"code\": \"ERR-008\",\n        \"message\": \"Anime already in favorites\",\n        \"details\": \"This anime is already in your favorites list\"\n    }\n}"
+						},
+						{
+							"name": "404 NOT FOUND",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer YOUR_JWT_TOKEN"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"anime_id\": 5\n  }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/v1/favorites",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"v1",
+										"favorites"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 03 Apr 2025 02:10:06 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "86"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": {\n        \"code\": \"ERR-002\",\n        \"message\": \"Anime not found\",\n        \"details\": \"record not found\"\n    }\n}"
+						},
+						{
+							"name": "201 CREATED",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer YOUR_JWT_TOKEN"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"anime_id\": 1\n  }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/v1/favorites",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"v1",
+										"favorites"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Thu, 03 Apr 2025 02:21:23 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "514"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\"id\":2,\"user_id\":1,\"anime_id\":1,\"created_at\":\"2025-04-02T23:21:23.73784-03:00\",\"updated_at\":\"2025-04-02T23:21:23.73784-03:00\",\"anime\":{\"id\":1,\"created_at\":\"2025-02-16T12:03:36.90465-03:00\",\"updated_at\":\"2025-02-16T12:06:41.52654-03:00\",\"title\":\"Fire Force\",\"description\":\"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\",\"rating\":0},\"user\":{\"id\":1,\"created_at\":\"2025-02-15T11:40:02.228852-03:00\",\"updated_at\":\"2025-03-10T09:37:59.277299-03:00\",\"username\":\"italo\",\"is_admin\":true}}\n"
+						}
+					]
+				},
+				{
+					"name": "Get User Favorites",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_JWT_TOKEN"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8080/v1/favorites",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"favorites"
+							]
+						},
+						"description": "Generated from cURL: curl -X GET http://localhost:8080/v1/favorites \\\n  -H \"Authorization: Bearer YOUR_JWT_TOKEN\""
+					},
+					"response": [
+						{
+							"name": "200 OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer YOUR_JWT_TOKEN",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/v1/favorites",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"v1",
+										"favorites"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Thu, 03 Apr 2025 02:17:51 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "518"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/plain; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "[{\"id\":1,\"user_id\":1,\"anime_id\":1,\"created_at\":\"2025-04-02T23:03:37.260993-03:00\",\"updated_at\":\"2025-04-02T23:03:37.260993-03:00\",\"anime\":{\"id\":1,\"created_at\":\"2025-02-16T12:03:36.90465-03:00\",\"updated_at\":\"2025-02-16T12:06:41.52654-03:00\",\"title\":\"Fire Force\",\"description\":\"Soldados Bombeiros Eliminam Pessoas em Chamas para Manter a Paz da População.\",\"rating\":0},\"user\":{\"id\":1,\"created_at\":\"2025-02-15T11:40:02.228852-03:00\",\"updated_at\":\"2025-03-10T09:37:59.277299-03:00\",\"username\":\"italo\",\"is_admin\":true}}]\n"
+						}
+					]
+				},
+				{
+					"name": "Remove from Favorite",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_JWT_TOKEN"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8080/v1/favorites/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"favorites",
+								"1"
+							]
+						},
+						"description": "Generated from cURL: curl -X DELETE http://localhost:8080/v1/favorites/1 \\\n  -H \"Authorization: Bearer YOUR_JWT_TOKEN\""
+					},
+					"response": [
+						{
+							"name": "204 NO CONTENT",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer YOUR_JWT_TOKEN",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/v1/favorites/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"v1",
+										"favorites",
+										"1"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Thu, 03 Apr 2025 02:21:02 GMT"
+								}
+							],
+							"cookie": [],
+							"body": null
 						}
 					]
 				}

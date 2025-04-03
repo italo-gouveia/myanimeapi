@@ -29,14 +29,15 @@ import (
 //   - userHandler: A pointer to a `UserHandler` instance for user-related routes.
 //   - reviewHandler: A pointer to a `ReviewHandler` instance for review-related routes.
 //   - authHandler: A pointer to an `AuthHandler` instance for authentication-related routes.
+//   - favoriteHandler: A pointer to a `FavoriteHandler` instance for favorite-related routes.
 //   - version: The current version of the API.
 //
 // Example usage:
 //
 //	router := mux.NewRouter()
-//	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler, version)
+//	RegisterRoutes(router, "/swagger/doc.json", animeHandler, userHandler, reviewHandler, authHandler, favoriteHandler, version)
 //	http.ListenAndServe(":8080", router)
-func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler, version string) {
+func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handlers.AnimeHandler, userHandler *handlers.UserHandler, reviewHandler *handlers.ReviewHandler, authHandler *handlers.AuthHandler, favoriteHandler *handlers.FavoriteHandler, version string) {
 	// Create a new rate limiter with a limit of 100 requests per minute
 	rateLimiter := middleware.NewRateLimiter()
 
@@ -99,6 +100,10 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, animeHandler *handler
 	// Register auth routes
 	authHandler.RegisterAuthRoutes(v1Router)
 	log.Println("Auth routes registered")
+
+	// Register favorite routes
+	favoriteHandler.RegisterFavoriteRoutes(v1Router)
+	log.Println("Favorite routes registered")
 
 	// Register Swagger documentation
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
