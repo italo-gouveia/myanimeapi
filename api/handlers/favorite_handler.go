@@ -189,7 +189,10 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	json.NewEncoder(w).Encode(favorites)
+	if err := json.NewEncoder(w).Encode(favorites); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", err.Error())
+		return
+	}
 }
 
 // RegisterFavoriteRoutes registers all favorite-related routes
