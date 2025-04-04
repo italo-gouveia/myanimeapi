@@ -8,6 +8,7 @@ import (
 	"myanimeapi/internal/db"
 	"myanimeapi/internal/errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -145,9 +146,14 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// Get anime ID from URL
+	// Get anime ID from URL and convert to uint
 	vars := mux.Vars(r)
-	animeID := vars["id"]
+	animeIDStr := vars["id"]
+	animeID, err := strconv.ParseUint(animeIDStr, 10, 64)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID", err.Error())
+		return
+	}
 
 	// Delete favorite
 	if err := h.db.WithContext(r.Context()).Where("user_id = ? AND anime_id = ?", user.ID, animeID).Delete(&models.Favorite{}).Error; err != nil {
