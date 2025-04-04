@@ -1287,7 +1287,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.Anime"
                 },
                 "anime_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
@@ -1314,8 +1314,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "anime_id": {
-                    "type": "string",
-                    "example": "123"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
