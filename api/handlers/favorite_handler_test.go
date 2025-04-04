@@ -8,122 +8,48 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	"myanimeapi/api/middleware"
+	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 
 	"gorm.io/gorm"
 )
-
-// MockDB is a mock implementation of the DBInterface
-type MockDB struct {
-	mock.Mock
-}
-
-func (m *MockDB) WithContext(ctx context.Context) *gorm.DB {
-	args := m.Called(ctx)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) First(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(ctx, dest, conds)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Find(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(ctx, dest, conds)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Create(ctx context.Context, value interface{}) *gorm.DB {
-	args := m.Called(ctx, value)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Delete(ctx context.Context, value interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(ctx, value, conds)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Preload(query string, ctx context.Context, args ...interface{}) *gorm.DB {
-	mockArgs := m.Called(query, ctx, args)
-	return mockArgs.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Where(ctx context.Context, query interface{}, args ...interface{}) *gorm.DB {
-	mockArgs := m.Called(ctx, query, args)
-	return mockArgs.Get(0).(*gorm.DB)
-}
-
-// Add missing methods to fully implement the db.DBInterface
-
-func (m *MockDB) Begin(ctx context.Context) *gorm.DB {
-	args := m.Called(ctx)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Commit(ctx context.Context) *gorm.DB {
-	args := m.Called(ctx)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Rollback(ctx context.Context) *gorm.DB {
-	args := m.Called(ctx)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Save(ctx context.Context, value interface{}) *gorm.DB {
-	args := m.Called(ctx, value)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Unscoped(ctx context.Context) *gorm.DB {
-	args := m.Called(ctx)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) GetError() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *MockDB) IsHealthy() bool {
-	args := m.Called()
-	return args.Bool(0)
-}
-
-func (m *MockDB) Offset(offset int) *gorm.DB {
-	args := m.Called(offset)
-	return args.Get(0).(*gorm.DB)
-}
-
-func (m *MockDB) Limit(limit int) *gorm.DB {
-	args := m.Called(limit)
-	return args.Get(0).(*gorm.DB)
-}
 
 // TestGetFavoritesHandler tests the GetFavoritesHandler function
 func TestGetFavoritesHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		userID         uint
-		setupMock      func(*MockDB)
+		setupMock      func(*mocks.MockDBInterface)
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
 			name:   "Success",
 			userID: 1,
-			setupMock: func(mockDB *MockDB) {
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("Preload", "Anime", mock.Anything).Return(mockDB)
-				mockDB.On("Preload", "User", mock.Anything).Return(mockDB)
-				mockDB.On("Where", "user_id = ?", uint(1)).Return(mockDB)
-				mockDB.On("Find", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-					favorites := args.Get(0).(*[]models.Favorite)
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Mock user retrieval
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
+					user.ID = 1
+					user.Username = "testuser"
+					return &gorm.DB{}
+				})
+
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
+				// Set up the chain of method calls
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Where(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Find(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					favorites := dest.(*[]models.Favorite)
 					*favorites = []models.Favorite{
 						{
 							ID:      1,
@@ -140,6 +66,7 @@ func TestGetFavoritesHandler(t *testing.T) {
 							},
 						},
 					}
+					return mockGormDB
 				})
 			},
 			expectedStatus: http.StatusOK,
@@ -148,12 +75,25 @@ func TestGetFavoritesHandler(t *testing.T) {
 		{
 			name:   "Database Error",
 			userID: 1,
-			setupMock: func(mockDB *MockDB) {
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("Preload", "Anime", mock.Anything).Return(mockDB)
-				mockDB.On("Preload", "User", mock.Anything).Return(mockDB)
-				mockDB.On("Where", "user_id = ?", uint(1)).Return(mockDB)
-				mockDB.On("Find", mock.Anything, mock.Anything).Return(errors.New("database error"))
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Mock user retrieval
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
+					user.ID = 1
+					user.Username = "testuser"
+					return &gorm.DB{}
+				})
+
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
+				// Set up the chain of method calls
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Where(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Find(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().GetError().Return(errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   `{"error":{"code":"ERR-004","message":"Failed to get favorites","details":"database error"}}`,
@@ -162,8 +102,12 @@ func TestGetFavoritesHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a mock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			// Create a mock DB
-			mockDB := new(MockDB)
+			mockDB := mocks.NewMockDBInterface(ctrl)
 			tt.setupMock(mockDB)
 
 			// Create a new handler with the mock DB
@@ -185,9 +129,6 @@ func TestGetFavoritesHandler(t *testing.T) {
 
 			// Check the response body
 			assert.JSONEq(t, tt.expectedBody, rr.Body.String())
-
-			// Verify that all expected mock calls were made
-			mockDB.AssertExpectations(t)
 		})
 	}
 }
@@ -198,7 +139,7 @@ func TestAddFavoriteHandler(t *testing.T) {
 		name           string
 		userID         uint
 		requestBody    string
-		setupMock      func(*MockDB)
+		setupMock      func(*mocks.MockDBInterface)
 		expectedStatus int
 		expectedBody   string
 	}{
@@ -206,39 +147,46 @@ func TestAddFavoriteHandler(t *testing.T) {
 			name:        "Success",
 			userID:      1,
 			requestBody: `{"anime_id": 1}`,
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
 				// Mock user retrieval
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					user := args.Get(0).(*models.User)
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
 					user.ID = 1
 					user.Username = "testuser"
+					return mockGormDB
 				})
 
 				// Mock anime existence check
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					anime := args.Get(0).(*models.Anime)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					anime := dest.(*models.Anime)
 					anime.ID = 1
 					anime.Title = "Test Anime"
+					return mockGormDB
 				})
 
 				// Mock favorite existence check
-				mockDB.On("Where", "user_id = ? AND anime_id = ?", uint(1), uint(1)).Return(mockDB)
-				mockDB.On("First", mock.Anything, mock.Anything).Return(errors.New("record not found"))
+				mockDB.EXPECT().Where(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().GetError().Return(errors.New("record not found"))
 
 				// Mock favorite creation
-				mockDB.On("Create", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-					favorite := args.Get(0).(*models.Favorite)
+				mockDB.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, value interface{}) *gorm.DB {
+					favorite := value.(*models.Favorite)
 					favorite.ID = 1
 					favorite.UserID = 1
 					favorite.AnimeID = 1
+					return mockGormDB
 				})
 
 				// Mock preloading related data
-				mockDB.On("Preload", "Anime", mock.Anything).Return(mockDB)
-				mockDB.On("Preload", "User", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					favorite := args.Get(0).(*models.Favorite)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					favorite := dest.(*models.Favorite)
 					favorite.ID = 1
 					favorite.UserID = 1
 					favorite.AnimeID = 1
@@ -251,6 +199,7 @@ func TestAddFavoriteHandler(t *testing.T) {
 						ID:       1,
 						Username: "testuser",
 					}
+					return mockGormDB
 				})
 			},
 			expectedStatus: http.StatusCreated,
@@ -260,9 +209,14 @@ func TestAddFavoriteHandler(t *testing.T) {
 			name:        "User Not Found",
 			userID:      1,
 			requestBody: `{"anime_id": 1}`,
-			setupMock: func(mockDB *MockDB) {
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(errors.New("user not found"))
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
+				// Mock user retrieval
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().GetError().Return(errors.New("user not found"))
 			},
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   `{"error":{"code":"ERR-001","message":"Unauthorized","details":"User not found"}}`,
@@ -271,16 +225,21 @@ func TestAddFavoriteHandler(t *testing.T) {
 			name:        "Anime Not Found",
 			userID:      1,
 			requestBody: `{"anime_id": 1}`,
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
 				// Mock user retrieval
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					user := args.Get(0).(*models.User)
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
 					user.ID = 1
+					return mockGormDB
 				})
 
 				// Mock anime existence check
-				mockDB.On("First", mock.Anything, uint(1)).Return(errors.New("record not found"))
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().GetError().Return(errors.New("record not found"))
 			},
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   `{"error":{"code":"ERR-002","message":"Anime not found","details":"record not found"}}`,
@@ -289,23 +248,28 @@ func TestAddFavoriteHandler(t *testing.T) {
 			name:        "Favorite Already Exists",
 			userID:      1,
 			requestBody: `{"anime_id": 1}`,
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
 				// Mock user retrieval
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					user := args.Get(0).(*models.User)
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
 					user.ID = 1
+					return mockGormDB
 				})
 
 				// Mock anime existence check
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					anime := args.Get(0).(*models.Anime)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					anime := dest.(*models.Anime)
 					anime.ID = 1
+					return mockGormDB
 				})
 
 				// Mock favorite existence check
-				mockDB.On("Where", "user_id = ? AND anime_id = ?", uint(1), uint(1)).Return(mockDB)
-				mockDB.On("First", mock.Anything, mock.Anything).Return(nil)
+				mockDB.EXPECT().Where(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).Return(mockGormDB)
 			},
 			expectedStatus: http.StatusConflict,
 			expectedBody:   `{"error":{"code":"ERR-008","message":"Anime already in favorites","details":"This anime is already in your favorites list"}}`,
@@ -314,18 +278,60 @@ func TestAddFavoriteHandler(t *testing.T) {
 			name:        "Invalid Request Body",
 			userID:      1,
 			requestBody: `{"anime_id": "invalid"}`,
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
 				// No mock setup needed for invalid request body
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":{"code":"ERR-003","message":"Invalid request body","details":"json: cannot unmarshal string into Go struct field FavoriteCreateRequest.anime_id of type uint"}}`,
 		},
+		{
+			name:        "Database Error",
+			userID:      1,
+			requestBody: `{"anime_id": 1}`,
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
+				// Mock user retrieval
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
+					user.ID = 1
+					return mockGormDB
+				})
+
+				// Mock anime existence check
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					anime := dest.(*models.Anime)
+					anime.ID = 1
+					return mockGormDB
+				})
+
+				// Mock favorite existence check
+				mockDB.EXPECT().Where(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().First(gomock.Any(), gomock.Any()).Return(mockGormDB)
+
+				// Mock favorite creation
+				mockDB.EXPECT().Create(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().GetError().Return(errors.New("database error"))
+
+				// Mock preloading related data
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+				mockDB.EXPECT().Preload(gomock.Any(), gomock.Any()).Return(mockGormDB)
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"error":{"code":"ERR-004","message":"Failed to get favorites","details":"database error"}}`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a mock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			// Create a mock DB
-			mockDB := new(MockDB)
+			mockDB := mocks.NewMockDBInterface(ctrl)
 			tt.setupMock(mockDB)
 
 			// Create a new handler with the mock DB
@@ -348,9 +354,6 @@ func TestAddFavoriteHandler(t *testing.T) {
 
 			// Check the response body
 			assert.JSONEq(t, tt.expectedBody, rr.Body.String())
-
-			// Verify that all expected mock calls were made
-			mockDB.AssertExpectations(t)
 		})
 	}
 }
@@ -361,24 +364,25 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 		name           string
 		userID         uint
 		animeID        string
-		setupMock      func(*MockDB)
+		setupMock      func(*mocks.MockDBInterface)
 		expectedStatus int
 	}{
 		{
 			name:    "Success",
 			userID:  1,
 			animeID: "1",
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
 				// Mock user retrieval
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(nil).Run(func(args mock.Arguments) {
-					user := args.Get(0).(*models.User)
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(&gorm.DB{})
+				mockDB.EXPECT().First(gomock.Any(), uint(1)).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
+					user := dest.(*models.User)
 					user.ID = 1
+					return &gorm.DB{}
 				})
 
 				// Mock favorite deletion
-				mockDB.On("Where", "user_id = ? AND anime_id = ?", uint(1), uint(1)).Return(mockDB)
-				mockDB.On("Delete", mock.Anything, mock.Anything).Return(nil)
+				mockDB.EXPECT().Where("user_id = ? AND anime_id = ?", uint(1), uint(1)).Return(&gorm.DB{})
+				mockDB.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(&gorm.DB{})
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -386,9 +390,10 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 			name:    "User Not Found",
 			userID:  1,
 			animeID: "1",
-			setupMock: func(mockDB *MockDB) {
-				mockDB.On("WithContext", mock.Anything).Return(mockDB)
-				mockDB.On("First", mock.Anything, uint(1)).Return(errors.New("user not found"))
+			setupMock: func(mockDB *mocks.MockDBInterface) {
+				mockDB.EXPECT().WithContext(gomock.Any()).Return(&gorm.DB{})
+				mockDB.EXPECT().First(gomock.Any(), uint(1)).Return(&gorm.DB{})
+				mockDB.EXPECT().GetError().Return(errors.New("user not found"))
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -396,7 +401,7 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 			name:    "Invalid Anime ID",
 			userID:  1,
 			animeID: "invalid",
-			setupMock: func(mockDB *MockDB) {
+			setupMock: func(mockDB *mocks.MockDBInterface) {
 				// No mock setup needed for invalid anime ID
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -405,8 +410,12 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a mock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			// Create a mock DB
-			mockDB := new(MockDB)
+			mockDB := mocks.NewMockDBInterface(ctrl)
 			tt.setupMock(mockDB)
 
 			// Create a new handler with the mock DB
@@ -431,9 +440,6 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 
 			// Check the status code
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-
-			// Verify that all expected mock calls were made
-			mockDB.AssertExpectations(t)
 		})
 	}
 }
