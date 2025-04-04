@@ -109,7 +109,7 @@ definitions:
       anime:
         $ref: '#/definitions/models.Anime'
       anime_id:
-        type: string
+        type: integer
       created_at:
         type: string
       id:
@@ -125,8 +125,8 @@ definitions:
     description: Request model for adding an anime to favorites
     properties:
       anime_id:
-        example: "123"
-        type: string
+        example: 1
+        type: integer
     required:
     - anime_id
     type: object
