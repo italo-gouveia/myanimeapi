@@ -32,16 +32,16 @@ func TestGetFavoritesHandler(t *testing.T) {
 			name:   "Success",
 			userID: 1,
 			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
 				// Mock user retrieval
 				mockDB.EXPECT().First(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
 					user := dest.(*models.User)
 					user.ID = 1
 					user.Username = "testuser"
-					return &gorm.DB{}
+					return mockGormDB
 				})
-
-				// Create a mock DB object that will be returned by each method
-				mockGormDB := &gorm.DB{}
 
 				// Set up the chain of method calls
 				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
@@ -76,16 +76,16 @@ func TestGetFavoritesHandler(t *testing.T) {
 			name:   "Database Error",
 			userID: 1,
 			setupMock: func(mockDB *mocks.MockDBInterface) {
+				// Create a mock DB object that will be returned by each method
+				mockGormDB := &gorm.DB{}
+
 				// Mock user retrieval
 				mockDB.EXPECT().First(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, dest interface{}, conds ...interface{}) *gorm.DB {
 					user := dest.(*models.User)
 					user.ID = 1
 					user.Username = "testuser"
-					return &gorm.DB{}
+					return mockGormDB
 				})
-
-				// Create a mock DB object that will be returned by each method
-				mockGormDB := &gorm.DB{}
 
 				// Set up the chain of method calls
 				mockDB.EXPECT().WithContext(gomock.Any()).Return(mockGormDB)
