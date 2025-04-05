@@ -103,6 +103,33 @@ definitions:
         example: "2025-02-20T19:27:00Z"
         type: string
     type: object
+  models.Favorite:
+    description: Model representing a user's favorite anime
+    properties:
+      anime:
+        $ref: '#/definitions/models.Anime'
+      anime_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
+    type: object
+  models.FavoriteCreateRequest:
+    description: Request model for adding an anime to favorites
+    properties:
+      anime_id:
+        example: 1
+        type: integer
+    required:
+    - anime_id
+    type: object
   models.Review:
     properties:
       animeId:
@@ -218,6 +245,10 @@ definitions:
         maxLength: 100
         minLength: 5
         type: string
+      favorites:
+        items:
+          $ref: '#/definitions/models.Favorite'
+        type: array
       id:
         description: Unique identifier for the user
         example: 1
@@ -227,7 +258,6 @@ definitions:
         example: false
         type: boolean
       reviews:
-        description: List of reviews created by the user (omitted unless necessary)
         items:
           $ref: '#/definitions/models.Review'
         type: array
@@ -325,6 +355,112 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
+  /favorites:
+    get:
+      description: Retrieves all anime in the authenticated user's favorites list
+      parameters:
+      - description: Bearer JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's favorite anime
+          schema:
+            items:
+              $ref: '#/definitions/models.Favorite'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get user's favorite anime list
+      tags:
+      - favorites
+    post:
+      consumes:
+      - application/json
+      description: Adds a specific anime to the authenticated user's favorites list
+      parameters:
+      - description: Bearer JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Anime ID to add to favorites
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.FavoriteCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Favorite created successfully
+          schema:
+            $ref: '#/definitions/models.Favorite'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Anime already in favorites
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Add an anime to user's favorites
+      tags:
+      - favorites
+  /favorites/{id}:
+    delete:
+      description: Removes a specific anime from the authenticated user's favorites
+        list
+      parameters:
+      - description: Bearer JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Anime ID to remove from favorites
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Favorite removed successfully
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Remove an anime from user's favorites
+      tags:
+      - favorites
   /reviews/{id}:
     delete:
       consumes:
