@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.3.0...v1.4.0) (2025-04-05)
+
+
+### Features
+
+* add favorite anime functionality ([4c804af](https://github.com/italo-gouveia/myanimeapi/commit/4c804aff13f97e17c8405271bdddc04b9fbeb5e4))
+
 # [1.3.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.2.0...v1.3.0) (2025-03-22)
 
 
