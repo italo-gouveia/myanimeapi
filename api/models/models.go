@@ -46,15 +46,15 @@ type Claims struct {
 //	  "is_admin": false
 //	}
 type User struct {
-	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                                                                 // Unique identifier for the user
-	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was created
-	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was last updated
-	Username  string    `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`              // Unique username for the user
-	Email     string    `json:"email,omitempty" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Unique Email address of the user (omitted unless necessary)
-	Password  string    `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                        // Password of the user (never serialized)
-	IsAdmin   bool      `json:"is_admin" gorm:"default:false" example:"false"`                                                    // Indicates if the user has admin privileges
-
-	Reviews []Review `json:"reviews,omitempty"` // List of reviews created by the user (omitted unless necessary)
+	ID        uint       `json:"id" gorm:"primaryKey" example:"1"`                                                                 // Unique identifier for the user
+	CreatedAt time.Time  `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was created
+	UpdatedAt time.Time  `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was last updated
+	Username  string     `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`              // Unique username for the user
+	Email     string     `json:"email,omitempty" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Unique Email address of the user (omitted unless necessary)
+	Password  string     `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                        // Password of the user (never serialized)
+	IsAdmin   bool       `json:"is_admin" gorm:"default:false" example:"false"`                                                    // Indicates if the user has admin privileges
+	Reviews   []Review   `json:"reviews,omitempty" gorm:"foreignKey:UserID"`
+	Favorites []Favorite `json:"favorites,omitempty" gorm:"foreignKey:UserID"`
 }
 
 // Anime represents an anime entry in the system.
