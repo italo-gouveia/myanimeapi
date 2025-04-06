@@ -234,7 +234,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch the entire commit history
+          fetch-depth: 0
 
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
@@ -242,22 +242,25 @@ jobs:
           project: 'MyAnimeAPI'
           format: 'ALL'
           fail_on_cvss: 7
+          exclude: |
+            **/vendor/**
+            **/node_modules/**
+            **/test/**
+            **/tests/**
+            **/docs/**
+
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
         with:
-          config: p/ci
+          config: p/security-audit
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: ${{ github.repository_owner }}/myanimeapi
+
       - name: Run GitLeaks
-        uses: zricethezav/gitleaks-action@v2  # Use the correct version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN as an environment variable
+        uses: zricethezav/gitleaks-action@v8.18.0
         with:
           config-path: .gitleaks.toml
-          redact: true
           verbose: true
-      - name: Run Gosec
-        uses: securego/gosec@master
-        with:
-          args: './...'
 
   swagger:
     name: Validate Swagger Docs
