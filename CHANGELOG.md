@@ -1,3 +1,20 @@
+# [1.4.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.3.0...v1.4.0) (2025-04-05)
+
+
+### Features
+
+* add favorite anime functionality ([4c804af](https://github.com/italo-gouveia/myanimeapi/commit/4c804aff13f97e17c8405271bdddc04b9fbeb5e4))
+
+# [1.3.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.2.0...v1.3.0) (2025-03-22)
+
+
+### Features
+
+* **anime-handler:** [GITISSUE-86] add pagination to GetAllAnimesHandler ([fb8e738](https://github.com/italo-gouveia/myanimeapi/commit/fb8e73829893964b7294d233473c784fcbb29559))
+* **anime-handler:** [GITISSUE-86] updated docs swagger ([fc411cd](https://github.com/italo-gouveia/myanimeapi/commit/fc411cde921d7e97c7fb77d0b56125bf69fa6584))
+* **anime-handler:** [GITISSUE-86] updating dependecy with vulnerabilitie ([a4daa25](https://github.com/italo-gouveia/myanimeapi/commit/a4daa25bf8c832f90d2c19760bfed30c4c9fdcc0))
+* **anime-handler:** [GITISSUE-86]commenting failing tests to be fixed late ([a51061a](https://github.com/italo-gouveia/myanimeapi/commit/a51061a2e1bf854fd4b7f1d8c97050388056b258))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
