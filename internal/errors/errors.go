@@ -41,6 +41,43 @@ type ErrorResponse struct {
 	} `json:"error"`
 }
 
+// AppError represents a structured application error.
+// It includes an error code, a message, and optional details for additional context.
+type AppError struct {
+	Code       string // A unique error code for categorization.
+	Message    string // A human-readable error message.
+	Details    string // Additional context or details about the error.
+	StatusCode int    // HTTP status code for the error.
+}
+
+// Error returns a formatted error message for the AppError.
+func (e *AppError) Error() string {
+	if e.Details != "" {
+		return fmt.Sprintf("%s: %s", e.Message, e.Details)
+	}
+	return e.Message
+}
+
+// NewError creates a new AppError instance.
+// It initializes the AppError with the provided code, message, and details.
+//
+// Parameters:
+//   - code: A unique error code (e.g., errors.ErrInvalidInput).
+//   - message: A human-readable error message.
+//   - details: Additional context or details about the error (optional).
+//   - statusCode: HTTP status code for the error.
+//
+// Returns:
+//   - *AppError: A pointer to the newly created AppError.
+func NewError(code, message, details string, statusCode int) *AppError {
+	return &AppError{
+		Code:       code,
+		Message:    message,
+		Details:    details,
+		StatusCode: statusCode,
+	}
+}
+
 // NewErrorResponse creates a new ErrorResponse instance.
 // It initializes the ErrorResponse with the provided code, message, and details.
 //
