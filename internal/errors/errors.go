@@ -114,6 +114,39 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int, code, message, de
 	}
 }
 
+// WriteAppErrorResponse writes an error response to the HTTP response writer using an AppError.
+// It sets the appropriate HTTP status code and encodes the error response as JSON.
+//
+// Parameters:
+//   - w: The HTTP response writer.
+//   - err: The AppError containing the error details.
+func WriteAppErrorResponse(w http.ResponseWriter, err error) {
+	var appErr *AppError
+	var notFoundErr *NotFoundError
+	var validationErr *ValidationError
+
+	switch e := err.(type) {
+	case *AppError:
+		appErr = e
+	case *NotFoundError:
+		notFoundErr = e
+	case *ValidationError:
+		validationErr = e
+	default:
+		// Default to internal server error if the error type is unknown
+		WriteErrorResponse(w, http.StatusInternalServerError, ErrInternalServer, "An unexpected error occurred", err.Error())
+		return
+	}
+
+	if appErr != nil {
+		WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+	} else if notFoundErr != nil {
+		WriteErrorResponse(w, http.StatusNotFound, notFoundErr.Code, notFoundErr.Error(), "")
+	} else if validationErr != nil {
+		WriteErrorResponse(w, http.StatusBadRequest, validationErr.Code, validationErr.Error(), "")
+	}
+}
+
 // NotFoundError represents a "not found" error.
 // It is used when a requested resource cannot be found in the system.
 type NotFoundError struct {
