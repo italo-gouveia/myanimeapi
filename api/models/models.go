@@ -235,3 +235,27 @@ type UserCreateRequest struct {
 	Email    string `json:"email" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email address for the new user (required, valid email format, 5-100 characters)
 	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`         // Password for the new user (required, 5-100 characters)
 }
+
+// Response represents a generic API response.
+// It includes a status, message, and data payload.
+//
+// Example:
+//
+//	{
+//	  "status": "success",
+//	  "message": "Operation completed successfully",
+//	  "data": {
+//	    "id": 1,
+//	    "username": "john_doe"
+//	  }
+//	}
+//
+// TODO: In the future, consider implementing a more comprehensive generic response type
+// that includes pagination metadata, error details, and other common response fields.
+// This would standardize API responses across all endpoints and make it easier to
+// add new features like pagination, filtering, and sorting.
+type Response struct {
+	Status  string      `json:"status" example:"success"`               // Status of the response (success, error)
+	Message string      `json:"message" example:"Operation successful"` // Message describing the result
+	Data    interface{} `json:"data"`                                   // Data payload (can be any type)
+}
