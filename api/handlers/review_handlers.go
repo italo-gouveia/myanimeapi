@@ -21,32 +21,32 @@ import (
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
+	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
-	"myanimeapi/internal/db"
 	"myanimeapi/internal/errors"
 
 	"github.com/gorilla/mux"
 )
 
 // ReviewHandler defines the handlers for review-related routes.
-// It contains a database interface for interacting with the database.
+// It contains a review service for handling business logic.
 type ReviewHandler struct {
-	DB db.DBInterface
+	reviewService *services.ReviewService
 }
 
 // NewReviewHandler creates a new instance of ReviewHandler.
-// It accepts a database interface and returns a pointer to a ReviewHandler.
+// It accepts a review service and returns a pointer to a ReviewHandler.
 //
 // Example:
 //
-//	db := // initialize your database connection
-//	reviewHandler := NewReviewHandler(db)
-func NewReviewHandler(db db.DBInterface) *ReviewHandler {
-	return &ReviewHandler{DB: db}
+//	reviewService := services.NewReviewService(...)
+//	reviewHandler := NewReviewHandler(reviewService)
+func NewReviewHandler(reviewService *services.ReviewService) *ReviewHandler {
+	return &ReviewHandler{reviewService: reviewService}
 }
 
 // GetReviewHandler retrieves a review by its ID.
-// It validates the ID, queries the database, and returns the review as a JSON response.
+// It validates the ID, queries the service, and returns the review as a JSON response.
 // If the ID is invalid or the review is not found, it returns an appropriate error response.
 //
 // @Summary Get a review by ID
@@ -90,11 +90,10 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	// Debug: Log the parsed ID
 	log.Printf("Parsed ID: %d", id)
 
-	var review models.Review
-	// Use the correct context for the database query
-	result := h.DB.WithContext(r.Context()).Preload("User").Preload("Anime").First(&review, id)
-	if result.Error != nil {
-		log.Printf("Review not found: %v", result.Error)
+	// Get review from service
+	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Failed to get review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
 		return
 	}
@@ -130,8 +129,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 }
 
 // CreateReviewHandler creates a new review in the database.
-// It validates the input payload, checks for the existence of the associated user and anime,
-// and creates the review. If successful, it returns the created review as a JSON response.
+// It validates the input payload and uses the service to create the review.
+// If successful, it returns the created review as a JSON response.
 //
 // @Summary Create a new review
 // @Description Create a new review for an anime
@@ -176,28 +175,9 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Check if the user exists
-	var user models.User
-	result := h.DB.First(r.Context(), &user, payload.UserID)
-	if result.Error != nil {
-		log.Printf("User not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with ID '%d' not found.", payload.UserID))
-		return
-	}
-
-	// Check if the anime exists
-	var anime models.Anime
-	result = h.DB.First(r.Context(), &anime, payload.AnimeID)
-	if result.Error != nil {
-		log.Printf("Anime not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Anime not found", fmt.Sprintf("Anime with ID '%d' not found.", payload.UserID))
-		return
-	}
-
-	// Create the review
-	result = h.DB.Create(r.Context(), payload)
-	if result.Error != nil {
-		log.Printf("Failed to create review: %v", result.Error)
+	// Create review using service
+	if err := h.reviewService.CreateReview(r.Context(), payload); err != nil {
+		log.Printf("Failed to create review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create review", "An internal server error occurred while creating the review.")
 		return
 	}
@@ -217,8 +197,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 }
 
 // UpdateReviewHandler updates an existing review in the database.
-// It validates the ID and input payload, updates the review, and returns the updated review as a JSON response.
-// If the ID or input is invalid, or the update fails, it returns an error response.
+// It validates the ID and input payload, uses the service to update the review,
+// and returns the updated review as a JSON response.
 //
 // @Summary Update a review by ID
 // @Description Update a review with the input payload
@@ -272,24 +252,21 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Fetch the existing review
-	var review models.Review
-	result := h.DB.WithContext(r.Context()).First(&review, id)
-	if result.Error != nil {
-		log.Printf("Review not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
+	// Set the ID from the URL
+	payload.ID = id
+
+	// Update review using service
+	if err := h.reviewService.UpdateReview(r.Context(), payload); err != nil {
+		log.Printf("Failed to update review: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.")
 		return
 	}
 
-	// Update only the allowed fields
-	review.Content = payload.Content
-	review.Rating = payload.Rating
-
-	// Save the updated review
-	result = h.DB.WithContext(r.Context()).Save(&review)
-	if result.Error != nil {
-		log.Printf("Failed to update review: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.")
+	// Get the updated review
+	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Failed to get updated review: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve updated review", "An internal server error occurred while retrieving the updated review.")
 		return
 	}
 
@@ -324,8 +301,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 }
 
 // DeleteReviewHandler deletes a review from the database.
-// It validates the ID, deletes the review, and returns a 204 No Content response.
-// If the ID is invalid or the deletion fails, it returns an error response.
+// It validates the ID, uses the service to delete the review,
+// and returns a 204 No Content response.
 //
 // @Summary Delete a review by ID
 // @Description Delete a review by its ID
@@ -351,19 +328,9 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Fetch the existing review (including soft-deleted records)
-	var review models.Review
-	result := h.DB.WithContext(r.Context()).Unscoped().First(&review, id)
-	if result.Error != nil {
-		log.Printf("Review not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
-		return
-	}
-
-	// Delete the review
-	result = h.DB.WithContext(r.Context()).Delete(&models.Review{}, id)
-	if result.Error != nil {
-		log.Printf("Failed to delete review: %v", result.Error)
+	// Delete review using service
+	if err := h.reviewService.DeleteReview(r.Context(), id); err != nil {
+		log.Printf("Failed to delete review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete review", "An internal server error occurred while deleting the review.")
 		return
 	}
