@@ -31,17 +31,17 @@ import (
 // AnimeHandler defines the handlers for anime-related routes.
 // It contains an anime service for handling business logic.
 type AnimeHandler struct {
-	service *services.AnimeService
+	service services.AnimeServiceInterface
 }
 
 // NewAnimeHandler creates a new instance of AnimeHandler.
-// It accepts an anime service and returns a pointer to an AnimeHandler.
+// It accepts an anime service interface and returns a pointer to an AnimeHandler.
 //
 // Example:
 //
 //	animeService := services.NewAnimeService(repository)
 //	animeHandler := NewAnimeHandler(animeService)
-func NewAnimeHandler(service *services.AnimeService) *AnimeHandler {
+func NewAnimeHandler(service services.AnimeServiceInterface) *AnimeHandler {
 	return &AnimeHandler{service: service}
 }
 

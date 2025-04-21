@@ -11,6 +11,18 @@ import (
 	"time"
 )
 
+// AnimeServiceInterface defines the interface for anime service operations
+type AnimeServiceInterface interface {
+	GetAnimeByID(ctx context.Context, id uint) (*models.Anime, error)
+	GetAllAnimes(ctx context.Context, page, limit int) ([]models.Anime, int64, error)
+	CreateAnime(ctx context.Context, anime *models.Anime) error
+	UpdateAnime(ctx context.Context, anime *models.Anime) error
+	DeleteAnime(ctx context.Context, id uint) error
+	GetAnimesByTitle(ctx context.Context, title string, page, limit int) ([]models.Anime, int64, error)
+	GetAnimesByGenre(ctx context.Context, genre string, page, limit int) ([]models.Anime, int64, error)
+	GetReviewsForAnime(ctx context.Context, animeID uint, page, limit int) ([]models.Review, int64, error)
+}
+
 // AnimeService handles business logic for anime operations
 type AnimeService struct {
 	animeRepo repositories.AnimeRepository
