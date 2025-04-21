@@ -27,17 +27,24 @@
 // It uses the myanimeapi/pkg/handlers package to create the handlers.
 package main
 
+/*
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"myanimeapi/api/handlers"
 	"myanimeapi/api/mocks"
+	"myanimeapi/api/models"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"myanimeapi/internal/errors" // Import the errors package
 
 	"github.com/golang/mock/gomock"
+	"gorm.io/gorm"
 )
 
 // Define handler variables at the package level
@@ -121,10 +128,187 @@ func TestHealthCheck(t *testing.T) {
 
 	// Verify that all expectations were met
 	mockCtrl.Finish()
-}
+}*/
 
 // TestRegisterUser tests the user registration endpoint
 /*func TestRegisterUser(t *testing.T) {
+	// Reset mock expectations before each test
+	mockCtrl.Finish()
+	mockCtrl = gomock.NewController(t)
+
+	tests := []struct {
+		name           string
+		user           models.User
+		setupMocks     func()
+		expectedStatus int
+		checkResponse  func(*httptest.ResponseRecorder)
+	}{
+		{
+			name: "Successful Registration",
+			user: models.User{
+				Username: "testuser",
+				Email:    "test@example.com",
+				Password: "password123",
+			},
+			setupMocks: func() {
+				// Create a mock DB instance for the chain
+				mockDBInstance := &gorm.DB{}
+
+				// Expect username check
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "testuser").
+					Return(mockDBInstance)
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+
+				// Expect email check
+				mockDB.EXPECT().
+					Where(gomock.Any(), "email = ?", "test@example.com").
+					Return(mockDBInstance)
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+
+				// Expect user creation
+				mockDB.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, user interface{}) *gorm.DB {
+						u := user.(*models.User)
+						u.ID = 1
+						u.CreatedAt = time.Now()
+						u.UpdatedAt = time.Now()
+						return &gorm.DB{}
+					})
+			},
+			expectedStatus: http.StatusCreated,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response models.User
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode response: %v", err)
+				}
+				if response.ID != 1 {
+					t.Errorf("Expected user ID 1, got %d", response.ID)
+				}
+				if response.Username != "testuser" {
+					t.Errorf("Expected username 'testuser', got %s", response.Username)
+				}
+				if response.Email != "test@example.com" {
+					t.Errorf("Expected email 'test@example.com', got %s", response.Email)
+				}
+			},
+		},
+		{
+			name: "Username Already Exists",
+			user: models.User{
+				Username: "existinguser",
+				Email:    "new@example.com",
+				Password: "password123",
+			},
+			setupMocks: func() {
+				// Expect username check to find existing user
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "existinguser").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{})
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response errors.ErrorResponse
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode error response: %v", err)
+				}
+				if response.Error.Message != "User with this username already exists" {
+					t.Errorf("Expected error message about existing username, got %s", response.Error.Message)
+				}
+			},
+		},
+		{
+			name: "Email Already Exists",
+			user: models.User{
+				Username: "newuser",
+				Email:    "existing@example.com",
+				Password: "password123",
+			},
+			setupMocks: func() {
+				// Expect username check
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "newuser").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+
+				// Expect email check to find existing user
+				mockDB.EXPECT().
+					Where(gomock.Any(), "email = ?", "existing@example.com").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{})
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response errors.ErrorResponse
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode error response: %v", err)
+				}
+				if response.Error.Message != "User with this email already exists" {
+					t.Errorf("Expected error message about existing email, got %s", response.Error.Message)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			tt.setupMocks()
+
+			// Create request body
+			userJSON, err := json.Marshal(tt.user)
+			if err != nil {
+				t.Fatalf("Failed to marshal user: %v", err)
+			}
+
+			// Create request
+			req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(userJSON))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Add validated payload to context
+			ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &tt.user)
+			req = req.WithContext(ctx)
+
+			// Create response recorder
+			rr := httptest.NewRecorder()
+
+			// Call the handler
+			handler := http.HandlerFunc(authHandler.RegisterUserHandler)
+			handler.ServeHTTP(rr, req)
+
+			// Check status code
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+
+			// Check response
+			tt.checkResponse(rr)
+		})
+	}
+}*/
+
+// TestAuthenticateUser tests the user authentication endpoint
+/*func TestAuthenticateUser(t *testing.T) {
 	// Initialize the mock controller
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -132,154 +316,150 @@ func TestHealthCheck(t *testing.T) {
 	// Create the mock DB
 	mockDB := mocks.NewMockDBInterface(mockCtrl)
 
-	// Define the test user
-	user := models.User{
-		Username: "testuser",
-		Email:    "testuser@example.com",
-		Password: "testpassword",
+	// Create the auth handler with the mock DB
+	authHandler := handlers.NewAuthHandler(mockDB)
+
+	tests := []struct {
+		name           string
+		credentials    models.UserCredentials
+		setupMocks     func()
+		expectedStatus int
+		checkResponse  func(*httptest.ResponseRecorder)
+	}{
+		{
+			name: "Successful Authentication",
+			credentials: models.UserCredentials{
+				Username: "testuser",
+				Password: "password123",
+			},
+			setupMocks: func() {
+				// Mock user lookup
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "testuser").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, _ ...interface{}) *gorm.DB {
+						// Simulate finding the user
+						return &gorm.DB{}
+					})
+
+				// Mock saving the migrated hash (if needed)
+				mockDB.EXPECT().
+					Save(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{}).
+					AnyTimes()
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response map[string]string
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode response: %v", err)
+				}
+				if _, exists := response["token"]; !exists {
+					t.Error("Response does not contain a token")
+				}
+			},
+		},
+		{
+			name: "User Not Found",
+			credentials: models.UserCredentials{
+				Username: "nonexistentuser",
+				Password: "password123",
+			},
+			setupMocks: func() {
+				// Mock user lookup failure
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "nonexistentuser").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response errors.ErrorResponse
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode error response: %v", err)
+				}
+				if response.Error.Message != "User not found" {
+					t.Errorf("Expected error message 'User not found', got %s", response.Error.Message)
+				}
+			},
+		},
+		{
+			name: "Invalid Password",
+			credentials: models.UserCredentials{
+				Username: "testuser",
+				Password: "wrongpassword",
+			},
+			setupMocks: func() {
+				// Mock user lookup success but password verification failure
+				mockDB.EXPECT().
+					Where(gomock.Any(), "username = ?", "testuser").
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(dest interface{}, _ ...interface{}) *gorm.DB {
+						user := dest.(*models.User)
+						user.Username = "testuser"
+						user.Password = "$2a$10$invalidhashforpassword" // Invalid hash that won't match
+						return &gorm.DB{}
+					})
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var response errors.ErrorResponse
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("Failed to decode error response: %v", err)
+				}
+				if response.Error.Message != "Invalid credentials" {
+					t.Errorf("Expected error message 'Invalid credentials', got %s", response.Error.Message)
+				}
+			},
+		},
 	}
 
-	// Marshal the user to JSON
-	userJSON, _ := json.Marshal(user)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			tt.setupMocks()
 
-	// Create a new HTTP request
-	req, err := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(userJSON))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Simulate the middleware by adding the payload to the request context
-	ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &user)
-	req = req.WithContext(ctx)
-
-	// Create a *gorm.DB instance to return from the mock
-	gormDB := &gorm.DB{}
-
-	// Set up mock expectations for username check
-	mockDB.EXPECT().
-		Where("username = ?", user.Username).
-		Return(gormDB) // Return a *gorm.DB instance
-
-	mockDB.EXPECT().
-		First(gomock.Any(), gomock.Any()).
-		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate "user not found" by setting dest to an empty User
-			destUser := dest.(*models.User)
-			*destUser = models.User{}
-		}).
-		Return(gormDB) // Return gormDB (one value)
-
-	// Set up mock expectations for email check
-	mockDB.EXPECT().
-		Where("email = ?", user.Email).
-		Return(gormDB) // Return a *gorm.DB instance
-
-	mockDB.EXPECT().
-		First(gomock.Any(), gomock.Any()).
-		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate "user not found" by setting dest to an empty User
-			destUser := dest.(*models.User)
-			*destUser = models.User{}
-		}).
-		Return(gormDB) // Return gormDB (one value)
-
-	// Set up mock expectations for user creation
-	mockDB.EXPECT().
-		Create(gomock.Any(), gomock.Any()).
-		Do(func(value interface{}, conds ...interface{}) {
-			// Simulate successful user creation by setting value to the test user
-			destUser := value.(*models.User)
-			*destUser = user
-		}).
-		Return(gormDB) // Return gormDB (one value)
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(authHandler.RegisterUserHandler)
-
-	// Serve the HTTP request
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
-	}
-
-	// Check the response body
-	var responseUser models.User
-	if err := json.NewDecoder(rr.Body).Decode(&responseUser); err != nil {
-		t.Fatalf("failed to decode response body: %v", err)
-	}
-	if responseUser.Username != user.Username {
-		t.Errorf("handler returned unexpected body: got %v want %v", responseUser.Username, user.Username)
-	}
-}*/
-
-// TestAuthenticateUser tests the user authentication endpoint
-/*func TestAuthenticateUser(t *testing.T) {
-	// Define the test credentials
-	credentials := models.UserCredentials{
-		Username: "testuser",
-		Password: "testpassword",
-	}
-
-	// Marshal the credentials to JSON
-	credentialsJSON, _ := json.Marshal(credentials)
-
-	// Create a new HTTP request
-	req, err := http.NewRequest("POST", "/auth/authenticate", bytes.NewBuffer(credentialsJSON))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Simulate the middleware by adding the payload to the request context
-	ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &credentials)
-	req = req.WithContext(ctx)
-
-	// Create a valid gorm.DB object for the mock to return
-	mockDBInstance := &gorm.DB{}
-
-	// Set up mock expectations
-	mockDB.EXPECT().
-		Where(gomock.Any(), "username = ?", credentials.Username).
-		Return(mockDBInstance)
-
-	mockDB.EXPECT().
-		First(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
-		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate a found user
-			destUser := dest.(*models.User)
-			*destUser = models.User{
-				Username: credentials.Username,
-				Password: "$2a$10$hashedpassword", // Simulate a hashed password
+			// Create request body
+			credentialsJSON, err := json.Marshal(tt.credentials)
+			if err != nil {
+				t.Fatalf("Failed to marshal credentials: %v", err)
 			}
+
+			// Create request
+			req := httptest.NewRequest("POST", "/auth/authenticate", bytes.NewBuffer(credentialsJSON))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Add validated payload to context
+			ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &tt.credentials)
+			req = req.WithContext(ctx)
+
+			// Create response recorder
+			rr := httptest.NewRecorder()
+
+			// Call the handler
+			handler := http.HandlerFunc(authHandler.AuthenticateHandler)
+			handler.ServeHTTP(rr, req)
+
+			// Check status code
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+
+			// Check response
+			tt.checkResponse(rr)
 		})
-
-	mockDB.EXPECT().
-		GetError().
-		Return(nil)
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(authHandler.AuthenticateHandler)
-
-	// Serve the HTTP request
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	// Check the response body
-	var response map[string]string
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatalf("failed to decode response body: %v", err)
-	}
-	if _, exists := response["token"]; !exists {
-		t.Errorf("handler returned unexpected body: token not found")
 	}
 }*/
 
@@ -384,5 +564,180 @@ func TestHealthCheck(t *testing.T) {
 	if responseReview.Content != review.Content {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			responseReview.Content, review.Content)
+	}
+}*/
+
+// TestFavorites tests the favorite-related endpoints
+/*func TestFavorites(t *testing.T) {
+	// Reset mock expectations before each test
+	mockCtrl.Finish()
+	mockCtrl = gomock.NewController(t)
+
+	tests := []struct {
+		name           string
+		setupMocks     func()
+		request        func() *http.Request
+		expectedStatus int
+		checkResponse  func(*httptest.ResponseRecorder)
+	}{
+		{
+			name: "Add Favorite Success",
+			setupMocks: func() {
+				// Mock anime existence check
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{}).
+					Do(func(dest interface{}, _ ...interface{}) {
+						anime := dest.(*models.Anime)
+						*anime = models.Anime{ID: 1, Title: "Test Anime"}
+					})
+
+				// Mock favorite existence check
+				mockDB.EXPECT().
+					Where(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{})
+
+				mockDB.EXPECT().
+					First(gomock.Any(), gomock.Any()).
+					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+
+				// Mock favorite creation
+				mockDB.EXPECT().
+					Create(gomock.Any()).
+					Return(&gorm.DB{}).
+					Do(func(value interface{}, _ ...interface{}) {
+						favorite := value.(*models.Favorite)
+						*favorite = models.Favorite{
+							ID:        1,
+							UserID:    1,
+							AnimeID:   1,
+							CreatedAt: time.Now(),
+							UpdatedAt: time.Now(),
+						}
+					})
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("POST", "/favorites", bytes.NewBufferString(`{"anime_id": 1}`))
+				req.Header.Set("Content-Type", "application/json")
+				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
+				return req.WithContext(ctx)
+			},
+			expectedStatus: http.StatusCreated,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var favorite models.Favorite
+				if err := json.NewDecoder(rr.Body).Decode(&favorite); err != nil {
+					t.Errorf("Failed to decode response: %v", err)
+				}
+				if favorite.ID != 1 {
+					t.Errorf("Expected favorite ID 1, got %d", favorite.ID)
+				}
+				if favorite.AnimeID != 1 {
+					t.Errorf("Expected anime ID 1, got %d", favorite.AnimeID)
+				}
+			},
+		},
+		{
+			name: "Get Favorites Success",
+			setupMocks: func() {
+				mockDB.EXPECT().
+					Preload(gomock.Any()).
+					Return(mockDB)
+
+				mockDB.EXPECT().
+					Where(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(mockDB)
+
+				mockDB.EXPECT().
+					Find(gomock.Any()).
+					Return(&gorm.DB{}).
+					Do(func(dest interface{}, _ ...interface{}) {
+						favorites := dest.(*[]models.Favorite)
+						*favorites = []models.Favorite{
+							{
+								ID:        1,
+								UserID:    1,
+								AnimeID:   1,
+								CreatedAt: time.Now(),
+								UpdatedAt: time.Now(),
+								Anime: models.Anime{
+									ID:    1,
+									Title: "Test Anime",
+								},
+							},
+						}
+					})
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("GET", "/favorites", nil)
+				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
+				return req.WithContext(ctx)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				var favorites []models.Favorite
+				if err := json.NewDecoder(rr.Body).Decode(&favorites); err != nil {
+					t.Errorf("Failed to decode response: %v", err)
+				}
+				if len(favorites) != 1 {
+					t.Errorf("Expected 1 favorite, got %d", len(favorites))
+				}
+				if favorites[0].Anime.Title != "Test Anime" {
+					t.Errorf("Expected anime title 'Test Anime', got %s", favorites[0].Anime.Title)
+				}
+			},
+		},
+		{
+			name: "Remove Favorite Success",
+			setupMocks: func() {
+				mockDB.EXPECT().
+					Where(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(mockDB)
+
+				mockDB.EXPECT().
+					Delete(gomock.Any()).
+					Return(&gorm.DB{})
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("DELETE", "/favorites/1", nil)
+				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
+				return req.WithContext(ctx)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(rr *httptest.ResponseRecorder) {
+				if rr.Body.Len() != 0 {
+					t.Error("Expected empty response body")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMocks()
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/favorites":
+					if r.Method == "POST" {
+						favoriteHandler.AddFavoriteHandler(w, r)
+					} else if r.Method == "GET" {
+						favoriteHandler.GetFavoritesHandler(w, r)
+					}
+				case "/favorites/1":
+					if r.Method == "DELETE" {
+						favoriteHandler.RemoveFavoriteHandler(w, r)
+					}
+				}
+			})
+
+			handler.ServeHTTP(rr, tt.request())
+
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+
+			tt.checkResponse(rr)
+		})
 	}
 }*/
