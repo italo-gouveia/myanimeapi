@@ -253,13 +253,20 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 //
 // @Security ApiKeyAuth
 func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	var payload models.Anime
+	var payload models.AnimeCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	err := h.service.CreateAnime(r.Context(), &payload)
+	// Convert AnimeCreateRequest to Anime
+	anime := &models.Anime{
+		Title:       payload.Title,
+		Description: payload.Description,
+		Rating:      payload.Rating,
+	}
+
+	err := h.service.CreateAnime(r.Context(), anime)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -269,7 +276,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusCreated, payload)
+	utils.WriteJSONResponse(w, http.StatusCreated, anime)
 }
 
 // UpdateAnimeHandler updates an existing anime entry in the database.
@@ -389,7 +396,7 @@ func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
 	// Protected routes (require authentication)
-	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateAnimeHandler), models.Anime{})).Methods("POST")
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateAnimeHandler), models.AnimeCreateRequest{})).Methods("POST")
 	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateAnimeHandler), models.Anime{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteAnimeHandler).Methods("DELETE")
 }
