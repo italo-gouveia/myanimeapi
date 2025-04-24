@@ -19,14 +19,20 @@ func ParseUint(s string) (uint, error) {
 func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
+		// If we can't encode the error response, we can't do much more
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
 }
 
 // WriteJSONResponse writes a JSON response to the HTTP response writer
 func WriteJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		// If we can't encode the response, we can't do much more
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 // GetPaginationParams extracts pagination parameters from the request
