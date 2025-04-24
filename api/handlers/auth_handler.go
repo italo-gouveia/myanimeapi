@@ -67,7 +67,10 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// If we can't encode the response, we can't do much more
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 // AuthenticateHandler handles user authentication requests.
