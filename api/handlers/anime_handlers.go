@@ -253,8 +253,9 @@ func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter,
 //
 // @Security ApiKeyAuth
 func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	var payload models.AnimeCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	// Get the validated payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeCreateRequest)
+	if !ok {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
