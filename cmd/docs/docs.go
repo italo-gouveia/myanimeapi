@@ -23,28 +23,116 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate a user with username and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Authenticate a user",
+                "parameters": [
+                    {
+                        "description": "User credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserCredentials"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Register a new user with the provided credentials",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User registration data",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/favorites": {
             "get": {
-                "description": "Retrieves all anime in the authenticated user's favorites list",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all favorites for the authenticated user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "favorites"
                 ],
-                "summary": "Get user's favorite anime list",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer JWT",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
+                "summary": "Get user's favorites",
                 "responses": {
                     "200": {
-                        "description": "List of user's favorite anime",
+                        "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -58,16 +146,29 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
-            },
+            }
+        },
+        "/favorites/{anime_id}": {
             "post": {
-                "description": "Adds a specific anime to the authenticated user's favorites list",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add an anime to the authenticated user's favorites",
                 "consumes": [
                     "application/json"
                 ],
@@ -77,34 +178,25 @@ const docTemplate = `{
                 "tags": [
                     "favorites"
                 ],
-                "summary": "Add an anime to user's favorites",
+                "summary": "Add anime to favorites",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Bearer JWT",
-                        "name": "Authorization",
-                        "in": "header",
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "anime_id",
+                        "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Anime ID to add to favorites",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.FavoriteCreateRequest"
-                        }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Favorite created successfully",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/models.Favorite"
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -116,55 +208,57 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Anime not found",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "Anime already in favorites",
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
-            }
-        },
-        "/favorites/{id}": {
+            },
             "delete": {
-                "description": "Removes a specific anime from the authenticated user's favorites list",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove an anime from the authenticated user's favorites",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "favorites"
                 ],
-                "summary": "Remove an anime from user's favorites",
+                "summary": "Remove anime from favorites",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Bearer JWT",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Anime ID to remove from favorites",
-                        "name": "id",
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "anime_id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "204": {
-                        "description": "Favorite removed successfully"
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
                     },
                     "401": {
                         "description": "Unauthorized",
@@ -172,8 +266,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -561,127 +661,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/auth/authenticate": {
-            "post": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
-                ],
-                "description": "Authenticate a user and return a JWT token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Authenticate a user",
-                "parameters": [
-                    {
-                        "description": "User credentials",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UserCredentials"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Returns a JWT token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "User not found or invalid credentials",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to generate token",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/auth/register": {
-            "post": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
-                ],
-                "description": "Register a new user with the provided data",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Register a new user",
-                "parameters": [
-                    {
-                        "description": "User registration data",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "User with this username or email already exists",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to hash password or create user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/reviews": {
             "post": {
                 "security": [
@@ -865,14 +844,14 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Retrieve a paginated list of all users. Requires admin privileges.",
+                "description": "Retrieve a paginated list of all users. Restricted to admin users only.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Get all users (admin only)",
+                "summary": "Get all users",
                 "parameters": [
                     {
                         "type": "integer",
@@ -882,7 +861,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Number of items per page (default: 10)",
+                        "description": "Number of items per page (default: 10, max: 100)",
                         "name": "limit",
                         "in": "query"
                     }
@@ -918,14 +897,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
-                ],
-                "description": "Create a new user with the provided data.",
+                "description": "Create a new user account. This endpoint is public and does not require authentication.",
                 "consumes": [
                     "application/json"
                 ],
@@ -938,12 +910,12 @@ const docTemplate = `{
                 "summary": "Create a new user",
                 "parameters": [
                     {
-                        "description": "User data",
+                        "description": "User object",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UserCreateRequest"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -951,17 +923,17 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.UserResponse"
+                            "$ref": "#/definitions/models.User"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or missing required fields",
+                        "description": "Invalid input",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "User with this username or email already exists",
+                        "description": "Username or email already exists",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1033,12 +1005,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyAuth": []
                     }
                 ],
-                "description": "Update an existing user with the provided data. Requires authentication.",
+                "description": "Update an existing user. Requires authentication and the user can only update their own profile.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1058,12 +1027,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated user data",
+                        "description": "User object",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UserCreateRequest"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -1071,17 +1040,29 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.UserResponse"
+                            "$ref": "#/definitions/models.User"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or ID format",
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Username or email already exists",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1098,12 +1079,12 @@ const docTemplate = `{
                 "security": [
                     {
                         "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete a user by their ID. Requires authentication.",
+                "description": "Delete a user by their ID. Requires authentication and the user can only delete their own profile.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "users"
                 ],
@@ -1123,6 +1104,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1306,16 +1293,21 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FavoriteCreateRequest": {
-            "description": "Request model for adding an anime to favorites",
+        "models.Response": {
             "type": "object",
-            "required": [
-                "anime_id"
-            ],
             "properties": {
-                "anime_id": {
-                    "type": "integer",
-                    "example": 1
+                "data": {
+                    "description": "Data payload (can be any type)"
+                },
+                "message": {
+                    "description": "Message describing the result",
+                    "type": "string",
+                    "example": "Operation successful"
+                },
+                "status": {
+                    "description": "Status of the response (success, error)",
+                    "type": "string",
+                    "example": "success"
                 }
             }
         },
@@ -1504,37 +1496,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "description": "Unique username for the user",
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3,
-                    "example": "john_doe"
-                }
-            }
-        },
-        "models.UserCreateRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "username"
-            ],
-            "properties": {
-                "email": {
-                    "description": "Email address for the new user (required, valid email format, 5-100 characters)",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 5,
-                    "example": "john@example.com"
-                },
-                "password": {
-                    "description": "Password for the new user (required, 5-100 characters)",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 5,
-                    "example": "password123"
-                },
-                "username": {
-                    "description": "Username for the new user (required, 3-50 characters)",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
