@@ -256,11 +256,11 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
           publishDeployment: ${{ github.repository_owner }}/myanimeapi
 
-      - name: Run GitLeaks
-        uses: zricethezav/gitleaks-action@v8.18.0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
-          verbose: true
+          redact: true
 
   swagger:
     name: Validate Swagger Docs
