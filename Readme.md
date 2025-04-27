@@ -36,11 +36,10 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [Unit Tests](#unit-tests)
     - [Integration Tests](#integration-tests)
     - [End-to-End Tests](#end-to-end-tests)
+    - [Smoke Tests](#smoke-tests)
     - [Generating Test Coverage](#generating-test-coverage)
   - [Contributing](#contributing)
   - [Changelog](#changelog)
-    - [Git Semantic Versioning](#git-semantic-versioning)
-    - [Tagging Releases with Git](#tagging-releases-with-git)
   - [Badges](#badges)
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
@@ -57,22 +56,26 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 - **Pagination**: Paginated responses for large datasets.
 - **Rate Limiting**: Protect endpoints from abuse with rate limiting.
 - **Swagger Documentation**: Auto-generated API documentation.
+- **Favorite Anime**: Add and manage favorite anime entries.
+- **Error Handling**: Structured error responses with detailed information.
+- **Security**: Regular security scanning and vulnerability checks.
 
 ## Technologies Used
 
-- **Go**: Backend programming language.
-- **Gorilla Mux**: HTTP router and dispatcher.
-- **GORM**: ORM for database interactions.
+- **Go**: Backend programming language (v1.23.0).
+- **Gorilla Mux**: HTTP router and dispatcher (v1.8.1).
+- **GORM**: ORM for database interactions (v1.25.12).
 - **PostgreSQL**: Relational database.
-- **JWT**: JSON Web Tokens for authentication.
-- **Swagger**: API documentation.
+- **JWT**: JSON Web Tokens for authentication (v5.2.2).
+- **Swagger**: API documentation (v1.16.4).
 - **Docker**: Containerization for easy deployment and development.
+- **Validator**: Input validation (v10.25.0).
 
 ## Getting Started
 
 ### Prerequisites
 
-- Go 1.23 or higher
+- Go 1.23.0 or higher
 - PostgreSQL
 - Docker (optional)
 
@@ -117,7 +120,7 @@ godoc -http=:6060
 Open your browser and navigate to:
 
 ```bash
-http://localhost:6060/pkg/myanimeapi/
+http://localhost:6060/api/myanimeapi/
 ```
 
 ----------
@@ -139,7 +142,7 @@ Run the Tests
 Run the tests using the following command:
 
 ```bash
-go test -v ./pkg/handlers
+go test -v ./api/handlers
 ```
 
 ### Docker Setup
@@ -154,14 +157,14 @@ This will start both the PostgreSQL database and the Go API server.
 
 **Access the API:**  
 The API will be available at `http://localhost:8080/v1`.
-The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
+The Swagger documentation will be available at `http://localhost:8080/swagger/index.html`.
 
 ## API Endpoints
 
 ### Authentication
 
 - **POST** `/v1/auth/register`: Register a new user.
-- **POST** `/auth/authenticate`: Authenticate a user and receive a JWT token.
+- **POST** `/v1/auth/login`: Authenticate a user and receive a JWT token.
 
 ### Users
 
@@ -173,11 +176,14 @@ The Swagger it will be available at `http://localhost:8080/swagger/index.html`.
 
 ### Anime
 
-- **GET** `/v1/anime`: Get all anime entries.
+- **GET** `/v1/anime`: Get all anime entries with pagination.
 - **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID.
 - **POST** `/v1/anime`: Create a new anime entry (Authenticated users only).
 - **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only).
 - **DELETE** `/v1/anime/{id}`: Delete an anime entry (Authenticated users only).
+- **POST** `/v1/anime/{id}/favorite`: Add anime to favorites (Authenticated users only).
+- **DELETE** `/v1/anime/{id}/favorite`: Remove anime from favorites (Authenticated users only).
+- **GET** `/v1/anime/favorites`: Get user's favorite anime (Authenticated users only).
 
 ### Reviews
 
@@ -286,7 +292,7 @@ go test ./...
 ### Unit Tests
 Run unit tests for the handlers:
 ```bash
-go test -v ./pkg/handlers
+go test -v ./api/handlers
 ```
 
 ### Integration Tests
@@ -303,6 +309,12 @@ Run end-to-end tests to test the API as a whole:
 go test -v ./tests/e2e
 ```
 
+### Smoke Tests
+Run smoke tests to verify basic functionality:
+```bash
+go test -v ./tests/smoke
+```
+
 ### Generating Test Coverage
 Generate a test coverage report:
 
@@ -311,58 +323,23 @@ go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
-
 ## Contributing
 
 Contributions are welcome! Please follow these steps:
 
 1. Fork the repository.
-
 2. Create a new branch for your feature or bugfix.
-
 3. Commit your changes with clear and descriptive messages.
-
 4. Submit a pull request.
 
 ## Changelog
 
 See the [CHANGELOG.md](CHANGELOG.md) file for a detailed list of changes.
 
-   
-### Git Semantic Versioning
-Adjust the CHANGELOG.md File with the changes.
-
-Do the following:
-
-```bash
-git commit -m "feat: Add new endpoint to fetch anime by genre"
-git tag v1.1.0
-git push origin main --tags
-```
-
-Or do like this:
-### Tagging Releases with Git
-To mark specific versions of your API, use Git tags.
-
-Steps to Tag a Release
-
-**1. Create a Git Tag:**
-After updating the VERSION constant and CHANGELOG.md, create a Git tag for the release:
-
-```bash
-git tag v1.0.0
-```
-**2. Push the Tag to GitHub:**
-Push the tag to your remote repository:
-```bash
-git push origin v1.0.0
-```
-
-**3. Create a GitHub Release:**
-Go to your repository on GitHub, navigate to Releases, and create a new release for the tag. Include the changelog entries for that version.
-
 ## Badges
 [![Build Status](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/italo-gouveia/myAnimeAPI/actions)
+[![Test Coverage](https://codecov.io/gh/italo-gouveia/myAnimeAPI/branch/main/graph/badge.svg)](https://codecov.io/gh/italo-gouveia/myAnimeAPI)
+[![Security Scan](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/security.yml/badge.svg)](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/security.yml)
 [![Swagger](https://img.shields.io/badge/docs-swagger-blue)](https://github.com/italo-gouveia/myAnimeAPI/blob/main/cmd/docs/swagger.yaml)
 [![GitHub release](https://img.shields.io/github/release/italo-gouveia/myAnimeAPI.svg)](https://github.com/italo-gouveia/myAnimeAPI/releases)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI)
@@ -373,21 +350,17 @@ Go to your repository on GitHub, navigate to Releases, and create a new release 
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/pulls)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 - [Gorilla Mux](https://github.com/gorilla/mux) for routing.
-
 - [GORM](https://gorm.io/) for database interactions.
-
 - [JWT](https://jwt.io/) for authentication.
-
 - [Swagger](https://swagger.io/) for API documentation.
-
-- [Docker](https://www.docker.com/) for Containerization
+- [Docker](https://www.docker.com/) for Containerization.
+- [Validator](https://github.com/go-playground/validator) for input validation.
 
 ## Contact
 For questions or feedback, please reach out to italogouveiadev@outlook.com.
