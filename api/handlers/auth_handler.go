@@ -107,7 +107,10 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // RegisterAuthRoutes registers all auth-related routes with a *mux.Router
