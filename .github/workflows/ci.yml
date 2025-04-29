@@ -260,10 +260,11 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}} # Only required for organizations, not individual users.
         with:
-          config-path: .gitleaks.toml
-          redact: false
-          exit-code: 1
+          # Pass command line arguments to gitleaks. Flags like --redact, --verbose, --exit-code can be added here.
+          # The action automatically detects .gitleaks.toml at the root.
+          gitleaks_flags: "--redact --exit-code 1 -v --report-format sarif --report-path results.sarif"
 
   swagger:
     name: Validate Swagger Docs
