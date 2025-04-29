@@ -15,5 +15,5 @@ tags = ["aws", "key"]
 [[rules]]
 id = "aws-secret-access-key"
 description = "AWS Secret Access Key"
-regex = '''(?i)aws(.{0,20})?['\"][0-9a-zA-Z\/+]{40}['\"]'''
+regex = '''(?i)aws(.{0,20})?['"][0-9a-zA-Z/+]{40}['"]'''
 tags = ["aws", "key"]
