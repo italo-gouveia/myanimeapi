@@ -263,6 +263,7 @@ jobs:
         with:
           config-path: .gitleaks.toml
           redact: false
+          exit-code: 1
 
   swagger:
     name: Validate Swagger Docs
