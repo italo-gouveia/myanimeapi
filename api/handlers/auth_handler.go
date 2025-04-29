@@ -68,8 +68,8 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		// If we can't encode the response, we can't do much more
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
 	}
 }
 
