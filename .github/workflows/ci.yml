@@ -262,7 +262,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-path: .gitleaks.toml
-          redact: true
+          redact: false
 
   swagger:
     name: Validate Swagger Docs
