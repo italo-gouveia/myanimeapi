@@ -349,6 +349,8 @@ See the [CHANGELOG.md](CHANGELOG.md) file for a detailed list of changes.
 [![GitHub issues](https://img.shields.io/github/issues/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/pulls)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DeepWiki Documentation](https://img.shields.io/badge/docs-DeepWiki-blue)](https://deepwiki.com/italo-gouveia/myanimeapi)
+[![GitDiagram](https://img.shields.io/badge/architecture-GitDiagram-blue)](https://gitdiagram.com/italo-gouveia/myanimeapi)
 
 ## License
 
