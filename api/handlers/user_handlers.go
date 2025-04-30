@@ -5,8 +5,8 @@
 //
 // Example usage:
 //
-//	db := // initialize your database connection
-//	userHandler := handlers.NewUserHandler(db)
+//	userService := services.NewUserService(userRepo)
+//	userHandler := handlers.NewUserHandler(userService)
 //	router := mux.NewRouter()
 //	userHandler.RegisterUserRoutes(router)
 //
@@ -21,39 +21,39 @@ import (
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
+	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
-	"myanimeapi/internal/db"
 	"myanimeapi/internal/errors"
 
 	"github.com/gorilla/mux"
 )
 
 // UserHandler defines the handlers for user-related routes.
-// It contains a database interface for interacting with the database.
+// It contains a user service for handling user-related business logic.
 type UserHandler struct {
-	DB db.DBInterface
+	userService *services.UserService
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-// It accepts a database interface and returns a pointer to a UserHandler.
+// It accepts a user service and returns a pointer to a UserHandler.
 //
 // Example:
 //
-//	db := // initialize your database connection
-//	userHandler := NewUserHandler(db)
-func NewUserHandler(db db.DBInterface) *UserHandler {
-	return &UserHandler{DB: db}
+//	userService := services.NewUserService(userRepo)
+//	userHandler := NewUserHandler(userService)
+func NewUserHandler(userService *services.UserService) *UserHandler {
+	return &UserHandler{userService: userService}
 }
 
 // GetAllUsersHandler retrieves a paginated list of all users.
 // This endpoint is restricted to admin users only.
 //
-// @Summary Get all users (admin only)
-// @Description Retrieve a paginated list of all users. Requires admin privileges.
+// @Summary Get all users
+// @Description Retrieve a paginated list of all users. Restricted to admin users only.
 // @Tags users
 // @Produce json
 // @Param page query int false "Page number (default: 1)"
-// @Param limit query int false "Number of items per page (default: 10)"
+// @Param limit query int false "Number of items per page (default: 10, max: 100)"
 // @Success 200 {array} models.User
 // @Failure 400 {object} errors.ErrorResponse "Invalid pagination parameters"
 // @Failure 403 {object} errors.ErrorResponse "Access denied"
@@ -91,20 +91,27 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Calculate offset
-	offset := (page - 1) * limit
-
-	var users []models.User
-	result := h.DB.Offset(offset).Limit(limit).Find(&users)
-	if result.Error != nil {
-		log.Printf("Failed to retrieve users: %v", result.Error)
+	// Get users using the service
+	users, total, err := h.userService.GetAllUsers(r.Context(), page, limit)
+	if err != nil {
+		log.Printf("Failed to retrieve users: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve users", "An internal server error occurred while retrieving users.")
 		return
 	}
 
+	// Create response with pagination metadata
+	response := map[string]interface{}{
+		"users": users,
+		"pagination": map[string]interface{}{
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		},
+	}
+
 	// Set response header and encode the result
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(users); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
@@ -137,25 +144,32 @@ func (h *UserHandler) GetAllUsersHandler(w http.ResponseWriter, r *http.Request)
 //
 // @Security ApiKeyAuth
 func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL
 	vars := mux.Vars(r)
 	idStr := vars["id"]
-
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", err.Error())
 		return
 	}
 
-	var user models.User
-	result := h.DB.First(r.Context(), &user, id)
-	if result.Error != nil {
-		log.Printf("User not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with ID '%d' not found.", id))
+	// Get user using the service
+	user, err := h.userService.GetUserByID(r.Context(), id)
+	if err != nil {
+		// Check if it's a "not found" error
+		if err.(*errors.AppError).Code == errors.ErrResourceNotFound {
+			log.Printf("User not found: %v", err)
+			errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with ID %d", id))
+			return
+		}
+
+		log.Printf("Failed to retrieve user: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve user", "An internal server error occurred while retrieving the user.")
 		return
 	}
 
+	// Set response header and encode the result
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		log.Printf("Failed to encode response: %v", err)
@@ -165,72 +179,52 @@ func (h *UserHandler) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUserHandler creates a new user.
-// This endpoint is publicly accessible and does not require authentication.
+// This endpoint is public and does not require authentication.
 //
 // @Summary Create a new user
-// @Description Create a new user with the provided data.
+// @Description Create a new user account. This endpoint is public and does not require authentication.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body models.UserCreateRequest true "User data"
-// @Success 201 {object} models.UserResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
-// @Failure 409 {object} errors.ErrorResponse "User with this username or email already exists"
+// @Param user body models.User true "User object"
+// @Success 201 {object} models.User
+// @Failure 400 {object} errors.ErrorResponse "Invalid input"
+// @Failure 409 {object} errors.ErrorResponse "Username or email already exists"
 // @Failure 500 {object} errors.ErrorResponse "Failed to create user"
 // @Router /v1/users [post]
-// @Example
-//
-//	{
-//	  "username": "john_doe",
-//	  "email": "john@example.com",
-//	  "password": "password123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "username": "john_doe",
-//	  "email": "john@example.com",
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
-//	}
-//
-// @Security []
 func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
-	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
+	// Parse request body
+	var payload models.User
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.")
 		return
 	}
 
-	// Check if a user with the same username already exists
-	var existingUser models.User
-	result := h.DB.Where(r.Context(), "username = ?", payload.Username).First(&existingUser)
-	if result.Error == nil {
-		log.Printf("User with username %s already exists", payload.Username)
-		errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "User with this username already exists", "The provided username is already in use.")
+	// Validate required fields
+	if payload.Username == "" || payload.Email == "" || payload.Password == "" {
+		log.Println("Missing required fields")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Missing required fields", "Username, email, and password are required.")
 		return
 	}
 
-	// Check if a user with the same email already exists
-	result = h.DB.Where(r.Context(), "email = ?", payload.Email).First(&existingUser)
-	if result.Error == nil {
-		log.Printf("User with email %s already exists", payload.Email)
-		errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "User with this email already exists", "The provided email is already in use.")
-		return
-	}
+	// Create user using the service
+	err := h.userService.CreateUser(r.Context(), &payload)
+	if err != nil {
+		// Check if it's a conflict error (username or email already exists)
+		if err.(*errors.AppError).Code == errors.ErrConflict {
+			log.Printf("Conflict: %v", err)
+			errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "Username or email already exists", err.Error())
+			return
+		}
 
-	// Create the user
-	result = h.DB.Create(r.Context(), payload)
-	if result.Error != nil {
-		log.Printf("Failed to create user: %v", result.Error)
+		log.Printf("Failed to create user: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create user", "An internal server error occurred while creating the user.")
 		return
 	}
 
-	log.Printf("User %s created successfully", payload.Username)
+	// Set response header and encode the result
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
@@ -240,85 +234,78 @@ func (h *UserHandler) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 // UpdateUserHandler updates an existing user.
-// This endpoint requires authentication.
+// This endpoint requires authentication and the user can only update their own profile.
 //
 // @Summary Update a user
-// @Description Update an existing user with the provided data. Requires authentication.
+// @Description Update an existing user. Requires authentication and the user can only update their own profile.
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"
-// @Param user body models.UserCreateRequest true "Updated user data"
-// @Success 200 {object} models.UserResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or ID format"
+// @Param user body models.User true "User object"
+// @Success 200 {object} models.User
+// @Failure 400 {object} errors.ErrorResponse "Invalid input"
+// @Failure 403 {object} errors.ErrorResponse "Access denied"
 // @Failure 404 {object} errors.ErrorResponse "User not found"
+// @Failure 409 {object} errors.ErrorResponse "Username or email already exists"
 // @Failure 500 {object} errors.ErrorResponse "Failed to update user"
 // @Security ApiKeyAuth
 // @Router /v1/users/{id} [put]
-// @Example
-//
-//	{
-//	  "username": "john_doe_updated",
-//	  "email": "john_updated@example.com",
-//	  "password": "newpassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "username": "john_doe_updated",
-//	  "email": "john_updated@example.com",
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
-//	}
-//
-// @Security ApiKeyAuth
 func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL
 	vars := mux.Vars(r)
 	idStr := vars["id"]
-
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", err.Error())
 		return
 	}
 
-	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.User)
-	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
+	// Check if the authenticated user is updating their own profile
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
+	if !ok || userID != id {
+		log.Printf("Access denied: user %d attempting to update user %d", userID, id)
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Access denied", "You do not have permission to update this user.")
 		return
 	}
 
-	// Fetch the existing user
-	var user models.User
-	result := h.DB.First(r.Context(), &user, id)
-	if result.Error != nil {
-		log.Printf("User not found: %v", result.Error)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with ID '%d' not found.", id))
+	// Parse request body
+	var payload models.User
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.")
 		return
 	}
 
-	// Update the user fields
-	user.Username = payload.Username
-	user.Email = payload.Email
-	user.Password = payload.Password
-	user.IsAdmin = payload.IsAdmin
+	// Set the ID from the URL
+	payload.ID = id
 
-	// Save the updated user
-	result = h.DB.Save(r.Context(), &user)
-	if result.Error != nil {
-		log.Printf("Failed to update user: %v", result.Error)
+	// Update user using the service
+	err = h.userService.UpdateUser(r.Context(), &payload)
+	if err != nil {
+		// Check if it's a "not found" error
+		if err.(*errors.AppError).Code == errors.ErrResourceNotFound {
+			log.Printf("User not found: %v", err)
+			errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with ID %d", id))
+			return
+		}
+
+		// Check if it's a conflict error (username or email already exists)
+		if err.(*errors.AppError).Code == errors.ErrConflict {
+			log.Printf("Conflict: %v", err)
+			errors.WriteErrorResponse(w, http.StatusConflict, errors.ErrConflict, "Username or email already exists", err.Error())
+			return
+		}
+
+		log.Printf("Failed to update user: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update user", "An internal server error occurred while updating the user.")
 		return
 	}
 
-	log.Printf("User %s updated successfully", user.Username)
+	// Set response header and encode the result
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
@@ -326,39 +313,55 @@ func (h *UserHandler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 // DeleteUserHandler deletes a user by their ID.
-// This endpoint requires authentication.
+// This endpoint requires authentication and the user can only delete their own profile.
 //
 // @Summary Delete a user
-// @Description Delete a user by their ID. Requires authentication.
+// @Description Delete a user by their ID. Requires authentication and the user can only delete their own profile.
 // @Tags users
+// @Produce json
 // @Param id path int true "User ID"
 // @Success 204 "No Content"
 // @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure 403 {object} errors.ErrorResponse "Access denied"
 // @Failure 404 {object} errors.ErrorResponse "User not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to delete user"
 // @Security ApiKeyAuth
 // @Router /v1/users/{id} [delete]
-// @Security ApiKeyAuth
 func (h *UserHandler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL
 	vars := mux.Vars(r)
 	idStr := vars["id"]
-
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", err.Error())
 		return
 	}
 
-	result := h.DB.Delete(r.Context(), &models.User{}, id)
-	if result.Error != nil {
-		log.Printf("Failed to delete user: %v", result.Error)
+	// Check if the authenticated user is deleting their own profile
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
+	if !ok || userID != id {
+		log.Printf("Access denied: user %d attempting to delete user %d", userID, id)
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Access denied", "You do not have permission to delete this user.")
+		return
+	}
+
+	// Delete user using the service
+	err = h.userService.DeleteUser(r.Context(), id)
+	if err != nil {
+		// Check if it's a "not found" error
+		if err.(*errors.AppError).Code == errors.ErrResourceNotFound {
+			log.Printf("User not found: %v", err)
+			errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with ID %d", id))
+			return
+		}
+
+		log.Printf("Failed to delete user: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete user", "An internal server error occurred while deleting the user.")
 		return
 	}
 
-	log.Printf("User with ID %d deleted successfully", id)
+	// Return 204 No Content
 	w.WriteHeader(http.StatusNoContent)
 }
 

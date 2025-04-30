@@ -41,6 +41,43 @@ type ErrorResponse struct {
 	} `json:"error"`
 }
 
+// AppError represents a structured application error.
+// It includes an error code, a message, and optional details for additional context.
+type AppError struct {
+	Code       string // A unique error code for categorization.
+	Message    string // A human-readable error message.
+	Details    string // Additional context or details about the error.
+	StatusCode int    // HTTP status code for the error.
+}
+
+// Error returns a formatted error message for the AppError.
+func (e *AppError) Error() string {
+	if e.Details != "" {
+		return fmt.Sprintf("%s: %s", e.Message, e.Details)
+	}
+	return e.Message
+}
+
+// NewError creates a new AppError instance.
+// It initializes the AppError with the provided code, message, and details.
+//
+// Parameters:
+//   - code: A unique error code (e.g., errors.ErrInvalidInput).
+//   - message: A human-readable error message.
+//   - details: Additional context or details about the error (optional).
+//   - statusCode: HTTP status code for the error.
+//
+// Returns:
+//   - *AppError: A pointer to the newly created AppError.
+func NewError(code, message, details string, statusCode int) *AppError {
+	return &AppError{
+		Code:       code,
+		Message:    message,
+		Details:    details,
+		StatusCode: statusCode,
+	}
+}
+
 // NewErrorResponse creates a new ErrorResponse instance.
 // It initializes the ErrorResponse with the provided code, message, and details.
 //
@@ -74,6 +111,39 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int, code, message, de
 	errResp := NewErrorResponse(code, message, details)
 	if err := json.NewEncoder(w).Encode(errResp); err != nil {
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
+}
+
+// WriteAppErrorResponse writes an error response to the HTTP response writer using an AppError.
+// It sets the appropriate HTTP status code and encodes the error response as JSON.
+//
+// Parameters:
+//   - w: The HTTP response writer.
+//   - err: The AppError containing the error details.
+func WriteAppErrorResponse(w http.ResponseWriter, err error) {
+	var appErr *AppError
+	var notFoundErr *NotFoundError
+	var validationErr *ValidationError
+
+	switch e := err.(type) {
+	case *AppError:
+		appErr = e
+	case *NotFoundError:
+		notFoundErr = e
+	case *ValidationError:
+		validationErr = e
+	default:
+		// Default to internal server error if the error type is unknown
+		WriteErrorResponse(w, http.StatusInternalServerError, ErrInternalServer, "An unexpected error occurred", err.Error())
+		return
+	}
+
+	if appErr != nil {
+		WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+	} else if notFoundErr != nil {
+		WriteErrorResponse(w, http.StatusNotFound, notFoundErr.Code, notFoundErr.Error(), "")
+	} else if validationErr != nil {
+		WriteErrorResponse(w, http.StatusBadRequest, validationErr.Code, validationErr.Error(), "")
 	}
 }
 

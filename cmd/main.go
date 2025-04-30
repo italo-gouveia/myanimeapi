@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"myanimeapi/api/database"
-	myhandlers "myanimeapi/api/handlers" // Alias for your custom handlers package
 	"myanimeapi/api/routes"
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/db"
@@ -37,7 +36,7 @@ import (
 )
 
 const (
-	VERSION = "1.3.1" // Current version of the API
+	VERSION = "1.4.0" // Current version of the API
 )
 
 // @title MyAnimeAPI
@@ -86,14 +85,6 @@ func main() {
 	}
 	log.Println("Database schema migrated successfully")
 
-	// Initialize handlers with the database instance
-	animeHandler := myhandlers.NewAnimeHandler(dbWrapper)
-	userHandler := myhandlers.NewUserHandler(dbWrapper)
-	reviewHandler := myhandlers.NewReviewHandler(dbWrapper)
-	authHandler := myhandlers.NewAuthHandler(dbWrapper)
-	favoriteHandler := myhandlers.NewFavoriteHandler(dbWrapper)
-	log.Println("Handlers initialized successfully")
-
 	// Create a new router
 	router := mux.NewRouter()
 
@@ -101,7 +92,6 @@ func main() {
 	env := os.Getenv("ENVIRONMENT")
 	if env == "production" {
 		log.Println("Running in production mode")
-
 		// Apply HTTPS redirection middleware
 		//router.Use(middleware.HTTPSRedirectMiddleware)
 	}
@@ -109,7 +99,7 @@ func main() {
 	// Serve Swagger UI
 	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, animeHandler, userHandler, reviewHandler, authHandler, favoriteHandler, VERSION)
+	routes.RegisterRoutes(router, swaggerURL, dbWrapper, VERSION)
 	log.Println("Routes registered successfully")
 
 	// Configure CORS
