@@ -78,7 +78,8 @@ type Anime struct {
 	Description string    `json:"description" validate:"max=500" example:"A story about ninjas."`           // Description of the anime
 	Rating      float32   `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                             // Average rating of the anime
 
-	Reviews []Review `json:"reviews,omitempty"` // List of reviews for the anime (omitted unless necessary)
+	Reviews []Review `json:"reviews,omitempty"`                               // List of reviews for the anime (omitted unless necessary)
+	Genres  []Genre  `json:"genres,omitempty" gorm:"many2many:anime_genres;"` // List of genres for the anime
 }
 
 // Review represents a review for an anime.
