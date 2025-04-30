@@ -1,3 +1,53 @@
+# [1.5.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.4.0...v1.5.0) (2025-04-30)
+
+
+### Bug Fixes
+
+* **anime-handler:** use validated payload from context in CreateAnimeHandler ([143a485](https://github.com/italo-gouveia/myanimeapi/commit/143a485160b410c6431d12724af4929b0761dfb0))
+* **api:** improve error handling in RegisterUserHandler ([bdfd19e](https://github.com/italo-gouveia/myanimeapi/commit/bdfd19ef9ac226940f047f7a34e5228da2a0feeb))
+* **ci:** add GITHUB_TOKEN to Gitleaks action configuration ([27b86e9](https://github.com/italo-gouveia/myanimeapi/commit/27b86e948b7995de8c4503668c66a1b980b59cda))
+* **ci:** correct Gitleaks action configuration in workflow ([065e2f5](https://github.com/italo-gouveia/myanimeapi/commit/065e2f5ac71148a2092b7c0bdb5b273e6d1dd00b))
+* **security:** add required rule IDs to Gitleaks configuration ([383e071](https://github.com/italo-gouveia/myanimeapi/commit/383e071693b9ebd944954ca0c990cac8027c84c5))
+* **security:** update Gitleaks configuration and workflow ([bbe9168](https://github.com/italo-gouveia/myanimeapi/commit/bbe91685b98f8b33d127572fa54b4d21e483d77d))
+* **security:** update Gitleaks configuration and workflow ([005f5c9](https://github.com/italo-gouveia/myanimeapi/commit/005f5c91e369f0db1586394e5670f2e1135787ae))
+* **security:** update Gitleaks workflow configuration ([7b9d633](https://github.com/italo-gouveia/myanimeapi/commit/7b9d63396680d26289f8540aaac66df94d790067))
+* **utils:** handle JSON encoding errors in response writers ([b8a1ad3](https://github.com/italo-gouveia/myanimeapi/commit/b8a1ad3c3a95d7abf76ab5aa3237e3bbb1a4afd0))
+
+
+### Code Refactoring
+
+* Implement interface-based dependency injection for anime handlers ([0da4a9a](https://github.com/italo-gouveia/myanimeapi/commit/0da4a9a5a379f9397530bbac1d00d1a4e0b17cbb))
+
+
+### Features
+
+* **anime:** update CreateAnimeHandler to use AnimeCreateRequest ([fcafaa8](https://github.com/italo-gouveia/myanimeapi/commit/fcafaa8a0c4492121dfdd3784d4aa499f82df32f))
+* **api:** enhance Swagger documentation and security ([fb7e166](https://github.com/italo-gouveia/myanimeapi/commit/fb7e1660f67d4d9982d19e1044e48c26a0448f5c))
+* **arch:** implement service layer and refactor handlers ([9ae9c4f](https://github.com/italo-gouveia/myanimeapi/commit/9ae9c4f78c070694077a8e71b882c89e48dcf715))
+* **auth:** implement auth repository and service with generic response type ([eb7d034](https://github.com/italo-gouveia/myanimeapi/commit/eb7d0349510e20835d571f1f0f6d0362aa7ae288))
+* enhance API with favorite anime and security features ([b41407e](https://github.com/italo-gouveia/myanimeapi/commit/b41407e0cd7506839056a7782999465d519b5a0f))
+* **errors:** add structured AppError type and constructor ([2513211](https://github.com/italo-gouveia/myanimeapi/commit/25132111406b692df174c6e2a354279f29e7d23c))
+* **errors:** add WriteAppErrorResponse function for unified error handling ([33a3d3a](https://github.com/italo-gouveia/myanimeapi/commit/33a3d3a61104201cefc91a4203b40d6e31693763))
+* **repositories:** add base repository interfaces ([af5516a](https://github.com/italo-gouveia/myanimeapi/commit/af5516a79af2d67277efa667e5f7002870d21196))
+* **repositories:** implement AnimeRepository ([25b8694](https://github.com/italo-gouveia/myanimeapi/commit/25b869433626b6be8c5f80a00befeda7cb3f0f39))
+* **repositories:** implement FavoriteRepository ([82383fe](https://github.com/italo-gouveia/myanimeapi/commit/82383fee2bb558092c5bfd38c87766a3f4b13726))
+* **repositories:** implement ReviewRepository ([3bd1aaf](https://github.com/italo-gouveia/myanimeapi/commit/3bd1aaffc7ceb617ce7f0fe100e9a510d47d7123))
+* **repositories:** implement UserRepository ([c75baf5](https://github.com/italo-gouveia/myanimeapi/commit/c75baf548bba5f60c11f9beda32ae2d8c7d286d2))
+* **services:** implement service layer with business logic ([fff27ce](https://github.com/italo-gouveia/myanimeapi/commit/fff27ce119b44e27211079582e2eb3eb4f354cc3))
+* **test:** add mock repository implementation for testing ([78f358f](https://github.com/italo-gouveia/myanimeapi/commit/78f358f13a2147aa7944144c148064387eee2314))
+* **utils:** add common utility functions ([fdcc999](https://github.com/italo-gouveia/myanimeapi/commit/fdcc9998f24cfee642f5833ee095b25f9ac964d4))
+
+
+### BREAKING CHANGES
+
+* **anime:** The POST /v1/anime endpoint now requires a different request payload structure.
+Instead of the full Anime model, it now uses AnimeCreateRequest which only includes title, description, and rating fields.
+* AnimeHandler constructor now accepts AnimeServiceInterface
+instead of concrete AnimeService type.
+* **auth:** The auth package now uses a repository pattern instead of
+direct database access. Existing code that directly accessed the database
+for auth operations will need to be updated to use the new AuthRepository.
+
 # [1.4.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.3.0...v1.4.0) (2025-04-05)
 
 
