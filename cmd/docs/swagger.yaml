@@ -121,14 +121,18 @@ definitions:
       user_id:
         type: integer
     type: object
-  models.FavoriteCreateRequest:
-    description: Request model for adding an anime to favorites
+  models.Response:
     properties:
-      anime_id:
-        example: 1
-        type: integer
-    required:
-    - anime_id
+      data:
+        description: Data payload (can be any type)
+      message:
+        description: Message describing the result
+        example: Operation successful
+        type: string
+      status:
+        description: Status of the response (success, error)
+        example: success
+        type: string
     type: object
   models.Review:
     properties:
@@ -275,32 +279,6 @@ definitions:
     - email
     - username
     type: object
-  models.UserCreateRequest:
-    properties:
-      email:
-        description: Email address for the new user (required, valid email format,
-          5-100 characters)
-        example: john@example.com
-        maxLength: 100
-        minLength: 5
-        type: string
-      password:
-        description: Password for the new user (required, 5-100 characters)
-        example: password123
-        maxLength: 100
-        minLength: 5
-        type: string
-      username:
-        description: Username for the new user (required, 3-50 characters)
-        example: john_doe
-        maxLength: 50
-        minLength: 3
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
   models.UserCredentials:
     properties:
       password:
@@ -355,20 +333,74 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
-  /favorites:
-    get:
-      description: Retrieves all anime in the authenticated user's favorites list
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with username and password
       parameters:
-      - description: Bearer JWT
-        in: header
-        name: Authorization
+      - description: User credentials
+        in: body
+        name: credentials
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/models.UserCredentials'
       produces:
       - application/json
       responses:
         "200":
-          description: List of user's favorite anime
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Authenticate a user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with the provided credentials
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Register a new user
+      tags:
+      - auth
+  /favorites:
+    get:
+      description: Get all favorites for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
           schema:
             items:
               $ref: '#/definitions/models.Favorite'
@@ -377,38 +409,35 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Internal server error
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      summary: Get user's favorite anime list
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user's favorites
       tags:
       - favorites
-    post:
-      consumes:
-      - application/json
-      description: Adds a specific anime to the authenticated user's favorites list
+  /favorites/{anime_id}:
+    delete:
+      description: Remove an anime from the authenticated user's favorites
       parameters:
-      - description: Bearer JWT
-        in: header
-        name: Authorization
+      - description: Anime ID
+        in: path
+        name: anime_id
         required: true
-        type: string
-      - description: Anime ID to add to favorites
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.FavoriteCreateRequest'
+        type: integer
       produces:
       - application/json
       responses:
-        "201":
-          description: Favorite created successfully
-          schema:
-            $ref: '#/definitions/models.Favorite'
+        "204":
+          description: No Content
         "400":
-          description: Invalid request body
+          description: Bad Request
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "401":
@@ -416,49 +445,58 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Anime not found
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "409":
-          description: Anime already in favorites
+          description: Not Found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      summary: Add an anime to user's favorites
+      security:
+      - BearerAuth: []
+      summary: Remove anime from favorites
       tags:
       - favorites
-  /favorites/{id}:
-    delete:
-      description: Removes a specific anime from the authenticated user's favorites
-        list
+    post:
+      consumes:
+      - application/json
+      description: Add an anime to the authenticated user's favorites
       parameters:
-      - description: Bearer JWT
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Anime ID to remove from favorites
+      - description: Anime ID
         in: path
-        name: id
+        name: anime_id
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
-        "204":
-          description: Favorite removed successfully
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Favorite'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Internal server error
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      summary: Remove an anime from user's favorites
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add anime to favorites
       tags:
       - favorites
   /reviews/{id}:
@@ -702,82 +740,6 @@ paths:
       summary: Get paginated reviews for an anime
       tags:
       - anime
-  /v1/auth/authenticate:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate a user and return a JWT token
-      parameters:
-      - description: User credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/models.UserCredentials'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Returns a JWT token
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "401":
-          description: User not found or invalid credentials
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to generate token
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
-      summary: Authenticate a user
-      tags:
-      - auth
-  /v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user with the provided data
-      parameters:
-      - description: User registration data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.User'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.User'
-        "400":
-          description: Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "409":
-          description: User with this username or email already exists
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to hash password or create user
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
-      summary: Register a new user
-      tags:
-      - auth
   /v1/reviews:
     post:
       consumes:
@@ -890,13 +852,14 @@ paths:
       - reviews
   /v1/users:
     get:
-      description: Retrieve a paginated list of all users. Requires admin privileges.
+      description: Retrieve a paginated list of all users. Restricted to admin users
+        only.
       parameters:
       - description: 'Page number (default: 1)'
         in: query
         name: page
         type: integer
-      - description: 'Number of items per page (default: 10)'
+      - description: 'Number of items per page (default: 10, max: 100)'
         in: query
         name: limit
         type: integer
@@ -924,59 +887,64 @@ paths:
       security:
       - ApiKeyAuth: []
       - ApiKeyAuth: []
-      summary: Get all users (admin only)
+      summary: Get all users
       tags:
       - users
     post:
       consumes:
       - application/json
-      description: Create a new user with the provided data.
+      description: Create a new user account. This endpoint is public and does not
+        require authentication.
       parameters:
-      - description: User data
+      - description: User object
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.UserCreateRequest'
+          $ref: '#/definitions/models.User'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/models.User'
         "400":
-          description: Invalid input or missing required fields
+          description: Invalid input
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "409":
-          description: User with this username or email already exists
+          description: Username or email already exists
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to create user
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
       summary: Create a new user
       tags:
       - users
   /v1/users/{id}:
     delete:
-      description: Delete a user by their ID. Requires authentication.
+      description: Delete a user by their ID. Requires authentication and the user
+        can only delete their own profile.
       parameters:
       - description: User ID
         in: path
         name: id
         required: true
         type: integer
+      produces:
+      - application/json
       responses:
         "204":
           description: No Content
         "400":
           description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
@@ -988,7 +956,6 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Delete a user
       tags:
@@ -1029,32 +996,41 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing user with the provided data. Requires authentication.
+      description: Update an existing user. Requires authentication and the user can
+        only update their own profile.
       parameters:
       - description: User ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Updated user data
+      - description: User object
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.UserCreateRequest'
+          $ref: '#/definitions/models.User'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/models.User'
         "400":
-          description: Invalid input or ID format
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Access denied
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: User not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Username or email already exists
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
@@ -1062,7 +1038,6 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
       - ApiKeyAuth: []
       summary: Update a user
       tags:
