@@ -7,8 +7,8 @@ import (
 // Genre represents an anime genre
 type Genre struct {
 	gorm.Model
-	Name  string  `json:"name" gorm:"unique;not null"`
-	Anime []Anime `json:"anime,omitempty" gorm:"many2many:anime_genres;"`
+	Name   string  `json:"name" gorm:"unique;not null"`
+	Animes []Anime `json:"animes,omitempty" gorm:"many2many:anime_genres;"`
 }
 
 // GenreResponse represents the response format for a genre
