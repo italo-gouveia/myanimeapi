@@ -7,8 +7,8 @@ import (
 // Tag represents an anime tag
 type Tag struct {
 	gorm.Model
-	Name  string  `json:"name" gorm:"unique;not null"`
-	Anime []Anime `json:"anime,omitempty" gorm:"many2many:anime_tags;"`
+	Name   string  `json:"name" gorm:"unique;not null"`
+	Animes []Anime `json:"animes,omitempty" gorm:"many2many:anime_tags;"`
 }
 
 // TagResponse represents the response format for a tag
