@@ -1,6 +1,5 @@
-// api/models/models.go
 // Package models defines the data structures used in the MyAnimeAPI application.
-// It includes models for users, anime, reviews, and related responses.
+// It includes models for users, reviews, and related responses.
 // These models are used for database interactions, request/response payloads, and JWT claims.
 package models
 

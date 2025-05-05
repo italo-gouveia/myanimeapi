@@ -10,6 +10,16 @@ import (
 	"net/http"
 )
 
+// TagServiceInterface defines the interface for tag operations
+type TagServiceInterface interface {
+	GetTagByID(ctx context.Context, id uint) (*models.Tag, error)
+	GetAllTags(ctx context.Context, page, limit int) ([]models.Tag, int64, error)
+	CreateTag(ctx context.Context, tag *models.Tag) error
+	UpdateTag(ctx context.Context, tag *models.Tag) error
+	DeleteTag(ctx context.Context, id uint) error
+	GetTagsByIDs(ctx context.Context, ids []uint) ([]models.Tag, error)
+}
+
 // TagService handles business logic for tag operations
 type TagService struct {
 	tagRepo repositories.TagRepository
