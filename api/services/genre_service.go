@@ -10,6 +10,16 @@ import (
 	"net/http"
 )
 
+// GenreServiceInterface defines the interface for genre operations
+type GenreServiceInterface interface {
+	GetGenreByID(ctx context.Context, id uint) (*models.Genre, error)
+	GetAllGenres(ctx context.Context, page, limit int) ([]models.Genre, int64, error)
+	CreateGenre(ctx context.Context, genre *models.Genre) error
+	UpdateGenre(ctx context.Context, genre *models.Genre) error
+	DeleteGenre(ctx context.Context, id uint) error
+	GetGenresByIDs(ctx context.Context, ids []uint) ([]models.Genre, error)
+}
+
 // GenreService handles business logic for genre operations
 type GenreService struct {
 	genreRepo repositories.GenreRepository

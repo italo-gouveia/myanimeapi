@@ -3,33 +3,60 @@ package models
 import "time"
 
 // Anime represents an anime entry in the system.
-// It includes fields for anime details and relationships with reviews.
+// It includes details about the anime and its relationships with reviews, genres, and tags.
 //
 // Example:
 //
 //	{
 //	  "id": 1,
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5,
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z",
 //	  "created_at": "2025-02-20T19:27:00Z",
 //	  "updated_at": "2025-02-20T19:27:00Z",
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5
+//	  "reviews": [
+//	    {
+//	      "id": 1,
+//	      "content": "Great anime!",
+//	      "rating": 9.0,
+//	      "user_id": 1
+//	    }
+//	  ],
+//	  "genres": [
+//	    {
+//	      "id": 1,
+//	      "name": "Action"
+//	    }
+//	  ],
+//	  "tags": [
+//	    {
+//	      "id": 1,
+//	      "name": "Ninja"
+//	    }
+//	  ]
 //	}
 type Anime struct {
-	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`                                         // Unique identifier for the anime
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was created
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was last updated
-	Title       string    `json:"title" gorm:"not null" validate:"required,min=3,max=100" example:"Naruto"` // Title of the anime
-	Description string    `json:"description" validate:"max=500" example:"A story about ninjas."`           // Description of the anime
-	Rating      float32   `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                             // Average rating of the anime
-
-	Reviews []Review `json:"reviews,omitempty"`                               // List of reviews for the anime (omitted unless necessary)
-	Genres  []Genre  `json:"genres,omitempty" gorm:"many2many:anime_genres;"` // List of genres for the anime
-	Tags    []Tag    `json:"tags,omitempty" gorm:"many2many:anime_tags;"`     // List of tags for the anime
+	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`               // Unique identifier for the anime
+	Title       string    `json:"title" gorm:"not null" example:"Naruto"`         // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."`    // Description of the anime
+	Rating      float64   `json:"rating" example:"8.5"`                           // Average rating of the anime
+	Episodes    int       `json:"episodes" example:"220"`                         // Number of episodes
+	Status      string    `json:"status" example:"Completed"`                     // Current status of the anime
+	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`      // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`        // Date when the anime finished airing
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`      // Timestamp when the anime was added
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`      // Timestamp when the anime was last updated
+	Reviews     []Review  `json:"reviews,omitempty" gorm:"foreignKey:AnimeID"`    // Associated reviews
+	Genres      []Genre   `json:"genres,omitempty" gorm:"many2many:anime_genres"` // Associated genres
+	Tags        []Tag     `json:"tags,omitempty" gorm:"many2many:anime_tags"`     // Associated tags
 }
 
-// AnimeResponse represents a simplified anime response.
-// It is used for serializing anime data in API responses.
+// AnimeResponse represents the response format for an anime entry.
+// It includes the anime details and associated information.
 //
 // Example:
 //
@@ -37,58 +64,91 @@ type Anime struct {
 //	  "id": 1,
 //	  "title": "Naruto",
 //	  "description": "A story about ninjas.",
-//	  "rating": 8.5
+//	  "rating": 8.5,
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z",
+//	  "created_at": "2025-02-20T19:27:00Z",
+//	  "updated_at": "2025-02-20T19:27:00Z",
+//	  "reviews": [
+//	    {
+//	      "id": 1,
+//	      "content": "Great anime!",
+//	      "rating": 9.0,
+//	      "user_id": 1
+//	    }
+//	  ],
+//	  "genres": [
+//	    {
+//	      "id": 1,
+//	      "name": "Action"
+//	    }
+//	  ],
+//	  "tags": [
+//	    {
+//	      "id": 1,
+//	      "name": "Ninja"
+//	    }
+//	  ]
 //	}
 type AnimeResponse struct {
 	ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was created
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
 	Title       string    `json:"title" example:"Naruto"`                      // Title of the anime
 	Description string    `json:"description" example:"A story about ninjas."` // Description of the anime
-	Rating      float32   `json:"rating" example:"8.5"`                        // Average rating of the anime
-
-	User   User            `gorm:"foreignKey:UserID" json:"-" validate:"-"`                               // User who created the review (excluded from JSON)
-	Anime  Anime           `gorm:"foreignKey:AnimeID;constraint:OnDelete:CASCADE;" json:"-" validate:"-"` // Anime being reviewed (excluded from JSON)
-	Genres []GenreResponse `json:"genres,omitempty"`
-	Tags   []TagResponse   `json:"tags,omitempty"`
+	Rating      float64   `json:"rating" example:"8.5"`                        // Average rating of the anime
+	Episodes    int       `json:"episodes" example:"220"`                      // Number of episodes
+	Status      string    `json:"status" example:"Completed"`                  // Current status of the anime
+	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`   // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`     // Date when the anime finished airing
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was added
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
+	Reviews     []Review  `json:"reviews,omitempty"`                           // Associated reviews
+	Genres      []Genre   `json:"genres,omitempty"`                            // Associated genres
+	Tags        []Tag     `json:"tags,omitempty"`                              // Associated tags
 }
 
-// AnimeCreateRequest represents the request payload for creating an anime.
-// It includes fields for the title, description, and rating of the anime.
+// AnimeCreateRequest represents the request payload for creating a new anime.
+// It includes the required fields for creating an anime entry.
 //
 // Example:
 //
 //	{
 //	  "title": "Naruto",
 //	  "description": "A story about ninjas.",
-//	  "rating": 8.5
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z"
 //	}
 type AnimeCreateRequest struct {
-	Title       string  `json:"title" validate:"required,min=3,max=100" example:"Naruto"`       // Title of the anime (required, 3-100 characters)
-	Description string  `json:"description" validate:"max=500" example:"A story about ninjas."` // Description of the anime (optional, max 500 characters)
-	Rating      float32 `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                   // Rating of the anime (0-10)
-	GenreIDs    []uint  `json:"genre_ids" example:"[1,2,3]"`                                    // List of genre IDs to associate with the anime
-	TagIDs      []uint  `json:"tag_ids" example:"[1,2,3]"`                                      // List of tag IDs to associate with the anime
+	Title       string    `json:"title" validate:"required" example:"Naruto"`                    // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."`                   // Description of the anime
+	Episodes    int       `json:"episodes" validate:"required" example:"220"`                    // Number of episodes
+	Status      string    `json:"status" validate:"required" example:"Completed"`                // Current status of the anime
+	StartDate   time.Time `json:"start_date" validate:"required" example:"2002-10-03T00:00:00Z"` // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`                       // Date when the anime finished airing
+	Rating      float64   `json:"rating" validate:"required,gte=0,lte=10" example:"8.5"`         // Initial rating for the anime
+	GenreIDs    []uint    `json:"genre_ids" validate:"omitempty,dive,gt=0" example:"[1,2,3]"`    // IDs of genres to associate with the anime
+	TagIDs      []uint    `json:"tag_ids" validate:"omitempty,dive,gt=0" example:"[1,2,3]"`      // IDs of tags to associate with the anime
 }
 
-// ToResponse converts an Anime to an AnimeResponse
-func (a *Anime) ToResponse() AnimeResponse {
-	genreResponses := make([]GenreResponse, len(a.Genres))
-	for i, genre := range a.Genres {
-		genreResponses[i] = genre.ToResponse()
-	}
-
-	tagResponses := make([]TagResponse, len(a.Tags))
-	for i, tag := range a.Tags {
-		tagResponses[i] = tag.ToResponse()
-	}
-
+// ToResponse converts an Anime model to an AnimeResponse.
+// This method is used to serialize anime data for API responses.
+func (a Anime) ToResponse() AnimeResponse {
 	return AnimeResponse{
 		ID:          a.ID,
 		Title:       a.Title,
 		Description: a.Description,
 		Rating:      a.Rating,
-		Genres:      genreResponses,
-		Tags:        tagResponses,
+		Episodes:    a.Episodes,
+		Status:      a.Status,
+		StartDate:   a.StartDate,
+		EndDate:     a.EndDate,
+		CreatedAt:   a.CreatedAt,
+		UpdatedAt:   a.UpdatedAt,
+		Reviews:     a.Reviews,
+		Genres:      a.Genres,
+		Tags:        a.Tags,
 	}
 }
