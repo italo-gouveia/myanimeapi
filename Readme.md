@@ -14,11 +14,23 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
     - [Docker Setup](#docker-setup)
+  - [Project Structure](#project-structure)
   - [API Endpoints](#api-endpoints)
     - [Authentication](#authentication)
     - [Users](#users)
     - [Anime](#anime)
+    - [Genres](#genres)
+    - [Tags](#tags)
     - [Reviews](#reviews)
+  - [Documentation](#documentation)
+    - [Swagger Documentation](#swagger-documentation)
+    - [GoDoc Documentation](#godoc-documentation)
+  - [Testing](#testing)
+    - [Unit Tests](#unit-tests)
+    - [Integration Tests](#integration-tests)
+    - [End-to-End Tests](#end-to-end-tests)
+    - [Smoke Tests](#smoke-tests)
+    - [Test Coverage](#test-coverage)
   - [Diagrams](#diagrams)
     - [**1. Architecture Diagram**](#1-architecture-diagram)
     - [**2. Database Schema (ER Diagram)**](#2-database-schema-er-diagram)
@@ -32,12 +44,6 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [**10. Anime Creation Sequence**](#10-anime-creation-sequence)
     - [**How to Generate Diagrams**](#how-to-generate-diagrams)
     - [**Notes**](#notes)
-  - [Testing](#testing)
-    - [Unit Tests](#unit-tests)
-    - [Integration Tests](#integration-tests)
-    - [End-to-End Tests](#end-to-end-tests)
-    - [Smoke Tests](#smoke-tests)
-    - [Generating Test Coverage](#generating-test-coverage)
   - [Contributing](#contributing)
   - [Changelog](#changelog)
   - [Badges](#badges)
@@ -49,27 +55,29 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 
 ## Features
 
-- **Anime Management**: Create, read, update, and delete anime entries.
-- **User Management**: Register, authenticate, and manage users.
-- **Review Management**: Add, update, and delete reviews for anime.
-- **Authentication**: JWT-based authentication for secure access.
-- **Pagination**: Paginated responses for large datasets.
-- **Rate Limiting**: Protect endpoints from abuse with rate limiting.
-- **Swagger Documentation**: Auto-generated API documentation.
-- **Favorite Anime**: Add and manage favorite anime entries.
-- **Error Handling**: Structured error responses with detailed information.
-- **Security**: Regular security scanning and vulnerability checks.
+- **Anime Management**: Create, read, update, and delete anime entries with support for genres and tags
+- **User Management**: Register, authenticate, and manage users
+- **Review Management**: Add, update, and delete reviews for anime
+- **Genre Management**: Manage anime genres with CRUD operations
+- **Tag Management**: Manage anime tags with CRUD operations
+- **Authentication**: JWT-based authentication for secure access
+- **Pagination**: Paginated responses for large datasets
+- **Rate Limiting**: Protect endpoints from abuse with rate limiting
+- **Swagger Documentation**: Auto-generated API documentation
+- **Favorite Anime**: Add and manage favorite anime entries
+- **Error Handling**: Structured error responses with detailed information
+- **Security**: Regular security scanning and vulnerability checks
 
 ## Technologies Used
 
-- **Go**: Backend programming language (v1.23.0).
-- **Gorilla Mux**: HTTP router and dispatcher (v1.8.1).
-- **GORM**: ORM for database interactions (v1.25.12).
-- **PostgreSQL**: Relational database.
-- **JWT**: JSON Web Tokens for authentication (v5.2.2).
-- **Swagger**: API documentation (v1.16.4).
-- **Docker**: Containerization for easy deployment and development.
-- **Validator**: Input validation (v10.25.0).
+- **Go**: Backend programming language (v1.23.0)
+- **Gorilla Mux**: HTTP router and dispatcher (v1.8.1)
+- **GORM**: ORM for database interactions (v1.25.12)
+- **PostgreSQL**: Relational database
+- **JWT**: JSON Web Tokens for authentication (v5.2.2)
+- **Swagger**: API documentation (v1.16.4)
+- **Docker**: Containerization for easy deployment and development
+- **Validator**: Input validation (v10.25.0)
 
 ## Getting Started
 
@@ -84,15 +92,15 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 Clone the repository:
 
 ```bash
-git clone https://github.com/{{yourusername}}/myanimeapi.git
+git clone https://github.com/italo-gouveia/myanimeapi.git
 cd myanimeapi
 ```
 
 Set up the database:
 
-- Ensure PostgreSQL is running.
-- Create a database named `myanimeapi`.
-- Update the `.env` file with your PostgreSQL credentials.
+- Ensure PostgreSQL is running
+- Create a database named `myanimeapi`
+- Update the `.env` file with your PostgreSQL credentials
 
 Run the application:
 
@@ -101,49 +109,6 @@ go run cmd/main.go
 ```
 
 The API will be available at `http://localhost:8080/v1`.
-
--------
-How do I generate Swagger documentation?
-
-```bash
-swag init --dir ./cmd,./pkg/handlers,./pkg/models,./internal/errors --output ./cmd/docs
-```
-
-This command it will generate the swagger docs. And then, after you run the application locally, you will be abble to go to `http://localhost:8080/swagger/index.html`.
-
-----------
-Start the godoc server:
-
-```bash
-godoc -http=:6060
-```
-Open your browser and navigate to:
-
-```bash
-http://localhost:6060/api/myanimeapi/
-```
-
-----------
-How do I generate mocks for testing?
-
-Run the following command to generate a mock for the DBInterface:
-
-```bash
-mockgen -source=internal/db/db_interface.go -destination=internal/mocks/mock_db_interface.go -package=mocks
-```
-This will create a mock_db_interface.go file in the internal/db package.
-If you are on the powershell, try this:
-```shell
-mockgen -source="$PWD\internal\db\db_interface.go" -destination="$PWD\internal\mocks\mock_db_interface.go" -package=mocks
-```
-
-----------
-Run the Tests
-Run the tests using the following command:
-
-```bash
-go test -v ./api/handlers
-```
 
 ### Docker Setup
 
@@ -159,38 +124,130 @@ This will start both the PostgreSQL database and the Go API server.
 The API will be available at `http://localhost:8080/v1`.
 The Swagger documentation will be available at `http://localhost:8080/swagger/index.html`.
 
+## Project Structure
+
+```
+myanimeapi/
+├── api/
+│   ├── handlers/     # HTTP request handlers
+│   ├── models/       # Data models and DTOs
+│   ├── services/     # Business logic layer
+│   ├── repositories/ # Data access layer
+│   ├── middleware/   # HTTP middleware
+│   ├── auth/         # Authentication related code
+│   └── utils/        # Utility functions
+├── cmd/
+│   └── main.go       # Application entry point
+├── internal/
+│   ├── config/       # Configuration management
+│   ├── database/     # Database connection and setup
+│   ├── errors/       # Custom error types
+│   └── utils/        # Internal utilities
+├── tests/
+│   ├── e2e/         # End-to-end tests
+│   ├── integration/ # Integration tests
+│   └── smoke/       # Smoke tests
+└── frontend/        # Next.js frontend application
+```
+
 ## API Endpoints
 
 ### Authentication
 
-- **POST** `/v1/auth/register`: Register a new user.
-- **POST** `/v1/auth/login`: Authenticate a user and receive a JWT token.
+- **POST** `/v1/auth/register`: Register a new user
+- **POST** `/v1/auth/login`: Authenticate a user and receive a JWT token
 
 ### Users
 
-- **GET** `/v1/users`: Retrieve a paginated list of users (Admin only).
-- **GET** `/v1/users/{id}`: Retrieve a specific user by ID.
-- **POST** `/v1/users`: Create a new user.
-- **PUT** `/v1/users/{id}`: Update an existing user.
-- **DELETE** `/v1/users/{id}`: Delete a user.
+- **GET** `/v1/users`: Retrieve a paginated list of users (Admin only)
+- **GET** `/v1/users/{id}`: Retrieve a specific user by ID
+- **POST** `/v1/users`: Create a new user
+- **PUT** `/v1/users/{id}`: Update an existing user
+- **DELETE** `/v1/users/{id}`: Delete a user
 
 ### Anime
 
-- **GET** `/v1/anime`: Get all anime entries with pagination.
-- **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID.
-- **POST** `/v1/anime`: Create a new anime entry (Authenticated users only).
-- **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only).
-- **DELETE** `/v1/anime/{id}`: Delete an anime entry (Authenticated users only).
-- **POST** `/v1/anime/{id}/favorite`: Add anime to favorites (Authenticated users only).
-- **DELETE** `/v1/anime/{id}/favorite`: Remove anime from favorites (Authenticated users only).
-- **GET** `/v1/anime/favorites`: Get user's favorite anime (Authenticated users only).
+- **GET** `/v1/anime`: Get all anime entries with pagination
+- **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID
+- **POST** `/v1/anime`: Create a new anime entry (Authenticated users only)
+- **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only)
+- **DELETE** `/v1/anime/{id}`: Delete an anime entry (Authenticated users only)
+- **POST** `/v1/anime/{id}/favorite`: Add anime to favorites (Authenticated users only)
+- **DELETE** `/v1/anime/{id}/favorite`: Remove anime from favorites (Authenticated users only)
+- **GET** `/v1/anime/favorites`: Get user's favorite anime (Authenticated users only)
+
+### Genres
+
+- **GET** `/v1/genres`: Get all genres with pagination
+- **GET** `/v1/genres/{id}`: Get a specific genre by ID
+- **POST** `/v1/genres`: Create a new genre (Admin only)
+- **PUT** `/v1/genres/{id}`: Update a genre (Admin only)
+- **DELETE** `/v1/genres/{id}`: Delete a genre (Admin only)
+
+### Tags
+
+- **GET** `/v1/tags`: Get all tags with pagination
+- **GET** `/v1/tags/{id}`: Get a specific tag by ID
+- **POST** `/v1/tags`: Create a new tag (Admin only)
+- **PUT** `/v1/tags/{id}`: Update a tag (Admin only)
+- **DELETE** `/v1/tags/{id}`: Delete a tag (Admin only)
 
 ### Reviews
 
-- **GET** `/v1/reviews/{id}`: Get a specific review by ID.
-- **POST** `/v1/reviews`: Create a new review (Authenticated users only).
-- **PUT** `/v1/reviews/{id}`: Update an existing review (Authenticated users only).
-- **DELETE** `/v1/reviews/{id}`: Delete a review (Authenticated users only).
+- **GET** `/v1/reviews/{id}`: Get a specific review by ID
+- **POST** `/v1/reviews`: Create a new review (Authenticated users only)
+- **PUT** `/v1/reviews/{id}`: Update an existing review (Authenticated users only)
+- **DELETE** `/v1/reviews/{id}`: Delete a review (Authenticated users only)
+
+## Documentation
+
+### Swagger Documentation
+
+Generate Swagger documentation:
+
+```bash
+swag init --dir ./cmd,./api/handlers,./api/models,./internal/errors --output ./cmd/docs
+```
+
+Access the Swagger UI at `http://localhost:8080/swagger/index.html`
+
+### GoDoc Documentation
+
+Start the godoc server:
+
+```bash
+godoc -http=:6060
+```
+
+Access the documentation at `http://localhost:6060/pkg/myanimeapi/`
+
+## Testing
+
+### Unit Tests
+```bash
+go test -v ./api/handlers
+```
+
+### Integration Tests
+```bash
+go test -v ./tests/integration
+```
+
+### End-to-End Tests
+```bash
+go test -v ./tests/e2e
+```
+
+### Smoke Tests
+```bash
+go test -v ./tests/smoke
+```
+
+### Test Coverage
+```bash
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
 
 ## Diagrams
 
@@ -281,56 +338,13 @@ The sequence of steps involved in creating a new anime entry.
 - Use consistent naming conventions for the diagram files (e.g., `architecture_diagram.png`, `entity_model_relationship.png`).
 - If you update the diagrams, make sure to update the corresponding images in the `resources` folder.
 
-## Testing
-
-To run the tests, use the following command:
-
-```bash
-go test ./...
-```
-
-### Unit Tests
-Run unit tests for the handlers:
-```bash
-go test -v ./api/handlers
-```
-
-### Integration Tests
-Run integration tests to test database interactions:
-
-```bash
-go test -v ./tests/integration
-```
-
-### End-to-End Tests
-Run end-to-end tests to test the API as a whole:
-
-```bash
-go test -v ./tests/e2e
-```
-
-### Smoke Tests
-Run smoke tests to verify basic functionality:
-```bash
-go test -v ./tests/smoke
-```
-
-### Generating Test Coverage
-Generate a test coverage report:
-
-```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-```
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes with clear and descriptive messages.
-4. Submit a pull request.
+1. Fork the repository
+2. Create a new branch for your feature or bugfix
+3. Commit your changes with clear and descriptive messages
+4. Submit a pull request
 
 ## Changelog
 
@@ -354,15 +368,15 @@ See the [CHANGELOG.md](CHANGELOG.md) file for a detailed list of changes.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
-- [Gorilla Mux](https://github.com/gorilla/mux) for routing.
-- [GORM](https://gorm.io/) for database interactions.
-- [JWT](https://jwt.io/) for authentication.
-- [Swagger](https://swagger.io/) for API documentation.
-- [Docker](https://www.docker.com/) for Containerization.
-- [Validator](https://github.com/go-playground/validator) for input validation.
+- [Gorilla Mux](https://github.com/gorilla/mux) for routing
+- [GORM](https://gorm.io/) for database interactions
+- [JWT](https://jwt.io/) for authentication
+- [Swagger](https://swagger.io/) for API documentation
+- [Docker](https://www.docker.com/) for Containerization
+- [Validator](https://github.com/go-playground/validator) for input validation
 
 ## Contact
 For questions or feedback, please reach out to italogouveiadev@outlook.com.
