@@ -15,6 +15,15 @@ type GenreRepository interface {
 
 	// GetByIDs retrieves genres by their IDs
 	GetByIDs(ctx context.Context, ids []uint) ([]models.Genre, error)
+
+	// Search retrieves genres based on a query
+	Search(ctx context.Context, query string, page, limit int) SearchResult
+
+	// BulkCreate creates multiple genres at once
+	BulkCreate(ctx context.Context, genres []models.Genre) error
+
+	// BulkDelete deletes multiple genres at once
+	BulkDelete(ctx context.Context, ids []uint) error
 }
 
 // GenreRepositoryImpl implements the GenreRepository interface
@@ -136,4 +145,49 @@ func (r *GenreRepositoryImpl) GetByIDs(ctx context.Context, ids []uint) ([]model
 
 	log.Printf("GenreRepository.GetByIDs: Successfully retrieved %d genres", len(genres))
 	return genres, nil
+}
+
+type SearchResult struct {
+	Genres []models.Genre
+	Total  int64
+	Error  error
+}
+
+func (r *GenreRepositoryImpl) Search(ctx context.Context, query string, page, limit int) SearchResult {
+	var genres []models.Genre
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Search in both name and description
+	result := r.db.WithContext(ctx).
+		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
+		Count(&total)
+
+	if result.Error != nil {
+		return SearchResult{Error: result.Error}
+	}
+
+	result = r.db.WithContext(ctx).Offset(offset).Limit(limit).
+		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
+		Find(&genres)
+
+	if result.Error != nil {
+		return SearchResult{Error: result.Error}
+	}
+
+	return SearchResult{
+		Genres: genres,
+		Total:  total,
+	}
+}
+
+// BulkCreate creates multiple genres at once
+func (r *GenreRepositoryImpl) BulkCreate(ctx context.Context, genres []models.Genre) error {
+	return r.db.WithContext(ctx).Create(&genres).Error
+}
+
+// BulkDelete deletes multiple genres at once
+func (r *GenreRepositoryImpl) BulkDelete(ctx context.Context, ids []uint) error {
+	return r.db.WithContext(ctx).Delete(&models.Genre{}, ids).Error
 }

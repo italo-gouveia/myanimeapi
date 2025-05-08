@@ -20,6 +20,9 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [Users](#users)
     - [Anime](#anime)
     - [Genres](#genres)
+      - [Search Genres](#search-genres)
+      - [Bulk Create Genres](#bulk-create-genres)
+      - [Bulk Delete Genres](#bulk-delete-genres)
     - [Tags](#tags)
     - [Reviews](#reviews)
   - [Documentation](#documentation)
@@ -178,11 +181,71 @@ myanimeapi/
 
 ### Genres
 
-- **GET** `/v1/genres`: Get all genres with pagination
-- **GET** `/v1/genres/{id}`: Get a specific genre by ID
-- **POST** `/v1/genres`: Create a new genre (Admin only)
-- **PUT** `/v1/genres/{id}`: Update a genre (Admin only)
-- **DELETE** `/v1/genres/{id}`: Delete a genre (Admin only)
+| Method | Endpoint | Description | Authentication Required |
+|--------|----------|-------------|------------------------|
+| GET | `/v1/genres` | Get all genres | No |
+| GET | `/v1/genres/{id}` | Get genre by ID | No |
+| POST | `/v1/genres` | Create a new genre | Yes |
+| PUT | `/v1/genres/{id}` | Update a genre | Yes |
+| DELETE | `/v1/genres/{id}` | Delete a genre | Yes |
+| GET | `/v1/genres/search` | Search genres by name or description | No |
+| POST | `/v1/genres/bulk` | Create multiple genres at once | Yes |
+| DELETE | `/v1/genres/bulk` | Delete multiple genres at once | Yes |
+
+#### Search Genres
+Search for genres by name or description with pagination support.
+
+**Query Parameters:**
+- `query` (required): Search term
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Action",
+      "created_at": "2024-02-20T19:27:00Z",
+      "updated_at": "2024-02-20T19:27:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 100,
+    "page": 1,
+    "limit": 10,
+    "pages": 10
+  }
+}
+```
+
+#### Bulk Create Genres
+Create multiple genres in a single request.
+
+**Request Body:**
+```json
+{
+  "genres": [
+    {
+      "name": "Action"
+    },
+    {
+      "name": "Comedy"
+    }
+  ]
+}
+```
+
+#### Bulk Delete Genres
+Delete multiple genres in a single request.
+
+**Request Body:**
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
 
 ### Tags
 
