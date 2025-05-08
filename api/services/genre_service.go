@@ -18,6 +18,9 @@ type GenreServiceInterface interface {
 	UpdateGenre(ctx context.Context, genre *models.Genre) error
 	DeleteGenre(ctx context.Context, id uint) error
 	GetGenresByIDs(ctx context.Context, ids []uint) ([]models.Genre, error)
+	SearchGenres(ctx context.Context, query string, page, limit int) ([]models.Genre, int64, error)
+	BulkCreateGenres(ctx context.Context, genres []models.Genre) error
+	BulkDeleteGenres(ctx context.Context, ids []uint) error
 }
 
 // GenreService handles business logic for genre operations
@@ -136,4 +139,32 @@ func (s *GenreService) DeleteGenre(ctx context.Context, id uint) error {
 func (s *GenreService) GetGenresByIDs(ctx context.Context, ids []uint) ([]models.Genre, error) {
 	log.Printf("GenreService.GetGenresByIDs: Retrieving genres with IDs %v", ids)
 	return s.genreRepo.GetByIDs(ctx, ids)
+}
+
+// SearchGenres searches for genres based on a query string
+func (s *GenreService) SearchGenres(ctx context.Context, query string, page, limit int) ([]models.Genre, int64, error) {
+	var genres []models.Genre
+	var total int64
+
+	// Search in both name and description
+	result := s.genreRepo.Search(ctx, query, page, limit)
+
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	genres = result.Genres
+	total = result.Total
+
+	return genres, total, nil
+}
+
+// BulkCreateGenres creates multiple genres at once
+func (s *GenreService) BulkCreateGenres(ctx context.Context, genres []models.Genre) error {
+	return s.genreRepo.BulkCreate(ctx, genres)
+}
+
+// BulkDeleteGenres deletes multiple genres at once
+func (s *GenreService) BulkDeleteGenres(ctx context.Context, ids []uint) error {
+	return s.genreRepo.BulkDelete(ctx, ids)
 }

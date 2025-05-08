@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -47,6 +48,9 @@ func (h *GenreHandler) RegisterGenreRoutes(router *mux.Router) {
 	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateGenreHandler), models.Genre{})).Methods("POST")
 	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateGenreHandler), models.Genre{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id}", h.DeleteGenreHandler).Methods("DELETE")
+	router.HandleFunc("/genres/search", h.SearchGenresHandler).Methods("GET")
+	protectedRouter.Handle("/bulk", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.BulkCreateGenresHandler), BulkCreateGenresRequest{})).Methods("POST")
+	protectedRouter.Handle("/bulk", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.BulkDeleteGenresHandler), BulkDeleteGenresRequest{})).Methods("DELETE")
 }
 
 // CreateGenreHandler handles the creation of a new genre.
@@ -275,6 +279,123 @@ func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to delete genre")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// SearchGenresHandler handles the search request for genres
+// @Summary Search genres
+// @Description Search genres by name or description
+// @Tags genres
+// @Accept json
+// @Produce json
+// @Param query query string true "Search query"
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 10)"
+// @Success 200 {object} []models.GenreResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Router /v1/genres/search [get]
+func (h *GenreHandler) SearchGenresHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, "Query parameter is required", "Missing query parameter", "Please provide a search query")
+		return
+	}
+
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 10)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, err.Error(), "Invalid pagination parameters", "Please provide valid page and limit values")
+		return
+	}
+
+	genres, total, err := h.genreService.SearchGenres(r.Context(), query, page, limit)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to search genres", "Search operation failed", "Please try again later")
+		return
+	}
+
+	response := make([]models.GenreResponse, len(genres))
+	for i, genre := range genres {
+		response[i] = genre.ToResponse()
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]interface{}{
+		"data": response,
+		"pagination": map[string]interface{}{
+			"total": total,
+			"page":  page,
+			"limit": limit,
+			"pages": int(math.Ceil(float64(total) / float64(limit))),
+		},
+	})
+}
+
+// BulkCreateGenresRequest represents the request body for bulk genre creation
+type BulkCreateGenresRequest struct {
+	Genres []models.Genre `json:"genres" validate:"required,dive"`
+}
+
+// BulkCreateGenresHandler handles bulk creation of genres
+// @Summary Bulk create genres
+// @Description Create multiple genres at once
+// @Tags genres
+// @Accept json
+// @Produce json
+// @Param genres body BulkCreateGenresRequest true "Genres to create"
+// @Success 201 {object} []models.GenreResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Security ApiKeyAuth
+// @Router /v1/genres/bulk [post]
+func (h *GenreHandler) BulkCreateGenresHandler(w http.ResponseWriter, r *http.Request) {
+	var req BulkCreateGenresRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body", "Invalid JSON format", "Please provide a valid JSON payload")
+		return
+	}
+
+	if err := h.genreService.BulkCreateGenres(r.Context(), req.Genres); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create genres", "Bulk creation failed", "Please try again later")
+		return
+	}
+
+	response := make([]models.GenreResponse, len(req.Genres))
+	for i, genre := range req.Genres {
+		response[i] = genre.ToResponse()
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, response)
+}
+
+// BulkDeleteGenresRequest represents the request body for bulk genre deletion
+type BulkDeleteGenresRequest struct {
+	IDs []uint `json:"ids" validate:"required,dive"`
+}
+
+// BulkDeleteGenresHandler handles bulk deletion of genres
+// @Summary Bulk delete genres
+// @Description Delete multiple genres at once
+// @Tags genres
+// @Accept json
+// @Produce json
+// @Param ids body BulkDeleteGenresRequest true "Genre IDs to delete"
+// @Success 204 "No Content"
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Security ApiKeyAuth
+// @Router /v1/genres/bulk [delete]
+func (h *GenreHandler) BulkDeleteGenresHandler(w http.ResponseWriter, r *http.Request) {
+	var req BulkDeleteGenresRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body", "Invalid JSON format", "Please provide a valid JSON payload")
+		return
+	}
+
+	if err := h.genreService.BulkDeleteGenres(r.Context(), req.IDs); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to delete genres", "Bulk deletion failed", "Please try again later")
 		return
 	}
 
