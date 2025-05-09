@@ -1,9 +1,5 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 // Tag represents a descriptive label or keyword for anime.
 // It includes the tag name and its relationship with anime.
 //
@@ -22,7 +18,7 @@ import (
 //	  ]
 //	}
 type Tag struct {
-	gorm.Model
+	BaseModel
 	ID    uint    `json:"id" gorm:"primaryKey" example:"1"`             // Unique identifier for the tag
 	Name  string  `json:"name" gorm:"not null;unique" example:"Ninja"`  // Name of the tag
 	Anime []Anime `json:"anime,omitempty" gorm:"many2many:anime_tags;"` // Associated anime entries
