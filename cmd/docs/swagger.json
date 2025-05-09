@@ -20,6 +20,636 @@
     "host": "localhost:8080",
     "basePath": "/v1",
     "paths": {
+        "/animes": {
+            "get": {
+                "description": "Get a list of all animes with pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Get all animes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid pagination parameters",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve animes",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new anime with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Create a new anime",
+                "parameters": [
+                    {
+                        "description": "Anime details",
+                        "name": "anime",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/genre/{genre}": {
+            "get": {
+                "description": "Search for animes by genre with pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Search animes by genre",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Genre to search for",
+                        "name": "genre",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Genre parameter is required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to search animes by genre",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/search": {
+            "get": {
+                "description": "Search for animes by title with pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Search animes by title",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title to search for",
+                        "name": "title",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Title parameter is required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to search animes by title",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/{id}": {
+            "get": {
+                "description": "Get an anime's details by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Get an anime by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing anime's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Update an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated anime details",
+                        "name": "anime",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Anime"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AnimeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an anime by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Delete an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/{id}/genres": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add one or more genres to an existing anime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Add genres to an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Genre IDs to add",
+                        "name": "genres",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to add genres to anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove one or more genres from an existing anime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Remove genres from an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Genre IDs to remove",
+                        "name": "genres",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to remove genres from anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/{id}/tags": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add one or more tags to an existing anime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Add tags to an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tag IDs to add",
+                        "name": "tags",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to add tags to anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove one or more tags from an existing anime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "anime"
+                ],
+                "summary": "Remove tags from an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tag IDs to remove",
+                        "name": "tags",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid anime ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to remove tags from anime",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate a user with username and password",
@@ -278,6 +908,252 @@
                 }
             }
         },
+        "/genres": {
+            "get": {
+                "description": "Get a list of all genres",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Get all genres",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.GenreResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve genres",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new genre with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Create a new genre",
+                "parameters": [
+                    {
+                        "description": "Genre details",
+                        "name": "genre",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Genre"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.GenreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Genre name already exists",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create genre",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/genres/{id}": {
+            "get": {
+                "description": "Get a genre's details by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Get a genre by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Genre ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.GenreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid genre ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Genre not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve genre",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing genre's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Update a genre",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Genre ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated genre details",
+                        "name": "genre",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Genre"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.GenreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid genre ID or request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Genre not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Genre name already exists",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update genre",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a genre by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Delete a genre",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Genre ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid genre ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Genre not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete genre",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reviews/{id}": {
             "delete": {
                 "security": [
@@ -330,55 +1206,28 @@
                 }
             }
         },
-        "/v1/anime": {
+        "/tags": {
             "get": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
-                ],
-                "description": "Retrieve a paginated list of anime entries",
+                "description": "Get a list of all tags",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "anime"
+                    "tags"
                 ],
-                "summary": "Get paginated anime entries",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Number of items per page (default: 10)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
+                "summary": "Get all tags",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Anime"
+                                "$ref": "#/definitions/models.TagResponse"
                             }
                         }
                     },
-                    "400": {
-                        "description": "Invalid pagination parameters",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
                     "500": {
-                        "description": "Failed to retrieve anime",
+                        "description": "Failed to retrieve tags",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -388,10 +1237,10 @@
             "post": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Create a new anime entry with the provided data",
+                "description": "Create a new tag with the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -399,17 +1248,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "anime"
+                    "tags"
                 ],
-                "summary": "Create a new anime",
+                "summary": "Create a new tag",
                 "parameters": [
                     {
-                        "description": "Anime data",
-                        "name": "anime",
+                        "description": "Tag details",
+                        "name": "tag",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.AnimeCreateRequest"
+                            "$ref": "#/definitions/models.Tag"
                         }
                     }
                 ],
@@ -417,17 +1266,23 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.AnimeResponse"
+                            "$ref": "#/definitions/models.TagResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or missing required fields",
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Tag name already exists",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to create anime",
+                        "description": "Failed to create tag",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -435,27 +1290,20 @@
                 }
             }
         },
-        "/v1/anime/{id}": {
+        "/tags/{id}": {
             "get": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
-                ],
-                "description": "Retrieve an anime by its ID",
+                "description": "Get a tag's details by its ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "anime"
+                    "tags"
                 ],
-                "summary": "Get an anime by ID",
+                "summary": "Get a tag by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Anime ID",
+                        "description": "Tag ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -465,23 +1313,23 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.TagResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Invalid tag ID",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Anime not found",
+                        "description": "Tag not found",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve anime",
+                        "description": "Failed to retrieve tag",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -491,10 +1339,10 @@
             "put": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Update an existing anime entry with the provided data",
+                "description": "Update an existing tag's details",
                 "consumes": [
                     "application/json"
                 ],
@@ -502,24 +1350,24 @@
                     "application/json"
                 ],
                 "tags": [
-                    "anime"
+                    "tags"
                 ],
-                "summary": "Update an anime",
+                "summary": "Update a tag",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Anime ID",
+                        "description": "Tag ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Updated anime data",
-                        "name": "anime",
+                        "description": "Updated tag details",
+                        "name": "tag",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.Tag"
                         }
                     }
                 ],
@@ -527,23 +1375,130 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.TagResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or ID format",
+                        "description": "Invalid tag ID or request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Anime not found",
+                        "description": "Tag not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Tag name already exists",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to update anime",
+                        "description": "Failed to update tag",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a tag by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tags"
+                ],
+                "summary": "Delete a tag",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Tag ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid tag ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Tag not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete tag",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/genres/bulk": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create multiple genres at once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Bulk create genres",
+                "parameters": [
+                    {
+                        "description": "Genres to create",
+                        "name": "genres",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkCreateGenresRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.GenreResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -556,18 +1511,26 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Delete an anime entry by its ID",
-                "tags": [
-                    "anime"
+                "description": "Delete multiple genres at once",
+                "consumes": [
+                    "application/json"
                 ],
-                "summary": "Delete an anime",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Bulk delete genres",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Genre IDs to delete",
+                        "name": "ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkDeleteGenresRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -575,19 +1538,13 @@
                         "description": "No Content"
                     },
                     "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to delete anime",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -595,29 +1552,25 @@
                 }
             }
         },
-        "/v1/anime/{id}/reviews": {
+        "/v1/genres/search": {
             "get": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
+                "description": "Search genres by name or description",
+                "consumes": [
+                    "application/json"
                 ],
-                "description": "Retrieve paginated reviews for an anime by its ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "anime"
+                    "genres"
                 ],
-                "summary": "Get paginated reviews for an anime",
+                "summary": "Search genres",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "query",
+                        "in": "query",
                         "required": true
                     },
                     {
@@ -628,7 +1581,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "Number of items per page (default: 10)",
+                        "description": "Items per page (default: 10)",
                         "name": "limit",
                         "in": "query"
                     }
@@ -639,18 +1592,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Review"
+                                "$ref": "#/definitions/models.GenreResponse"
                             }
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format or pagination parameters",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve reviews",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1150,22 +2103,63 @@
                 }
             }
         },
-        "models.Anime": {
+        "handlers.BulkCreateGenresRequest": {
             "type": "object",
             "required": [
-                "title"
+                "genres"
             ],
             "properties": {
+                "genres": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Genre"
+                    }
+                }
+            }
+        },
+        "handlers.BulkDeleteGenresRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "models.Anime": {
+            "type": "object",
+            "properties": {
                 "created_at": {
-                    "description": "Timestamp when the anime was created",
+                    "description": "Timestamp when the anime was added",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
                 "description": {
                     "description": "Description of the anime",
                     "type": "string",
-                    "maxLength": 500,
                     "example": "A story about ninjas."
+                },
+                "end_date": {
+                    "description": "Date when the anime finished airing",
+                    "type": "string",
+                    "example": "2007-02-08T00:00:00Z"
+                },
+                "episodes": {
+                    "description": "Number of episodes",
+                    "type": "integer",
+                    "example": 220
+                },
+                "genres": {
+                    "description": "Associated genres",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Genre"
+                    }
                 },
                 "id": {
                     "description": "Unique identifier for the anime",
@@ -1175,22 +2169,35 @@
                 "rating": {
                     "description": "Average rating of the anime",
                     "type": "number",
-                    "maximum": 10,
-                    "minimum": 0,
                     "example": 8.5
                 },
                 "reviews": {
-                    "description": "List of reviews for the anime (omitted unless necessary)",
+                    "description": "Associated reviews",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Review"
                     }
                 },
+                "start_date": {
+                    "description": "Date when the anime started airing",
+                    "type": "string",
+                    "example": "2002-10-03T00:00:00Z"
+                },
+                "status": {
+                    "description": "Current status of the anime",
+                    "type": "string",
+                    "example": "Completed"
+                },
+                "tags": {
+                    "description": "Associated tags",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Tag"
+                    }
+                },
                 "title": {
                     "description": "Title of the anime",
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3,
                     "example": "Naruto"
                 },
                 "updated_at": {
@@ -1203,28 +2210,100 @@
         "models.AnimeCreateRequest": {
             "type": "object",
             "required": [
+                "episodes",
+                "rating",
+                "start_date",
+                "status",
                 "title"
             ],
             "properties": {
                 "description": {
-                    "description": "Description of the anime (optional, max 500 characters)",
+                    "description": "Description of the anime",
                     "type": "string",
-                    "maxLength": 500,
                     "example": "A story about ninjas."
                 },
+                "end_date": {
+                    "description": "Date when the anime finished airing",
+                    "type": "string",
+                    "example": "2007-02-08T00:00:00Z"
+                },
+                "episodes": {
+                    "description": "Number of episodes",
+                    "type": "integer",
+                    "example": 220
+                },
+                "genre_ids": {
+                    "description": "IDs of genres to associate with the anime",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
                 "rating": {
-                    "description": "Rating of the anime (0-10)",
+                    "description": "Initial rating for the anime",
                     "type": "number",
                     "maximum": 10,
                     "minimum": 0,
                     "example": 8.5
                 },
-                "title": {
-                    "description": "Title of the anime (required, 3-100 characters)",
+                "start_date": {
+                    "description": "Date when the anime started airing",
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3,
+                    "example": "2002-10-03T00:00:00Z"
+                },
+                "status": {
+                    "description": "Current status of the anime",
+                    "type": "string",
+                    "example": "Completed"
+                },
+                "tag_ids": {
+                    "description": "IDs of tags to associate with the anime",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
                     "example": "Naruto"
+                }
+            }
+        },
+        "models.AnimeListResponse": {
+            "type": "object",
+            "properties": {
+                "animes": {
+                    "description": "List of anime responses",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnimeResponse"
+                    }
+                },
+                "limit": {
+                    "description": "Number of items per page",
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "description": "Total number of animes",
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -1232,7 +2311,7 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "Timestamp when the anime was created",
+                    "description": "Timestamp when the anime was added",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
                 },
@@ -1240,6 +2319,23 @@
                     "description": "Description of the anime",
                     "type": "string",
                     "example": "A story about ninjas."
+                },
+                "end_date": {
+                    "description": "Date when the anime finished airing",
+                    "type": "string",
+                    "example": "2007-02-08T00:00:00Z"
+                },
+                "episodes": {
+                    "description": "Number of episodes",
+                    "type": "integer",
+                    "example": 220
+                },
+                "genres": {
+                    "description": "Associated genres",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Genre"
+                    }
                 },
                 "id": {
                     "description": "Unique identifier for the anime",
@@ -1250,6 +2346,30 @@
                     "description": "Average rating of the anime",
                     "type": "number",
                     "example": 8.5
+                },
+                "reviews": {
+                    "description": "Associated reviews",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Review"
+                    }
+                },
+                "start_date": {
+                    "description": "Date when the anime started airing",
+                    "type": "string",
+                    "example": "2002-10-03T00:00:00Z"
+                },
+                "status": {
+                    "description": "Current status of the anime",
+                    "type": "string",
+                    "example": "Completed"
+                },
+                "tags": {
+                    "description": "Associated tags",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Tag"
+                    }
                 },
                 "title": {
                     "description": "Title of the anime",
@@ -1264,29 +2384,107 @@
             }
         },
         "models.Favorite": {
-            "description": "Model representing a user's favorite anime",
             "type": "object",
             "properties": {
                 "anime": {
-                    "$ref": "#/definitions/models.Anime"
+                    "description": "Associated anime details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Anime"
+                        }
+                    ]
                 },
                 "anime_id": {
-                    "type": "integer"
+                    "description": "ID of the favorited anime",
+                    "type": "integer",
+                    "example": 1
                 },
                 "created_at": {
-                    "type": "string"
+                    "description": "Timestamp when the favorite was created",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
                 },
                 "id": {
-                    "type": "integer"
+                    "description": "Unique identifier for the favorite entry",
+                    "type": "integer",
+                    "example": 1
                 },
                 "updated_at": {
-                    "type": "string"
+                    "description": "Timestamp when the favorite was last updated",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
                 },
                 "user": {
-                    "$ref": "#/definitions/models.User"
+                    "description": "Associated user details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    ]
                 },
                 "user_id": {
-                    "type": "integer"
+                    "description": "ID of the user who favorited the anime",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.Genre": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Associated anime entries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "deleted_at": {
+                    "description": "Soft delete timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier for the genre",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Name of the genre",
+                    "type": "string",
+                    "example": "Action"
+                },
+                "updated_at": {
+                    "description": "Update timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
+        "models.GenreResponse": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Associated anime entries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "id": {
+                    "description": "Unique identifier for the genre",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Name of the genre",
+                    "type": "string",
+                    "example": "Action"
                 }
             }
         },
@@ -1442,6 +2640,78 @@
                     "description": "ID of the user who created the review",
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "models.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Optional response data"
+                },
+                "message": {
+                    "description": "Success message",
+                    "type": "string",
+                    "example": "Operation completed successfully"
+                }
+            }
+        },
+        "models.Tag": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Associated anime entries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "deleted_at": {
+                    "description": "Soft delete timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Unique identifier for the tag",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Name of the tag",
+                    "type": "string",
+                    "example": "Ninja"
+                },
+                "updated_at": {
+                    "description": "Update timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
+        "models.TagResponse": {
+            "type": "object",
+            "properties": {
+                "anime": {
+                    "description": "Associated anime entries",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "id": {
+                    "description": "Unique identifier for the tag",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Name of the tag",
+                    "type": "string",
+                    "example": "Ninja"
                 }
             }
         },
