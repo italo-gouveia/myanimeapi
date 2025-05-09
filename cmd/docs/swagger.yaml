@@ -15,17 +15,47 @@ definitions:
             type: string
         type: object
     type: object
+  handlers.BulkCreateGenresRequest:
+    properties:
+      genres:
+        items:
+          $ref: '#/definitions/models.Genre'
+        type: array
+    required:
+    - genres
+    type: object
+  handlers.BulkDeleteGenresRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
   models.Anime:
     properties:
       created_at:
-        description: Timestamp when the anime was created
+        description: Timestamp when the anime was added
         example: "2025-02-20T19:27:00Z"
         type: string
       description:
         description: Description of the anime
         example: A story about ninjas.
-        maxLength: 500
         type: string
+      end_date:
+        description: Date when the anime finished airing
+        example: "2007-02-08T00:00:00Z"
+        type: string
+      episodes:
+        description: Number of episodes
+        example: 220
+        type: integer
+      genres:
+        description: Associated genres
+        items:
+          $ref: '#/definitions/models.Genre'
+        type: array
       id:
         description: Unique identifier for the anime
         example: 1
@@ -33,59 +63,134 @@ definitions:
       rating:
         description: Average rating of the anime
         example: 8.5
-        maximum: 10
-        minimum: 0
         type: number
       reviews:
-        description: List of reviews for the anime (omitted unless necessary)
+        description: Associated reviews
         items:
           $ref: '#/definitions/models.Review'
+        type: array
+      start_date:
+        description: Date when the anime started airing
+        example: "2002-10-03T00:00:00Z"
+        type: string
+      status:
+        description: Current status of the anime
+        example: Completed
+        type: string
+      tags:
+        description: Associated tags
+        items:
+          $ref: '#/definitions/models.Tag'
         type: array
       title:
         description: Title of the anime
         example: Naruto
-        maxLength: 100
-        minLength: 3
         type: string
       updated_at:
         description: Timestamp when the anime was last updated
         example: "2025-02-20T19:27:00Z"
         type: string
-    required:
-    - title
     type: object
   models.AnimeCreateRequest:
     properties:
       description:
-        description: Description of the anime (optional, max 500 characters)
+        description: Description of the anime
         example: A story about ninjas.
-        maxLength: 500
         type: string
+      end_date:
+        description: Date when the anime finished airing
+        example: "2007-02-08T00:00:00Z"
+        type: string
+      episodes:
+        description: Number of episodes
+        example: 220
+        type: integer
+      genre_ids:
+        description: IDs of genres to associate with the anime
+        example:
+        - 1
+        - 2
+        - 3
+        items:
+          type: integer
+        type: array
       rating:
-        description: Rating of the anime (0-10)
+        description: Initial rating for the anime
         example: 8.5
         maximum: 10
         minimum: 0
         type: number
+      start_date:
+        description: Date when the anime started airing
+        example: "2002-10-03T00:00:00Z"
+        type: string
+      status:
+        description: Current status of the anime
+        example: Completed
+        type: string
+      tag_ids:
+        description: IDs of tags to associate with the anime
+        example:
+        - 1
+        - 2
+        - 3
+        items:
+          type: integer
+        type: array
       title:
-        description: Title of the anime (required, 3-100 characters)
+        description: Title of the anime
         example: Naruto
-        maxLength: 100
-        minLength: 3
         type: string
     required:
+    - episodes
+    - rating
+    - start_date
+    - status
     - title
+    type: object
+  models.AnimeListResponse:
+    properties:
+      animes:
+        description: List of anime responses
+        items:
+          $ref: '#/definitions/models.AnimeResponse'
+        type: array
+      limit:
+        description: Number of items per page
+        example: 10
+        type: integer
+      page:
+        description: Current page number
+        example: 1
+        type: integer
+      total:
+        description: Total number of animes
+        example: 1
+        type: integer
     type: object
   models.AnimeResponse:
     properties:
       created_at:
-        description: Timestamp when the anime was created
+        description: Timestamp when the anime was added
         example: "2025-02-20T19:27:00Z"
         type: string
       description:
         description: Description of the anime
         example: A story about ninjas.
         type: string
+      end_date:
+        description: Date when the anime finished airing
+        example: "2007-02-08T00:00:00Z"
+        type: string
+      episodes:
+        description: Number of episodes
+        example: 220
+        type: integer
+      genres:
+        description: Associated genres
+        items:
+          $ref: '#/definitions/models.Genre'
+        type: array
       id:
         description: Unique identifier for the anime
         example: 1
@@ -94,6 +199,24 @@ definitions:
         description: Average rating of the anime
         example: 8.5
         type: number
+      reviews:
+        description: Associated reviews
+        items:
+          $ref: '#/definitions/models.Review'
+        type: array
+      start_date:
+        description: Date when the anime started airing
+        example: "2002-10-03T00:00:00Z"
+        type: string
+      status:
+        description: Current status of the anime
+        example: Completed
+        type: string
+      tags:
+        description: Associated tags
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
       title:
         description: Title of the anime
         example: Naruto
@@ -104,22 +227,79 @@ definitions:
         type: string
     type: object
   models.Favorite:
-    description: Model representing a user's favorite anime
     properties:
       anime:
-        $ref: '#/definitions/models.Anime'
+        allOf:
+        - $ref: '#/definitions/models.Anime'
+        description: Associated anime details
       anime_id:
+        description: ID of the favorited anime
+        example: 1
         type: integer
       created_at:
+        description: Timestamp when the favorite was created
+        example: "2025-02-20T19:27:00Z"
         type: string
       id:
+        description: Unique identifier for the favorite entry
+        example: 1
         type: integer
       updated_at:
+        description: Timestamp when the favorite was last updated
+        example: "2025-02-20T19:27:00Z"
         type: string
       user:
-        $ref: '#/definitions/models.User'
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: Associated user details
       user_id:
+        description: ID of the user who favorited the anime
+        example: 1
         type: integer
+    type: object
+  models.Genre:
+    properties:
+      anime:
+        description: Associated anime entries
+        items:
+          $ref: '#/definitions/models.Anime'
+        type: array
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      deleted_at:
+        description: Soft delete timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Unique identifier for the genre
+        example: 1
+        type: integer
+      name:
+        description: Name of the genre
+        example: Action
+        type: string
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+    type: object
+  models.GenreResponse:
+    properties:
+      anime:
+        description: Associated anime entries
+        items:
+          $ref: '#/definitions/models.Anime'
+        type: array
+      id:
+        description: Unique identifier for the genre
+        example: 1
+        type: integer
+      name:
+        description: Name of the genre
+        example: Action
+        type: string
     type: object
   models.Response:
     properties:
@@ -237,6 +417,59 @@ definitions:
         example: 1
         type: integer
     type: object
+  models.SuccessResponse:
+    properties:
+      data:
+        description: Optional response data
+      message:
+        description: Success message
+        example: Operation completed successfully
+        type: string
+    type: object
+  models.Tag:
+    properties:
+      anime:
+        description: Associated anime entries
+        items:
+          $ref: '#/definitions/models.Anime'
+        type: array
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      deleted_at:
+        description: Soft delete timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Unique identifier for the tag
+        example: 1
+        type: integer
+      name:
+        description: Name of the tag
+        example: Ninja
+        type: string
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+    type: object
+  models.TagResponse:
+    properties:
+      anime:
+        description: Associated anime entries
+        items:
+          $ref: '#/definitions/models.Anime'
+        type: array
+      id:
+        description: Unique identifier for the tag
+        example: 1
+        type: integer
+      name:
+        description: Name of the tag
+        example: Ninja
+        type: string
+    type: object
   models.User:
     properties:
       created_at:
@@ -333,6 +566,416 @@ info:
   title: MyAnimeAPI
   version: "1.0"
 paths:
+  /animes:
+    get:
+      description: Get a list of all animes with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnimeListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to retrieve animes
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get all animes
+      tags:
+      - anime
+    post:
+      consumes:
+      - application/json
+      description: Create a new anime with the provided details
+      parameters:
+      - description: Anime details
+        in: body
+        name: anime
+        required: true
+        schema:
+          $ref: '#/definitions/models.AnimeCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AnimeResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to create anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new anime
+      tags:
+      - anime
+  /animes/{id}:
+    delete:
+      description: Delete an anime by its ID
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid anime ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to delete anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an anime
+      tags:
+      - anime
+    get:
+      description: Get an anime's details by its ID
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnimeResponse'
+        "400":
+          description: Invalid anime ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to retrieve anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get an anime by ID
+      tags:
+      - anime
+    put:
+      consumes:
+      - application/json
+      description: Update an existing anime's details
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated anime details
+        in: body
+        name: anime
+        required: true
+        schema:
+          $ref: '#/definitions/models.Anime'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnimeResponse'
+        "400":
+          description: Invalid anime ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to update anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an anime
+      tags:
+      - anime
+  /animes/{id}/genres:
+    delete:
+      consumes:
+      - application/json
+      description: Remove one or more genres from an existing anime
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Genre IDs to remove
+        in: body
+        name: genres
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid anime ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to remove genres from anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove genres from an anime
+      tags:
+      - anime
+    post:
+      consumes:
+      - application/json
+      description: Add one or more genres to an existing anime
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Genre IDs to add
+        in: body
+        name: genres
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid anime ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to add genres to anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add genres to an anime
+      tags:
+      - anime
+  /animes/{id}/tags:
+    delete:
+      consumes:
+      - application/json
+      description: Remove one or more tags from an existing anime
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag IDs to remove
+        in: body
+        name: tags
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid anime ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to remove tags from anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove tags from an anime
+      tags:
+      - anime
+    post:
+      consumes:
+      - application/json
+      description: Add one or more tags to an existing anime
+      parameters:
+      - description: Anime ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag IDs to add
+        in: body
+        name: tags
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid anime ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to add tags to anime
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add tags to an anime
+      tags:
+      - anime
+  /animes/genre/{genre}:
+    get:
+      description: Search for animes by genre with pagination
+      parameters:
+      - description: Genre to search for
+        in: path
+        name: genre
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnimeListResponse'
+        "400":
+          description: Genre parameter is required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to search animes by genre
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Search animes by genre
+      tags:
+      - anime
+  /animes/search:
+    get:
+      description: Search for animes by title with pagination
+      parameters:
+      - description: Title to search for
+        in: query
+        name: title
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnimeListResponse'
+        "400":
+          description: Title parameter is required
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to search animes by title
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Search animes by title
+      tags:
+      - anime
   /auth/login:
     post:
       consumes:
@@ -499,6 +1142,165 @@ paths:
       summary: Add anime to favorites
       tags:
       - favorites
+  /genres:
+    get:
+      description: Get a list of all genres
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.GenreResponse'
+            type: array
+        "500":
+          description: Failed to retrieve genres
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get all genres
+      tags:
+      - genres
+    post:
+      consumes:
+      - application/json
+      description: Create a new genre with the provided details
+      parameters:
+      - description: Genre details
+        in: body
+        name: genre
+        required: true
+        schema:
+          $ref: '#/definitions/models.Genre'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.GenreResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Genre name already exists
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to create genre
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new genre
+      tags:
+      - genres
+  /genres/{id}:
+    delete:
+      description: Delete a genre by its ID
+      parameters:
+      - description: Genre ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid genre ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Genre not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to delete genre
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a genre
+      tags:
+      - genres
+    get:
+      description: Get a genre's details by its ID
+      parameters:
+      - description: Genre ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.GenreResponse'
+        "400":
+          description: Invalid genre ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Genre not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to retrieve genre
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get a genre by ID
+      tags:
+      - genres
+    put:
+      consumes:
+      - application/json
+      description: Update an existing genre's details
+      parameters:
+      - description: Genre ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated genre details
+        in: body
+        name: genre
+        required: true
+        schema:
+          $ref: '#/definitions/models.Genre'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.GenreResponse'
+        "400":
+          description: Invalid genre ID or request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Genre not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Genre name already exists
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to update genre
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a genre
+      tags:
+      - genres
   /reviews/{id}:
     delete:
       consumes:
@@ -532,18 +1334,9 @@ paths:
       summary: Delete a review by ID
       tags:
       - reviews
-  /v1/anime:
+  /tags:
     get:
-      description: Retrieve a paginated list of anime entries
-      parameters:
-      - description: 'Page number (default: 1)'
-        in: query
-        name: page
-        type: integer
-      - description: 'Number of items per page (default: 10)'
-        in: query
-        name: limit
-        type: integer
+      description: Get a list of all tags
       produces:
       - application/json
       responses:
@@ -551,86 +1344,85 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Anime'
+              $ref: '#/definitions/models.TagResponse'
             type: array
-        "400":
-          description: Invalid pagination parameters
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to retrieve anime
+          description: Failed to retrieve tags
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
-      summary: Get paginated anime entries
+      summary: Get all tags
       tags:
-      - anime
+      - tags
     post:
       consumes:
       - application/json
-      description: Create a new anime entry with the provided data
+      description: Create a new tag with the provided details
       parameters:
-      - description: Anime data
+      - description: Tag details
         in: body
-        name: anime
+        name: tag
         required: true
         schema:
-          $ref: '#/definitions/models.AnimeCreateRequest'
+          $ref: '#/definitions/models.Tag'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.AnimeResponse'
+            $ref: '#/definitions/models.TagResponse'
         "400":
-          description: Invalid input or missing required fields
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Tag name already exists
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to create anime
+          description: Failed to create tag
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
-      summary: Create a new anime
+      - BearerAuth: []
+      summary: Create a new tag
       tags:
-      - anime
-  /v1/anime/{id}:
+      - tags
+  /tags/{id}:
     delete:
-      description: Delete an anime entry by its ID
+      description: Delete a tag by its ID
       parameters:
-      - description: Anime ID
+      - description: Tag ID
         in: path
         name: id
         required: true
         type: integer
+      produces:
+      - application/json
       responses:
         "204":
           description: No Content
         "400":
-          description: Invalid ID format
+          description: Invalid tag ID
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Anime not found
+          description: Tag not found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to delete anime
+          description: Failed to delete tag
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
-      summary: Delete an anime
+      - BearerAuth: []
+      summary: Delete a tag
       tags:
-      - anime
+      - tags
     get:
-      description: Retrieve an anime by its ID
+      description: Get a tag's details by its ID
       parameters:
-      - description: Anime ID
+      - description: Tag ID
         in: path
         name: id
         required: true
@@ -641,79 +1433,145 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Anime'
+            $ref: '#/definitions/models.TagResponse'
         "400":
-          description: Invalid ID format
+          description: Invalid tag ID
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Anime not found
+          description: Tag not found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to retrieve anime
+          description: Failed to retrieve tag
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
-      summary: Get an anime by ID
+      summary: Get a tag by ID
       tags:
-      - anime
+      - tags
     put:
       consumes:
       - application/json
-      description: Update an existing anime entry with the provided data
+      description: Update an existing tag's details
       parameters:
-      - description: Anime ID
+      - description: Tag ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Updated anime data
+      - description: Updated tag details
         in: body
-        name: anime
+        name: tag
         required: true
         schema:
-          $ref: '#/definitions/models.Anime'
+          $ref: '#/definitions/models.Tag'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Anime'
+            $ref: '#/definitions/models.TagResponse'
         "400":
-          description: Invalid input or ID format
+          description: Invalid tag ID or request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: Anime not found
+          description: Tag not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: Tag name already exists
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to update anime
+          description: Failed to update tag
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a tag
+      tags:
+      - tags
+  /v1/genres/bulk:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple genres at once
+      parameters:
+      - description: Genre IDs to delete
+        in: body
+        name: ids
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.BulkDeleteGenresRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
       - ApiKeyAuth: []
-      summary: Update an anime
+      summary: Bulk delete genres
       tags:
-      - anime
-  /v1/anime/{id}/reviews:
-    get:
-      description: Retrieve paginated reviews for an anime by its ID
+      - genres
+    post:
+      consumes:
+      - application/json
+      description: Create multiple genres at once
       parameters:
-      - description: Anime ID
-        in: path
-        name: id
+      - description: Genres to create
+        in: body
+        name: genres
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/handlers.BulkCreateGenresRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            items:
+              $ref: '#/definitions/models.GenreResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Bulk create genres
+      tags:
+      - genres
+  /v1/genres/search:
+    get:
+      consumes:
+      - application/json
+      description: Search genres by name or description
+      parameters:
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
       - description: 'Page number (default: 1)'
         in: query
         name: page
         type: integer
-      - description: 'Number of items per page (default: 10)'
+      - description: 'Items per page (default: 10)'
         in: query
         name: limit
         type: integer
@@ -724,22 +1582,19 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Review'
+              $ref: '#/definitions/models.GenreResponse'
             type: array
         "400":
-          description: Invalid ID format or pagination parameters
+          description: Bad Request
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to retrieve reviews
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - "":
-        - ""
-      summary: Get paginated reviews for an anime
+      summary: Search genres
       tags:
-      - anime
+      - genres
   /v1/reviews:
     post:
       consumes:
