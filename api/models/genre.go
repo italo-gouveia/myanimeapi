@@ -1,9 +1,5 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 // Genre represents a category or classification for anime.
 // It includes the genre name and its relationship with anime.
 //
@@ -22,7 +18,7 @@ import (
 //	  ]
 //	}
 type Genre struct {
-	gorm.Model
+	BaseModel
 	ID    uint    `json:"id" gorm:"primaryKey" example:"1"`               // Unique identifier for the genre
 	Name  string  `json:"name" gorm:"not null;unique" example:"Action"`   // Name of the genre
 	Anime []Anime `json:"anime,omitempty" gorm:"many2many:anime_genres;"` // Associated anime entries

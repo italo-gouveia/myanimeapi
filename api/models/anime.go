@@ -129,8 +129,8 @@ type AnimeCreateRequest struct {
 	StartDate   time.Time `json:"start_date" validate:"required" example:"2002-10-03T00:00:00Z"` // Date when the anime started airing
 	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`                       // Date when the anime finished airing
 	Rating      float64   `json:"rating" validate:"required,gte=0,lte=10" example:"8.5"`         // Initial rating for the anime
-	GenreIDs    []uint    `json:"genre_ids" validate:"omitempty,dive,gt=0" example:"[1,2,3]"`    // IDs of genres to associate with the anime
-	TagIDs      []uint    `json:"tag_ids" validate:"omitempty,dive,gt=0" example:"[1,2,3]"`      // IDs of tags to associate with the anime
+	GenreIDs    []uint    `json:"genre_ids" validate:"omitempty,dive,gt=0" example:"1,2,3"`      // IDs of genres to associate with the anime
+	TagIDs      []uint    `json:"tag_ids" validate:"omitempty,dive,gt=0" example:"1,2,3"`        // IDs of tags to associate with the anime
 }
 
 // ToResponse converts an Anime model to an AnimeResponse.
@@ -151,4 +151,35 @@ func (a Anime) ToResponse() AnimeResponse {
 		Genres:      a.Genres,
 		Tags:        a.Tags,
 	}
+}
+
+// AnimeListResponse represents a paginated list of anime responses.
+// It includes the list of animes and pagination metadata.
+//
+// Example:
+//
+//	{
+//	  "animes": [
+//	    {
+//	      "id": 1,
+//	      "title": "Naruto",
+//	      "description": "A story about ninjas.",
+//	      "rating": 8.5,
+//	      "episodes": 220,
+//	      "status": "Completed",
+//	      "start_date": "2002-10-03T00:00:00Z",
+//	      "end_date": "2007-02-08T00:00:00Z",
+//	      "created_at": "2025-02-20T19:27:00Z",
+//	      "updated_at": "2025-02-20T19:27:00Z"
+//	    }
+//	  ],
+//	  "total": 1,
+//	  "page": 1,
+//	  "limit": 10
+//	}
+type AnimeListResponse struct {
+	Animes []AnimeResponse `json:"animes"`             // List of anime responses
+	Total  int64           `json:"total" example:"1"`  // Total number of animes
+	Page   int             `json:"page" example:"1"`   // Current page number
+	Limit  int             `json:"limit" example:"10"` // Number of items per page
 }
