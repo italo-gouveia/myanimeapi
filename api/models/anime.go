@@ -136,21 +136,7 @@ type AnimeCreateRequest struct {
 // ToResponse converts an Anime model to an AnimeResponse.
 // This method is used to serialize anime data for API responses.
 func (a Anime) ToResponse() AnimeResponse {
-	return AnimeResponse{
-		ID:          a.ID,
-		Title:       a.Title,
-		Description: a.Description,
-		Rating:      a.Rating,
-		Episodes:    a.Episodes,
-		Status:      a.Status,
-		StartDate:   a.StartDate,
-		EndDate:     a.EndDate,
-		CreatedAt:   a.CreatedAt,
-		UpdatedAt:   a.UpdatedAt,
-		Reviews:     a.Reviews,
-		Genres:      a.Genres,
-		Tags:        a.Tags,
-	}
+	return AnimeResponse(a)
 }
 
 // AnimeListResponse represents a paginated list of anime responses.
