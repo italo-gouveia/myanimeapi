@@ -1,6 +1,5 @@
-// api/models/models.go
 // Package models defines the data structures used in the MyAnimeAPI application.
-// It includes models for users, anime, reviews, and related responses.
+// It includes models for users, reviews, and related responses.
 // These models are used for database interactions, request/response payloads, and JWT claims.
 package models
 
@@ -55,30 +54,6 @@ type User struct {
 	IsAdmin   bool       `json:"is_admin" gorm:"default:false" example:"false"`                                                    // Indicates if the user has admin privileges
 	Reviews   []Review   `json:"reviews,omitempty" gorm:"foreignKey:UserID"`
 	Favorites []Favorite `json:"favorites,omitempty" gorm:"foreignKey:UserID"`
-}
-
-// Anime represents an anime entry in the system.
-// It includes fields for anime details and relationships with reviews.
-//
-// Example:
-//
-//	{
-//	  "id": 1,
-//	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:27:00Z",
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5
-//	}
-type Anime struct {
-	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`                                         // Unique identifier for the anime
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was created
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                // Timestamp when the anime was last updated
-	Title       string    `json:"title" gorm:"not null" validate:"required,min=3,max=100" example:"Naruto"` // Title of the anime
-	Description string    `json:"description" validate:"max=500" example:"A story about ninjas."`           // Description of the anime
-	Rating      float32   `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                             // Average rating of the anime
-
-	Reviews []Review `json:"reviews,omitempty"` // List of reviews for the anime (omitted unless necessary)
 }
 
 // Review represents a review for an anime.
@@ -161,45 +136,6 @@ type UserResponse struct {
 	IsAdmin   bool      `json:"is_admin" example:"false"`                  // Indicates if the user has admin privileges
 	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the user was created
 	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the user was last updated
-}
-
-// AnimeResponse represents a simplified anime response.
-// It is used for serializing anime data in API responses.
-//
-// Example:
-//
-//	{
-//	  "id": 1,
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5
-//	}
-type AnimeResponse struct {
-	ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was created
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
-	Title       string    `json:"title" example:"Naruto"`                      // Title of the anime
-	Description string    `json:"description" example:"A story about ninjas."` // Description of the anime
-	Rating      float32   `json:"rating" example:"8.5"`                        // Average rating of the anime
-
-	User  User  `gorm:"foreignKey:UserID" json:"-" validate:"-"`                               // User who created the review (excluded from JSON)
-	Anime Anime `gorm:"foreignKey:AnimeID;constraint:OnDelete:CASCADE;" json:"-" validate:"-"` // Anime being reviewed (excluded from JSON)
-}
-
-// AnimeCreateRequest represents the request payload for creating an anime.
-// It includes fields for the title, description, and rating of the anime.
-//
-// Example:
-//
-//	{
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5
-//	}
-type AnimeCreateRequest struct {
-	Title       string  `json:"title" validate:"required,min=3,max=100" example:"Naruto"`       // Title of the anime (required, 3-100 characters)
-	Description string  `json:"description" validate:"max=500" example:"A story about ninjas."` // Description of the anime (optional, max 500 characters)
-	Rating      float32 `json:"rating" validate:"gte=0,lte=10" example:"8.5"`                   // Rating of the anime (0-10)
 }
 
 // ReviewCreateRequest represents the request payload for creating a review.
