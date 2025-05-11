@@ -5,8 +5,8 @@
 //
 // Example usage:
 //
-//	db := // initialize your database connection
-//	animeHandler := handlers.NewAnimeHandler(db)
+//	animeService := services.NewAnimeService(repository)
+//	animeHandler := handlers.NewAnimeHandler(animeService)
 //	router := mux.NewRouter()
 //	animeHandler.RegisterAnimeRoutes(router)
 //
@@ -17,13 +17,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/api/services"
-	"myanimeapi/internal/errors"
-
 	"myanimeapi/api/utils"
+	"myanimeapi/internal/errors"
 
 	"github.com/gorilla/mux"
 )
@@ -42,23 +42,40 @@ type AnimeHandler struct {
 //	animeService := services.NewAnimeService(repository)
 //	animeHandler := NewAnimeHandler(animeService)
 func NewAnimeHandler(service services.AnimeServiceInterface) *AnimeHandler {
-	return &AnimeHandler{service: service}
+	return &AnimeHandler{
+		service: service,
+	}
 }
 
-// GetAnimeHandler retrieves an anime by its ID.
-// It validates the ID, queries the database, and returns the anime as a JSON response.
-// If the ID is invalid or the anime is not found, it returns an appropriate error response.
+// CreateAnimeHandler handles the creation of a new anime.
+// It validates the input payload and uses the service to create the anime.
+// If successful, it returns the created anime as a JSON response.
 //
-// @Summary Get an anime by ID
-// @Description Retrieve an anime by its ID
+// @Summary Create a new anime
+// @Description Create a new anime with the provided details
 // @Tags anime
+// @Accept json
 // @Produce json
-// @Param id path int true "Anime ID"
-// @Success 200 {object} models.Anime
-// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
-// @Failure 404 {object} errors.ErrorResponse "Anime not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
-// @Router /v1/anime/{id} [get]
+// @Param anime body models.AnimeCreateRequest true "Anime details"
+// @Success 201 {object} models.AnimeResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 500 {object} errors.ErrorResponse "Failed to create anime"
+// @Router /animes [post]
+// @Security BearerAuth
+// @Example
+//
+//	{
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z",
+//	  "rating": 8.5,
+//	  "genre_ids": [1, 2, 3],
+//	  "tag_ids": [1, 2, 3]
+//	}
+//
 // @ExampleResponse
 //
 //	{
@@ -66,14 +83,122 @@ func NewAnimeHandler(service services.AnimeServiceInterface) *AnimeHandler {
 //	  "title": "Naruto",
 //	  "description": "A story about ninjas.",
 //	  "rating": 8.5,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z",
+//	  "created_at": "2025-02-20T19:27:00Z",
+//	  "updated_at": "2025-02-20T19:27:00Z",
+//	  "genres": [
+//	    {
+//	      "id": 1,
+//	      "name": "Action"
+//	    }
+//	  ],
+//	  "tags": [
+//	    {
+//	      "id": 1,
+//	      "name": "Ninja"
+//	    }
+//	  ]
 //	}
+func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	var request models.AnimeCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Create the anime
+	anime := &models.Anime{
+		Title:       request.Title,
+		Description: request.Description,
+		Rating:      request.Rating,
+	}
+
+	// Create the anime first
+	if err := h.service.CreateAnime(r.Context(), anime); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create anime")
+		return
+	}
+
+	// Add genres if provided
+	if len(request.GenreIDs) > 0 {
+		if err := h.service.AddGenresToAnime(r.Context(), anime.ID, request.GenreIDs); err != nil {
+			// Log the error but don't fail the request
+			log.Printf("Failed to add genres to anime: %v", err)
+		}
+	}
+
+	// Add tags if provided
+	if len(request.TagIDs) > 0 {
+		if err := h.service.AddTagsToAnime(r.Context(), anime.ID, request.TagIDs); err != nil {
+			// Log the error but don't fail the request
+			log.Printf("Failed to add tags to anime: %v", err)
+		}
+	}
+
+	// Get the complete anime with genres and tags
+	createdAnime, err := h.service.GetAnimeByID(r.Context(), anime.ID)
+	if err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to retrieve created anime")
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, createdAnime)
+}
+
+// GetAnimeHandler handles retrieving an anime by ID.
+// It validates the ID, queries the service, and returns the anime as a JSON response.
+// If the ID is invalid or the anime is not found, it returns an appropriate error response.
 //
-// @Security []
+// @Summary Get an anime by ID
+// @Description Get an anime's details by its ID
+// @Tags anime
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Success 200 {object} models.AnimeResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
+// @Router /animes/{id} [get]
+// @ExampleResponse
+//
+//	{
+//	  "id": 1,
+//	  "title": "Naruto",
+//	  "description": "A story about ninjas.",
+//	  "rating": 8.5,
+//	  "episodes": 220,
+//	  "status": "Completed",
+//	  "start_date": "2002-10-03T00:00:00Z",
+//	  "end_date": "2007-02-08T00:00:00Z",
+//	  "created_at": "2025-02-20T19:27:00Z",
+//	  "updated_at": "2025-02-20T19:27:00Z",
+//	  "genres": [
+//	    {
+//	      "id": 1,
+//	      "name": "Action"
+//	    }
+//	  ],
+//	  "tags": [
+//	    {
+//	      "id": 1,
+//	      "name": "Ninja"
+//	    }
+//	  ]
+//	}
 func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := utils.ParseUint(vars["id"])
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
 		return
@@ -92,37 +217,55 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, http.StatusOK, anime)
 }
 
-// GetAllAnimesHandler retrieves paginated anime entries from the database.
-// It validates the pagination parameters, queries the database, and returns the anime entries as a JSON response.
-// If the pagination parameters are invalid or the query fails, it returns an error response.
+// GetAllAnimesHandler handles retrieving all animes with pagination.
+// It validates the pagination parameters, queries the service, and returns the animes as a JSON response.
+// If the pagination parameters are invalid, it returns an appropriate error response.
 //
-// @Summary Get paginated anime entries
-// @Description Retrieve a paginated list of anime entries
+// @Summary Get all animes
+// @Description Get a list of all animes with pagination
 // @Tags anime
 // @Produce json
-// @Param page query int false "Page number (default: 1)"
-// @Param limit query int false "Number of items per page (default: 10)"
-// @Success 200 {array} models.Anime
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} models.AnimeListResponse
 // @Failure 400 {object} errors.ErrorResponse "Invalid pagination parameters"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve anime"
-// @Router /v1/anime [get]
+// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve animes"
+// @Router /animes [get]
 // @ExampleResponse
-// [
 //
 //	{
-//	  "id": 1,
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "animes": [
+//	    {
+//	      "id": 1,
+//	      "title": "Naruto",
+//	      "description": "A story about ninjas.",
+//	      "rating": 8.5,
+//	      "episodes": 220,
+//	      "status": "Completed",
+//	      "start_date": "2002-10-03T00:00:00Z",
+//	      "end_date": "2007-02-08T00:00:00Z",
+//	      "created_at": "2025-02-20T19:27:00Z",
+//	      "updated_at": "2025-02-20T19:27:00Z",
+//	      "genres": [
+//	        {
+//	          "id": 1,
+//	          "name": "Action"
+//	        }
+//	      ],
+//	      "tags": [
+//	        {
+//	          "id": 1,
+//	          "name": "Ninja"
+//	        }
+//	      ]
+//	    }
+//	  ],
+//	  "total": 1,
+//	  "page": 1,
+//	  "limit": 10
 //	}
-//
-// ]
-// @Security []
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	page, limit := utils.GetPaginationParams(r)
-
 	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
@@ -143,165 +286,33 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
-// GetPaginatedReviewsForAnimeHandler retrieves paginated reviews for an anime by its ID.
-// It validates the ID and pagination parameters, queries the database, and returns the reviews as a JSON response.
-// If the ID or pagination parameters are invalid, or the query fails, it returns an error response.
-//
-// @Summary Get paginated reviews for an anime
-// @Description Retrieve paginated reviews for an anime by its ID
-// @Tags anime
-// @Produce json
-// @Param id path int true "Anime ID"
-// @Param page query int false "Page number (default: 1)"
-// @Param limit query int false "Number of items per page (default: 10)"
-// @Success 200 {array} models.Review
-// @Failure 400 {object} errors.ErrorResponse "Invalid ID format or pagination parameters"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve reviews"
-// @Router /v1/anime/{id}/reviews [get]
-// @ExampleResponse
-// [
-//
-//	{
-//	  "id": 1,
-//	  "user_id": 1,
-//	  "anime_id": 1,
-//	  "content": "Great anime!",
-//	  "rating": 9,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
-//	}
-//
-// ]
-// @Security []
-func (h *AnimeHandler) GetPaginatedReviewsForAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-
-	// Validate ID
-	id, err := utils.ValidateID(idStr)
-	if err != nil {
-		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
-		return
-	}
-
-	// Validate pagination
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	page, limit, err := utils.ValidatePagination(pageStr, limitStr, 1, 10)
-	if err != nil {
-		log.Printf("Invalid pagination parameters: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error())
-		return
-	}
-
-	// Get reviews for the anime
-	reviews, total, err := h.service.GetReviewsForAnime(r.Context(), id, page, limit)
-	if err != nil {
-		log.Printf("Failed to retrieve reviews: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve reviews", "An internal server error occurred while retrieving reviews.")
-		return
-	}
-
-	response := map[string]interface{}{
-		"reviews": reviews,
-		"total":   total,
-		"page":    page,
-		"limit":   limit,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
-		return
-	}
-}
-
-// CreateAnimeHandler creates a new anime entry in the database.
-// It validates the input payload, creates the anime, and returns the created anime as a JSON response.
-// If the input is invalid or the creation fails, it returns an error response.
-//
-// @Summary Create a new anime
-// @Description Create a new anime entry with the provided data
-// @Tags anime
-// @Accept json
-// @Produce json
-// @Param anime body models.AnimeCreateRequest true "Anime data"
-// @Success 201 {object} models.AnimeResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
-// @Failure 500 {object} errors.ErrorResponse "Failed to create anime"
-// @Router /v1/anime [post]
-// @Example
-//
-//	{
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "title": "Naruto",
-//	  "description": "A story about ninjas.",
-//	  "rating": 8.5,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
-//	}
-//
-// @Security ApiKeyAuth
-func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the validated payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeCreateRequest)
-	if !ok {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
-		return
-	}
-
-	// Convert AnimeCreateRequest to Anime
-	anime := &models.Anime{
-		Title:       payload.Title,
-		Description: payload.Description,
-		Rating:      payload.Rating,
-	}
-
-	err := h.service.CreateAnime(r.Context(), anime)
-	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
-			return
-		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create anime")
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusCreated, anime)
-}
-
-// UpdateAnimeHandler updates an existing anime entry in the database.
-// It validates the ID and input payload, updates the anime, and returns the updated anime as a JSON response.
-// If the ID or input is invalid, or the update fails, it returns an error response.
+// UpdateAnimeHandler handles updating an existing anime.
+// It validates the ID and input payload, uses the service to update the anime,
+// and returns the updated anime as a JSON response.
 //
 // @Summary Update an anime
-// @Description Update an existing anime entry with the provided data
+// @Description Update an existing anime's details
 // @Tags anime
 // @Accept json
 // @Produce json
 // @Param id path int true "Anime ID"
-// @Param anime body models.Anime true "Updated anime data"
-// @Success 200 {object} models.Anime
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or ID format"
+// @Param anime body models.Anime true "Updated anime details"
+// @Success 200 {object} models.AnimeResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
 // @Failure 404 {object} errors.ErrorResponse "Anime not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to update anime"
-// @Router /v1/anime/{id} [put]
+// @Router /animes/{id} [put]
+// @Security BearerAuth
 // @Example
 //
 //	{
 //	  "title": "Naruto Shippuden",
-//	  "description": "The continuation of Naruto's journey.",
-//	  "rating": 9.0
+//	  "description": "The continuation of Naruto's story.",
+//	  "episodes": 500,
+//	  "status": "Completed",
+//	  "start_date": "2007-02-15T00:00:00Z",
+//	  "end_date": "2017-03-23T00:00:00Z",
+//	  "rating": 8.7
 //	}
 //
 // @ExampleResponse
@@ -309,30 +320,43 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 //	{
 //	  "id": 1,
 //	  "title": "Naruto Shippuden",
-//	  "description": "The continuation of Naruto's journey.",
-//	  "rating": 9.0,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "description": "The continuation of Naruto's story.",
+//	  "rating": 8.7,
+//	  "episodes": 500,
+//	  "status": "Completed",
+//	  "start_date": "2007-02-15T00:00:00Z",
+//	  "end_date": "2017-03-23T00:00:00Z",
+//	  "created_at": "2025-02-20T19:27:00Z",
+//	  "updated_at": "2025-02-20T19:27:00Z",
+//	  "genres": [
+//	    {
+//	      "id": 1,
+//	      "name": "Action"
+//	    }
+//	  ],
+//	  "tags": [
+//	    {
+//	      "id": 1,
+//	      "name": "Ninja"
+//	    }
+//	  ]
 //	}
-//
-// @Security ApiKeyAuth
 func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := utils.ParseUint(vars["id"])
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
 		return
 	}
 
-	var payload models.Anime
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
+	var anime models.Anime
+	if err := json.NewDecoder(r.Body).Decode(&anime); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	payload.ID = uint(id)
-	err = h.service.UpdateAnime(r.Context(), &payload)
-	if err != nil {
+	anime.ID = uint(id)
+	if err := h.service.UpdateAnime(r.Context(), &anime); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -341,33 +365,38 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, payload)
+	utils.WriteJSONResponse(w, http.StatusOK, anime)
 }
 
-// DeleteAnimeHandler deletes an anime entry from the database.
-// It validates the ID, deletes the anime, and returns a 204 No Content response.
-// If the ID is invalid or the deletion fails, it returns an error response.
+// DeleteAnimeHandler handles deleting an anime.
+// It validates the ID, uses the service to delete the anime,
+// and returns a success message as a JSON response.
 //
 // @Summary Delete an anime
-// @Description Delete an anime entry by its ID
+// @Description Delete an anime by its ID
 // @Tags anime
+// @Produce json
 // @Param id path int true "Anime ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID"
 // @Failure 404 {object} errors.ErrorResponse "Anime not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to delete anime"
-// @Router /v1/anime/{id} [delete]
-// @Security ApiKeyAuth
+// @Router /animes/{id} [delete]
+// @Security BearerAuth
+// @ExampleResponse
+//
+//	{
+//	  "message": "Anime deleted successfully"
+//	}
 func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := utils.ParseUint(vars["id"])
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
 		return
 	}
 
-	err = h.service.DeleteAnime(r.Context(), uint(id))
-	if err != nil {
+	if err := h.service.DeleteAnime(r.Context(), uint(id)); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -379,25 +408,413 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Anime deleted successfully"})
 }
 
-// RegisterAnimeRoutes registers all anime-related routes with the provided router.
-// It defines public routes (GET) and protected routes (POST, PUT, DELETE) that require authentication.
+// AddGenresToAnimeHandler handles adding genres to an anime.
+// It validates the ID and input payload, uses the service to add genres,
+// and returns a success message as a JSON response.
 //
-// Example:
+// @Summary Add genres to an anime
+// @Description Add one or more genres to an existing anime
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param genres body []uint true "Genre IDs to add"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to add genres to anime"
+// @Router /animes/{id}/genres [post]
+// @Security BearerAuth
+// @Example
 //
-//	router := mux.NewRouter()
-//	animeHandler.RegisterAnimeRoutes(router)
+//	{
+//	  "genre_ids": [1, 2, 3]
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "message": "Genres added successfully"
+//	}
+func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		return
+	}
+
+	var request struct {
+		GenreIDs []uint `json:"genre_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := h.service.AddGenresToAnime(r.Context(), uint(animeID), request.GenreIDs); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to add genres to anime")
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Genres added successfully"})
+}
+
+// RemoveGenresFromAnimeHandler handles removing genres from an anime.
+// It validates the ID and input payload, uses the service to remove genres,
+// and returns a success message as a JSON response.
+//
+// @Summary Remove genres from an anime
+// @Description Remove one or more genres from an existing anime
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param genres body []uint true "Genre IDs to remove"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to remove genres from anime"
+// @Router /animes/{id}/genres [delete]
+// @Security BearerAuth
+// @Example
+//
+//	{
+//	  "genre_ids": [1, 2, 3]
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "message": "Genres removed successfully"
+//	}
+func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		return
+	}
+
+	var request struct {
+		GenreIDs []uint `json:"genre_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := h.service.RemoveGenresFromAnime(r.Context(), uint(animeID), request.GenreIDs); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to remove genres from anime")
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Genres removed successfully"})
+}
+
+// AddTagsToAnimeHandler handles adding tags to an anime.
+// It validates the ID and input payload, uses the service to add tags,
+// and returns a success message as a JSON response.
+//
+// @Summary Add tags to an anime
+// @Description Add one or more tags to an existing anime
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param tags body []uint true "Tag IDs to add"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to add tags to anime"
+// @Router /animes/{id}/tags [post]
+// @Security BearerAuth
+// @Example
+//
+//	{
+//	  "tag_ids": [1, 2, 3]
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "message": "Tags added successfully"
+//	}
+func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		return
+	}
+
+	var request struct {
+		TagIDs []uint `json:"tag_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := h.service.AddTagsToAnime(r.Context(), uint(animeID), request.TagIDs); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to add tags to anime")
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Tags added successfully"})
+}
+
+// RemoveTagsFromAnimeHandler handles removing tags from an anime.
+// It validates the ID and input payload, uses the service to remove tags,
+// and returns a success message as a JSON response.
+//
+// @Summary Remove tags from an anime
+// @Description Remove one or more tags from an existing anime
+// @Tags anime
+// @Accept json
+// @Produce json
+// @Param id path int true "Anime ID"
+// @Param tags body []uint true "Tag IDs to remove"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
+// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Failure 500 {object} errors.ErrorResponse "Failed to remove tags from anime"
+// @Router /animes/{id}/tags [delete]
+// @Security BearerAuth
+// @Example
+//
+//	{
+//	  "tag_ids": [1, 2, 3]
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "message": "Tags removed successfully"
+//	}
+func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		return
+	}
+
+	var request struct {
+		TagIDs []uint `json:"tag_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := h.service.RemoveTagsFromAnime(r.Context(), uint(animeID), request.TagIDs); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to remove tags from anime")
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Tags removed successfully"})
+}
+
+// GetAnimesByTitleHandler handles searching animes by title.
+// It validates the title parameter, uses the service to search for animes,
+// and returns the matching animes as a JSON response.
+//
+// @Summary Search animes by title
+// @Description Search for animes by title with pagination
+// @Tags anime
+// @Produce json
+// @Param title query string true "Title to search for"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} models.AnimeListResponse
+// @Failure 400 {object} errors.ErrorResponse "Title parameter is required"
+// @Failure 500 {object} errors.ErrorResponse "Failed to search animes by title"
+// @Router /animes/search [get]
+// @ExampleResponse
+//
+//	{
+//	  "animes": [
+//	    {
+//	      "id": 1,
+//	      "title": "Naruto",
+//	      "description": "A story about ninjas.",
+//	      "rating": 8.5,
+//	      "episodes": 220,
+//	      "status": "Completed",
+//	      "start_date": "2002-10-03T00:00:00Z",
+//	      "end_date": "2007-02-08T00:00:00Z",
+//	      "created_at": "2025-02-20T19:27:00Z",
+//	      "updated_at": "2025-02-20T19:27:00Z",
+//	      "genres": [
+//	        {
+//	          "id": 1,
+//	          "name": "Action"
+//	        }
+//	      ],
+//	      "tags": [
+//	        {
+//	          "id": 1,
+//	          "name": "Ninja"
+//	        }
+//	      ]
+//	    }
+//	  ],
+//	  "total": 1,
+//	  "page": 1,
+//	  "limit": 10
+//	}
+func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Query().Get("title")
+	if title == "" {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Title parameter is required")
+		return
+	}
+
+	page, limit := utils.GetPaginationParams(r)
+	animes, total, err := h.service.GetAnimesByTitle(r.Context(), title, page, limit)
+	if err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to search animes by title")
+		return
+	}
+
+	response := map[string]interface{}{
+		"animes": animes,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
+}
+
+// GetAnimesByGenreHandler handles searching animes by genre.
+// It validates the genre parameter, uses the service to search for animes,
+// and returns the matching animes as a JSON response.
+//
+// @Summary Search animes by genre
+// @Description Search for animes by genre with pagination
+// @Tags anime
+// @Produce json
+// @Param genre path string true "Genre to search for"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} models.AnimeListResponse
+// @Failure 400 {object} errors.ErrorResponse "Genre parameter is required"
+// @Failure 500 {object} errors.ErrorResponse "Failed to search animes by genre"
+// @Router /animes/genre/{genre} [get]
+// @ExampleResponse
+//
+//	{
+//	  "animes": [
+//	    {
+//	      "id": 1,
+//	      "title": "Naruto",
+//	      "description": "A story about ninjas.",
+//	      "rating": 8.5,
+//	      "episodes": 220,
+//	      "status": "Completed",
+//	      "start_date": "2002-10-03T00:00:00Z",
+//	      "end_date": "2007-02-08T00:00:00Z",
+//	      "created_at": "2025-02-20T19:27:00Z",
+//	      "updated_at": "2025-02-20T19:27:00Z",
+//	      "genres": [
+//	        {
+//	          "id": 1,
+//	          "name": "Action"
+//	        }
+//	      ],
+//	      "tags": [
+//	        {
+//	          "id": 1,
+//	          "name": "Ninja"
+//	        }
+//	      ]
+//	    }
+//	  ],
+//	  "total": 1,
+//	  "page": 1,
+//	  "limit": 10
+//	}
+func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	genre := vars["genre"]
+	if genre == "" {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Genre parameter is required")
+		return
+	}
+
+	page, limit := utils.GetPaginationParams(r)
+	animes, total, err := h.service.GetAnimesByGenre(r.Context(), genre, page, limit)
+	if err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			return
+		}
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to search animes by genre")
+		return
+	}
+
+	response := map[string]interface{}{
+		"animes": animes,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
+}
+
+// RegisterAnimeRoutes registers all anime-related routes
 func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
-	router.HandleFunc("/anime", h.GetAllAnimesHandler).Methods("GET")
-	router.HandleFunc("/anime/{id:[0-9]+}", h.GetAnimeHandler).Methods("GET")
-	router.HandleFunc("/anime/{id:[0-9]+}/reviews", h.GetPaginatedReviewsForAnimeHandler).Methods("GET")
+	router.HandleFunc("/animes", h.GetAllAnimesHandler).Methods("GET")
+	router.HandleFunc("/animes/search", h.GetAnimesByTitleHandler).Methods("GET")
+	router.HandleFunc("/animes/genre/{genre}", h.GetAnimesByGenreHandler).Methods("GET")
+	router.HandleFunc("/animes/{id}", h.GetAnimeHandler).Methods("GET")
 
 	// Create a subrouter for protected routes
-	protectedRouter := router.PathPrefix("/anime").Subrouter()
+	protectedRouter := router.PathPrefix("/animes").Subrouter()
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
-	// Protected routes (require authentication)
+	// Protected routes with payload validation
 	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateAnimeHandler), models.AnimeCreateRequest{})).Methods("POST")
-	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateAnimeHandler), models.Anime{})).Methods("PUT")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteAnimeHandler).Methods("DELETE")
+	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateAnimeHandler), models.Anime{})).Methods("PUT")
+	protectedRouter.HandleFunc("/{id}", h.DeleteAnimeHandler).Methods("DELETE")
+
+	// Protected routes for genres with payload validation
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AddGenresToAnimeHandler), struct {
+		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+	}{})).Methods("POST")
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.RemoveGenresFromAnimeHandler), struct {
+		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+	}{})).Methods("DELETE")
+
+	// Protected routes for tags with payload validation
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AddTagsToAnimeHandler), struct {
+		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
+	}{})).Methods("POST")
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.RemoveTagsFromAnimeHandler), struct {
+		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
+	}{})).Methods("DELETE")
 }

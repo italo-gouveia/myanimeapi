@@ -89,14 +89,18 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	reviewRepo := repositories.NewReviewRepository(dbWrapper)
 	favoriteRepo := repositories.NewFavoriteRepository(dbWrapper)
 	authRepo := repositories.NewAuthRepository(dbWrapper)
+	genreRepo := repositories.NewGenreRepository(dbWrapper)
+	tagRepo := repositories.NewTagRepository(dbWrapper)
 	log.Println("Repositories initialized")
 
 	// Initialize services
-	animeService := services.NewAnimeService(animeRepo)
+	animeService := services.NewAnimeService(animeRepo, genreRepo, tagRepo, reviewRepo)
 	userService := services.NewUserService(userRepo)
 	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo)
 	authService := services.NewAuthService(authRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
+	genreService := services.NewGenreService(genreRepo)
+	tagService := services.NewTagService(tagRepo)
 	log.Println("Services initialized")
 
 	// Initialize handlers
@@ -105,6 +109,8 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	reviewHandler := handlers.NewReviewHandler(reviewService)
 	authHandler := handlers.NewAuthHandler(authService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
+	genreHandler := handlers.NewGenreHandler(genreService)
+	tagHandler := handlers.NewTagHandler(tagService)
 	log.Println("Handlers initialized")
 
 	// Register anime routes
@@ -126,6 +132,14 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Register favorite routes
 	favoriteHandler.RegisterFavoriteRoutes(v1Router)
 	log.Println("Favorite routes registered")
+
+	// Register genre routes
+	genreHandler.RegisterGenreRoutes(v1Router)
+	log.Println("Genre routes registered")
+
+	// Register tag routes
+	tagHandler.RegisterTagRoutes(v1Router)
+	log.Println("Tag routes registered")
 
 	// Register Swagger documentation
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
