@@ -1,3 +1,32 @@
+# [1.6.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.5.0...v1.6.0) (2025-05-11)
+
+
+### Code Refactoring
+
+* **repository:** implement generic repository pattern for genres and tags ([f50a550](https://github.com/italo-gouveia/myanimeapi/commit/f50a55063c77c03754975f8b223afeb41b654821))
+
+
+### Features
+
+* **api:** add comprehensive anime, genre, and tag management endpoints ([f7e575b](https://github.com/italo-gouveia/myanimeapi/commit/f7e575b0d3c443519246667ca131b43eef725325))
+* **api:** enhance anime, genre, and tag handlers with comprehensive documentation ([c1e2c45](https://github.com/italo-gouveia/myanimeapi/commit/c1e2c45435b96d5d26df60f90ce661ea8595eb74))
+* **genres:** add search and bulk operations ([252bbe2](https://github.com/italo-gouveia/myanimeapi/commit/252bbe29c26ec3895f99bd9aaa56b95a6ea588e0))
+* **models:** add Genre and Tag models with anime relationships ([0fa5849](https://github.com/italo-gouveia/myanimeapi/commit/0fa584982ce42411665d5439347beaa6c6ce94c8))
+* **models:** improve Swagger documentation and model structure ([789e8ce](https://github.com/italo-gouveia/myanimeapi/commit/789e8ce2edb4cd76f6789cf384f02b1d195643fb))
+* **repositories:** implement Genre and Tag repositories ([4c9a5cd](https://github.com/italo-gouveia/myanimeapi/commit/4c9a5cd5acc9588ce16e1576f8780094c636b991))
+
+
+### BREAKING CHANGES
+
+* **genres:** None
+* **api:** Some response formats have been updated to include additional fields
+and improved type safety. Clients should update their response handling accordingly.
+* **repository:** Repository interfaces have been refactored to use a
+generic pattern. The following changes are required:
+- Update repository method calls to use new interface methods
+- Update service layer to handle new error types
+- Update handlers to work with new repository and service interfaces
+
 # [1.5.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.4.0...v1.5.0) (2025-04-30)
 
 
