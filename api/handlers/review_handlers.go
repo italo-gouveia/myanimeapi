@@ -5,8 +5,8 @@
 //
 // Example usage:
 //
-//	db := // initialize your database connection
-//	reviewHandler := handlers.NewReviewHandler(db)
+//	reviewService := services.NewReviewService(repository)
+//	reviewHandler := handlers.NewReviewHandler(reviewService)
 //	router := mux.NewRouter()
 //	reviewHandler.RegisterReviewRoutes(router)
 //
@@ -39,7 +39,7 @@ type ReviewHandler struct {
 //
 // Example:
 //
-//	reviewService := services.NewReviewService(...)
+//	reviewService := services.NewReviewService(repository)
 //	reviewHandler := NewReviewHandler(reviewService)
 func NewReviewHandler(reviewService *services.ReviewService) *ReviewHandler {
 	return &ReviewHandler{reviewService: reviewService}
@@ -58,7 +58,7 @@ func NewReviewHandler(reviewService *services.ReviewService) *ReviewHandler {
 // @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
 // @Failure 404 {object} errors.ErrorResponse "Review not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to retrieve review"
-// @Router /v1/reviews/{id} [get]
+// @Router /reviews/{id} [get]
 // @ExampleResponse
 //
 //	{
@@ -68,10 +68,19 @@ func NewReviewHandler(reviewService *services.ReviewService) *ReviewHandler {
 //	  "content": "Great anime!",
 //	  "rating": 9,
 //	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "updated_at": "2023-10-01T12:00:00Z",
+//	  "user": {
+//	    "id": 1,
+//	    "username": "johndoe",
+//	    "is_admin": false
+//	  },
+//	  "anime": {
+//	    "id": 1,
+//	    "title": "Naruto",
+//	    "description": "A story about ninjas.",
+//	    "rating": 8.5
+//	  }
 //	}
-//
-// @Security []
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -138,16 +147,15 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 // @Accept json
 // @Produce json
 // @Param review body models.ReviewCreateRequest true "Review data"
-// @Success 201 {object} models.Review
-// @Failure 404 {object} errors.ErrorResponse "User not found"
-// @Failure 404 {object} errors.ErrorResponse "Anime not found"
+// @Success 201 {object} models.ReviewResponse
 // @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
+// @Failure 404 {object} errors.ErrorResponse "User or anime not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to create review"
-// @Router /v1/reviews [post]
+// @Router /reviews [post]
+// @Security BearerAuth
 // @Example
 //
 //	{
-//	  "user_id": 1,
 //	  "anime_id": 1,
 //	  "content": "Great anime!",
 //	  "rating": 9
@@ -162,10 +170,19 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 //	  "content": "Great anime!",
 //	  "rating": 9,
 //	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "updated_at": "2023-10-01T12:00:00Z",
+//	  "user": {
+//	    "id": 1,
+//	    "username": "johndoe",
+//	    "is_admin": false
+//	  },
+//	  "anime": {
+//	    "id": 1,
+//	    "title": "Naruto",
+//	    "description": "A story about ninjas.",
+//	    "rating": 8.5
+//	  }
 //	}
-//
-// @Security ApiKeyAuth
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
@@ -200,18 +217,20 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // It validates the ID and input payload, uses the service to update the review,
 // and returns the updated review as a JSON response.
 //
-// @Summary Update a review by ID
-// @Description Update a review with the input payload
+// @Summary Update a review
+// @Description Update an existing review's details
 // @Tags reviews
 // @Accept json
 // @Produce json
 // @Param id path int true "Review ID"
-// @Param review body models.ReviewCreateRequest true "Updated review data"
+// @Param review body models.ReviewUpdateRequest true "Updated review data"
 // @Success 200 {object} models.ReviewResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or ID format"
+// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized to update this review"
 // @Failure 404 {object} errors.ErrorResponse "Review not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to update review"
-// @Router /v1/reviews/{id} [put]
+// @Router /reviews/{id} [put]
+// @Security BearerAuth
 // @Example
 //
 //	{
@@ -228,10 +247,19 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 //	  "content": "Updated review content",
 //	  "rating": 8,
 //	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z"
+//	  "updated_at": "2023-10-01T13:00:00Z",
+//	  "user": {
+//	    "id": 1,
+//	    "username": "johndoe",
+//	    "is_admin": false
+//	  },
+//	  "anime": {
+//	    "id": 1,
+//	    "title": "Naruto",
+//	    "description": "A story about ninjas.",
+//	    "rating": 8.5
+//	  }
 //	}
-//
-// @Security ApiKeyAuth
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -300,22 +328,28 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// DeleteReviewHandler deletes a review from the database.
-// It validates the ID, uses the service to delete the review,
-// and returns a 204 No Content response.
+// DeleteReviewHandler handles the deletion of a review.
+// It validates the ID and uses the service to delete the review.
+// If successful, it returns a success message as a JSON response.
 //
-// @Summary Delete a review by ID
-// @Description Delete a review by its ID
+// @Summary Delete a review
+// @Description Delete an existing review by its ID
 // @Tags reviews
-// @Accept json
 // @Produce json
 // @Param id path int true "Review ID"
-// @Success 204 "No Content"
+// @Success 200 {object} models.Response
 // @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
+// @Failure 401 {object} errors.ErrorResponse "Unauthorized to delete this review"
 // @Failure 404 {object} errors.ErrorResponse "Review not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to delete review"
 // @Router /reviews/{id} [delete]
-// @Security ApiKeyAuth
+// @Security BearerAuth
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "Review deleted successfully"
+//	}
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
@@ -339,13 +373,14 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// RegisterReviewRoutes registers all review-related routes with the provided router.
-// It defines public routes (GET) and protected routes (POST, PUT, DELETE) that require authentication.
+// RegisterReviewRoutes registers all review-related routes with a *mux.Router.
+// It sets up the routes for review management, including public and protected endpoints.
 //
-// Example:
-//
-//	router := mux.NewRouter()
-//	reviewHandler.RegisterReviewRoutes(router)
+// Routes registered:
+// - GET /reviews/{id} - Get a specific review (public)
+// - POST /reviews - Create a new review (protected)
+// - PUT /reviews/{id} - Update a review (protected)
+// - DELETE /reviews/{id} - Delete a review (protected)
 func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/reviews/{id:[0-9]+}", h.GetReviewHandler).Methods("GET")

@@ -14,6 +14,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// api/handlers/tag_handler.go
+// Package handlers provides HTTP handlers for tag-related routes in the MyAnimeAPI application.
+// It defines methods to handle tag creation, retrieval, updating, and deletion.
+// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
+//
+// Example usage:
+//
+//	tagService := services.NewTagService(repository)
+//	tagHandler := handlers.NewTagHandler(tagService)
+//	router := mux.NewRouter()
+//	tagHandler.RegisterTagRoutes(router)
+//
+//	http.ListenAndServe(":8080", router)
+
 // TagHandler handles HTTP requests for tag operations.
 // It contains a tag service for handling business logic.
 type TagHandler struct {
@@ -33,7 +47,15 @@ func NewTagHandler(tagService services.TagServiceInterface) *TagHandler {
 	}
 }
 
-// RegisterTagRoutes registers all tag-related routes
+// RegisterTagRoutes registers all tag-related routes with a *mux.Router.
+// It sets up the routes for tag management, including public and protected endpoints.
+//
+// Routes registered:
+// - GET /tags - Get all tags (public)
+// - GET /tags/{id} - Get a specific tag (public)
+// - POST /tags - Create a new tag (protected)
+// - PUT /tags/{id} - Update a tag (protected)
+// - DELETE /tags/{id} - Delete a tag (protected)
 func (h *TagHandler) RegisterTagRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/tags", h.GetAllTagsHandler).Methods("GET")
@@ -199,7 +221,7 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 // @Param id path int true "Tag ID"
 // @Param tag body models.Tag true "Updated tag details"
 // @Success 200 {object} models.TagResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid tag ID or request body"
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
 // @Failure 404 {object} errors.ErrorResponse "Tag not found"
 // @Failure 409 {object} errors.ErrorResponse "Tag name already exists"
 // @Failure 500 {object} errors.ErrorResponse "Failed to update tag"
@@ -208,16 +230,16 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 // @Example
 //
 //	{
-//	  "name": "Action-Adventure"
+//	  "name": "Updated Action"
 //	}
 //
 // @ExampleResponse
 //
 //	{
 //	  "id": 1,
-//	  "name": "Action-Adventure",
+//	  "name": "Updated Action",
 //	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:27:00Z"
+//	  "updated_at": "2025-02-20T19:28:00Z"
 //	}
 func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -246,21 +268,27 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, http.StatusOK, tag.ToResponse())
 }
 
-// DeleteTagHandler handles deleting a tag.
-// It validates the ID, uses the service to delete the tag,
-// and returns a 204 No Content response.
+// DeleteTagHandler handles the deletion of a tag.
+// It validates the ID and uses the service to delete the tag.
+// If successful, it returns a success message as a JSON response.
 //
 // @Summary Delete a tag
-// @Description Delete a tag by its ID
+// @Description Delete an existing tag by its ID
 // @Tags tags
 // @Produce json
 // @Param id path int true "Tag ID"
-// @Success 204 "No Content"
+// @Success 200 {object} models.Response
 // @Failure 400 {object} errors.ErrorResponse "Invalid tag ID"
 // @Failure 404 {object} errors.ErrorResponse "Tag not found"
 // @Failure 500 {object} errors.ErrorResponse "Failed to delete tag"
 // @Router /tags/{id} [delete]
 // @Security BearerAuth
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "Tag deleted successfully"
+//	}
 func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseUint(vars["id"], 10, 32)
