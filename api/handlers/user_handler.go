@@ -113,12 +113,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "User registered successfully",
 		Data:    user,
-	})
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // Login handles user authentication requests.
@@ -179,16 +182,21 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := map[string]interface{}{
+		"token": token,
+		"user":  user,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "Login successful",
-		Data: map[string]interface{}{
-			"token": token,
-			"user":  user,
-		},
-	})
+		Data:    response,
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // GetProfile retrieves the authenticated user's profile information.
@@ -243,12 +251,15 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "Profile retrieved successfully",
 		Data:    user,
-	})
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // UpdateProfile updates the authenticated user's profile information.
