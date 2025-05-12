@@ -375,12 +375,15 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "Profile updated successfully",
 		Data:    user,
-	})
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // ChangePassword handles password change requests for authenticated users.
@@ -456,11 +459,14 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "Password changed successfully",
-	})
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // DeactivateAccount handles account deactivation requests for authenticated users.
@@ -528,11 +534,14 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(models.Response{
+	if err := json.NewEncoder(w).Encode(models.Response{
 		Status:  "success",
 		Message: "Account deactivated successfully",
-	})
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
 }
 
 // RegisterUserRoutes registers all user-related routes with a *mux.Router.
