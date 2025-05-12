@@ -382,7 +382,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body models.PasswordChangeRequest true "Password change request"
+// @Param request body models.ChangePasswordRequest true "Password change request"
 // @Success 200 {object} models.Response
 // @Failure 400 {object} errors.ErrorResponse "Invalid request body"
 // @Failure 401 {object} errors.ErrorResponse "Invalid current password"
@@ -462,7 +462,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body models.AccountDeactivationRequest true "Account deactivation request"
+// @Param request body models.DeactivateAccountRequest true "Account deactivation request"
 // @Success 200 {object} models.Response
 // @Failure 400 {object} errors.ErrorResponse "Invalid request body"
 // @Failure 401 {object} errors.ErrorResponse "Invalid password"

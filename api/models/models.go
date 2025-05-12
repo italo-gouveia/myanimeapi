@@ -150,6 +150,20 @@ type ReviewCreateRequest struct {
 	Rating  int    `json:"rating" validate:"required,gte=0,lte=10" example:"9"`                  // Rating given in the review (0-10, required)
 }
 
+// ReviewUpdateRequest represents the request payload for updating a review.
+// It includes optional fields that can be updated, with validation rules for each field.
+//
+// Example:
+//
+//	{
+//	  "content": "Updated review content",
+//	  "rating": 8
+//	}
+type ReviewUpdateRequest struct {
+	Content string `json:"content" validate:"omitempty,max=500" example:"Updated review content"` // Updated content of the review (optional, max 500 characters)
+	Rating  int    `json:"rating" validate:"omitempty,gte=0,lte=10" example:"8"`                  // Updated rating (optional, 0-10)
+}
+
 // UserCreateRequest represents the request payload for creating a user.
 // It includes fields for the username, email, and password.
 //
@@ -164,6 +178,20 @@ type UserCreateRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`             // Username for the new user (required, 3-50 characters)
 	Email    string `json:"email" validate:"required,email,min=5,max=100" example:"john@example.com"` // Email address for the new user (required, valid email format, 5-100 characters)
 	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`         // Password for the new user (required, 5-100 characters)
+}
+
+// PasswordChangeRequest represents the request payload for changing a user's password.
+// It includes fields for the current password and the new password.
+//
+// Example:
+//
+//	{
+//	  "current_password": "old_password",
+//	  "new_password": "new_password"
+//	}
+type PasswordChangeRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required,min=5,max=100" example:"old_password"` // Current password (required, 5-100 characters)
+	NewPassword     string `json:"new_password" validate:"required,min=5,max=100" example:"new_password"`     // New password (required, 5-100 characters)
 }
 
 // Response represents a generic API response structure.
@@ -204,4 +232,18 @@ type Response struct {
 	Status  string      `json:"status" example:"success"`               // Status of the response (success, error)
 	Message string      `json:"message" example:"Operation successful"` // Message describing the result
 	Data    interface{} `json:"data"`                                   // Data payload (can be any type)
+}
+
+// SocialLinks represents a user's social media links.
+// It includes fields for various social media platforms.
+//
+// Example:
+//
+//	{
+//	  "twitter": "https://twitter.com/johndoe",
+//	  "instagram": "https://instagram.com/johndoe"
+//	}
+type SocialLinks struct {
+	Twitter   string `json:"twitter,omitempty" validate:"omitempty,url" example:"https://twitter.com/johndoe"`     // Twitter profile URL
+	Instagram string `json:"instagram,omitempty" validate:"omitempty,url" example:"https://instagram.com/johndoe"` // Instagram profile URL
 }

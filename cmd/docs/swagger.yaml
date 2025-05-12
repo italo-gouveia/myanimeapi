@@ -18,6 +18,7 @@ definitions:
   handlers.BulkCreateGenresRequest:
     properties:
       genres:
+        description: List of genres to create
         items:
           $ref: '#/definitions/models.Genre'
         type: array
@@ -27,6 +28,7 @@ definitions:
   handlers.BulkDeleteGenresRequest:
     properties:
       ids:
+        description: List of genre IDs to delete
         items:
           type: integer
         type: array
@@ -226,6 +228,31 @@ definitions:
         example: "2025-02-20T19:27:00Z"
         type: string
     type: object
+  models.ChangePasswordRequest:
+    properties:
+      current_password:
+        description: Current password for verification
+        example: oldpassword123
+        minLength: 6
+        type: string
+      new_password:
+        description: New password to set
+        example: newpassword123
+        minLength: 6
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  models.DeactivateAccountRequest:
+    properties:
+      password:
+        description: User's password for verification
+        example: password123
+        type: string
+    required:
+    - password
+    type: object
   models.Favorite:
     properties:
       anime:
@@ -300,6 +327,9 @@ definitions:
         description: Name of the genre
         example: Action
         type: string
+    type: object
+  models.JSON:
+    additionalProperties: true
     type: object
   models.Response:
     properties:
@@ -417,6 +447,20 @@ definitions:
         example: 1
         type: integer
     type: object
+  models.ReviewUpdateRequest:
+    properties:
+      content:
+        description: Updated content of the review (optional, max 500 characters)
+        example: Updated review content
+        maxLength: 500
+        type: string
+      rating:
+        description: Updated rating (optional, 0-10)
+        example: 8
+        maximum: 10
+        minimum: 0
+        type: integer
+    type: object
   models.SuccessResponse:
     properties:
       data:
@@ -471,45 +515,31 @@ definitions:
         type: string
     type: object
   models.User:
+    type: object
+  models.UserCreateRequest:
     properties:
-      created_at:
-        description: Timestamp when the user was created
-        example: "2025-02-20T19:27:00Z"
-        type: string
       email:
-        description: Unique Email address of the user (omitted unless necessary)
+        description: Email address for the new user (required, valid email format,
+          5-100 characters)
         example: john@example.com
         maxLength: 100
         minLength: 5
         type: string
-      favorites:
-        items:
-          $ref: '#/definitions/models.Favorite'
-        type: array
-      id:
-        description: Unique identifier for the user
-        example: 1
-        type: integer
-      is_admin:
-        description: Indicates if the user has admin privileges
-        example: false
-        type: boolean
-      reviews:
-        items:
-          $ref: '#/definitions/models.Review'
-        type: array
-      updated_at:
-        description: Timestamp when the user was last updated
-        example: "2025-02-20T19:27:00Z"
+      password:
+        description: Password for the new user (required, 5-100 characters)
+        example: password123
+        maxLength: 100
+        minLength: 5
         type: string
       username:
-        description: Unique username for the user
+        description: Username for the new user (required, 3-50 characters)
         example: john_doe
         maxLength: 50
         minLength: 3
         type: string
     required:
     - email
+    - password
     - username
     type: object
   models.UserCredentials:
@@ -552,6 +582,8 @@ definitions:
         description: Username of the user
         example: john_doe
         type: string
+    type: object
+  models.UserUpdateRequest:
     type: object
 host: localhost:8080
 info:
@@ -996,13 +1028,17 @@ paths:
           schema:
             $ref: '#/definitions/models.Response'
         "400":
-          description: Bad Request
+          description: Invalid request body
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/errors.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: Invalid credentials
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to authenticate user
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Authenticate a user
       tags:
       - auth
@@ -1026,13 +1062,17 @@ paths:
           schema:
             $ref: '#/definitions/models.Response'
         "400":
-          description: Bad Request
+          description: Invalid request body
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/errors.ErrorResponse'
         "409":
-          description: Conflict
+          description: Username or email already exists
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to register user
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Register a new user
       tags:
       - auth
@@ -1198,7 +1238,7 @@ paths:
       - genres
   /genres/{id}:
     delete:
-      description: Delete a genre by its ID
+      description: Delete an existing genre by its ID
       parameters:
       - description: Genre ID
         in: path
@@ -1208,8 +1248,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
         "400":
           description: Invalid genre ID
           schema:
@@ -1281,7 +1323,7 @@ paths:
           schema:
             $ref: '#/definitions/models.GenreResponse'
         "400":
-          description: Invalid genre ID or request body
+          description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
@@ -1301,11 +1343,147 @@ paths:
       summary: Update a genre
       tags:
       - genres
-  /reviews/{id}:
+  /genres/bulk:
     delete:
       consumes:
       - application/json
-      description: Delete a review by its ID
+      description: Delete multiple genres by their IDs
+      parameters:
+      - description: Bulk genre deletion request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.BulkDeleteGenresRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: One or more genres not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to delete genres
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete multiple genres
+      tags:
+      - genres
+    post:
+      consumes:
+      - application/json
+      description: Create multiple genres with the provided details
+      parameters:
+      - description: Bulk genre creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.BulkCreateGenresRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            items:
+              $ref: '#/definitions/models.GenreResponse'
+            type: array
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "409":
+          description: One or more genre names already exist
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to create genres
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create multiple genres
+      tags:
+      - genres
+  /genres/search:
+    get:
+      description: Search for genres by name
+      parameters:
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.GenreResponse'
+            type: array
+        "400":
+          description: Invalid search query
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to search genres
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Search genres
+      tags:
+      - genres
+  /reviews:
+    post:
+      consumes:
+      - application/json
+      description: Create a new review for an anime
+      parameters:
+      - description: Review data
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReviewCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ReviewResponse'
+        "400":
+          description: Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: User or anime not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to create review
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new review
+      tags:
+      - reviews
+  /reviews/{id}:
+    delete:
+      description: Delete an existing review by its ID
       parameters:
       - description: Review ID
         in: path
@@ -1315,10 +1493,16 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
         "400":
           description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized to delete this review
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
@@ -1330,8 +1514,82 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
-      summary: Delete a review by ID
+      - BearerAuth: []
+      summary: Delete a review
+      tags:
+      - reviews
+    get:
+      description: Retrieve a review by its ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ReviewResponse'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to retrieve review
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Get a review by ID
+      tags:
+      - reviews
+    put:
+      consumes:
+      - application/json
+      description: Update an existing review's details
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated review data
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReviewUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ReviewResponse'
+        "400":
+          description: Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized to update this review
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to update review
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a review
       tags:
       - reviews
   /tags:
@@ -1390,7 +1648,7 @@ paths:
       - tags
   /tags/{id}:
     delete:
-      description: Delete a tag by its ID
+      description: Delete an existing tag by its ID
       parameters:
       - description: Tag ID
         in: path
@@ -1400,8 +1658,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
         "400":
           description: Invalid tag ID
           schema:
@@ -1473,7 +1733,7 @@ paths:
           schema:
             $ref: '#/definitions/models.TagResponse'
         "400":
-          description: Invalid tag ID or request body
+          description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
@@ -1493,279 +1753,191 @@ paths:
       summary: Update a tag
       tags:
       - tags
-  /v1/genres/bulk:
-    delete:
-      consumes:
-      - application/json
-      description: Delete multiple genres at once
-      parameters:
-      - description: Genre IDs to delete
-        in: body
-        name: ids
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.BulkDeleteGenresRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Bulk delete genres
-      tags:
-      - genres
+  /users/change-password:
     post:
       consumes:
       - application/json
-      description: Create multiple genres at once
+      description: Change the authenticated user's password
       parameters:
-      - description: Genres to create
+      - description: Password change request
         in: body
-        name: genres
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.BulkCreateGenresRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            items:
-              $ref: '#/definitions/models.GenreResponse'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Bulk create genres
-      tags:
-      - genres
-  /v1/genres/search:
-    get:
-      consumes:
-      - application/json
-      description: Search genres by name or description
-      parameters:
-      - description: Search query
-        in: query
-        name: query
-        required: true
-        type: string
-      - description: 'Page number (default: 1)'
-        in: query
-        name: page
-        type: integer
-      - description: 'Items per page (default: 10)'
-        in: query
-        name: limit
-        type: integer
+          $ref: '#/definitions/models.ChangePasswordRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.GenreResponse'
-            type: array
+            $ref: '#/definitions/models.Response'
         "400":
-          description: Bad Request
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Invalid current password
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      summary: Search genres
-      tags:
-      - genres
-  /v1/reviews:
-    post:
-      consumes:
-      - application/json
-      description: Create a new review for an anime
-      parameters:
-      - description: Review data
-        in: body
-        name: review
-        required: true
-        schema:
-          $ref: '#/definitions/models.ReviewCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/models.Review'
-        "400":
-          description: Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: Anime not found
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to create review
+          description: Failed to change password
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
-      summary: Create a new review
+      - BearerAuth: []
+      summary: Change user password
       tags:
-      - reviews
-  /v1/reviews/{id}:
-    get:
-      description: Retrieve a review by its ID
+      - users
+  /users/deactivate:
+    post:
+      consumes:
+      - application/json
+      description: Deactivate the authenticated user's account
       parameters:
-      - description: Review ID
-        in: path
-        name: id
+      - description: Account deactivation request
+        in: body
+        name: request
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/models.DeactivateAccountRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ReviewResponse'
+            $ref: '#/definitions/models.Response'
         "400":
-          description: Invalid ID format
+          description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: Review not found
+        "401":
+          description: Invalid password
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to retrieve review
+          description: Failed to deactivate account
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - "":
-        - ""
-      summary: Get a review by ID
+      - BearerAuth: []
+      summary: Deactivate user account
       tags:
-      - reviews
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with username and password
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to authenticate user
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Login user
+      tags:
+      - users
+  /users/profile:
+    get:
+      description: Get the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to get user profile
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - users
     put:
       consumes:
       - application/json
-      description: Update a review with the input payload
+      description: Update the authenticated user's profile information
       parameters:
-      - description: Review ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated review data
+      - description: Profile update request
         in: body
-        name: review
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/models.ReviewCreateRequest'
+          $ref: '#/definitions/models.UserUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ReviewResponse'
+            $ref: '#/definitions/models.Response'
         "400":
-          description: Invalid input or ID format
+          description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: Review not found
+        "401":
+          description: User not authenticated
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to update review
+          description: Failed to update profile
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - ApiKeyAuth: []
-      summary: Update a review by ID
-      tags:
-      - reviews
-  /v1/users:
-    get:
-      description: Retrieve a paginated list of all users. Restricted to admin users
-        only.
-      parameters:
-      - description: 'Page number (default: 1)'
-        in: query
-        name: page
-        type: integer
-      - description: 'Number of items per page (default: 10, max: 100)'
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.User'
-            type: array
-        "400":
-          description: Invalid pagination parameters
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "403":
-          description: Access denied
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to retrieve users
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - ApiKeyAuth: []
-      summary: Get all users
+      - BearerAuth: []
+      summary: Update user profile
       tags:
       - users
+  /users/register:
     post:
       consumes:
       - application/json
-      description: Create a new user account. This endpoint is public and does not
-        require authentication.
+      description: Register a new user with the provided credentials
       parameters:
-      - description: User object
+      - description: User registration data
         in: body
-        name: user
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.UserCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.User'
+            $ref: '#/definitions/models.Response'
         "400":
-          description: Invalid input
+          description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "409":
@@ -1776,125 +1948,7 @@ paths:
           description: Failed to create user
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
-      summary: Create a new user
-      tags:
-      - users
-  /v1/users/{id}:
-    delete:
-      description: Delete a user by their ID. Requires authentication and the user
-        can only delete their own profile.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid ID format
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "403":
-          description: Access denied
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to delete user
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a user
-      tags:
-      - users
-    get:
-      description: Retrieve a user by their ID. Requires authentication.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.User'
-        "400":
-          description: Invalid ID format
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to retrieve user
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - ApiKeyAuth: []
-      summary: Get a user by ID
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update an existing user. Requires authentication and the user can
-        only update their own profile.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: User object
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.User'
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "403":
-          description: Access denied
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "409":
-          description: Username or email already exists
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "500":
-          description: Failed to update user
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Update a user
+      summary: Register a new user
       tags:
       - users
 schemes:

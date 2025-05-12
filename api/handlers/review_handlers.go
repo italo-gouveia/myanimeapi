@@ -185,28 +185,60 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 //	}
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
 	if !ok {
 		log.Printf("Invalid payload: %v", payload)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
+	// Create a new Review from the request
+	review := &models.Review{
+		UserID:  payload.UserID,
+		AnimeID: payload.AnimeID,
+		Content: payload.Content,
+		Rating:  payload.Rating,
+	}
+
 	// Create review using service
-	if err := h.reviewService.CreateReview(r.Context(), payload); err != nil {
+	if err := h.reviewService.CreateReview(r.Context(), review); err != nil {
 		log.Printf("Failed to create review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create review", "An internal server error occurred while creating the review.")
 		return
 	}
 
-	// Remove sensitive data before returning the response
-	payload.User = models.User{}   // Clear User field
-	payload.Anime = models.Anime{} // Clear Anime field
+	// Get the created review with user and anime details
+	createdReview, err := h.reviewService.GetReviewByID(r.Context(), review.ID)
+	if err != nil {
+		log.Printf("Failed to get created review: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve created review", "An internal server error occurred while retrieving the created review.")
+		return
+	}
 
-	log.Printf("Review created successfully: ID %d", payload.ID)
-	w.WriteHeader(http.StatusCreated)
+	// Create a custom response to exclude sensitive data
+	response := models.ReviewResponse{
+		ID:        createdReview.ID,
+		CreatedAt: createdReview.CreatedAt,
+		UpdatedAt: createdReview.UpdatedAt,
+		UserID:    createdReview.UserID,
+		AnimeID:   createdReview.AnimeID,
+		Content:   createdReview.Content,
+		Rating:    createdReview.Rating,
+		User: models.UserResponse{
+			ID:       createdReview.User.ID,
+			Username: createdReview.User.Username,
+			IsAdmin:  createdReview.User.IsAdmin,
+		},
+		Anime: models.AnimeResponse{
+			ID:          createdReview.Anime.ID,
+			Title:       createdReview.Anime.Title,
+			Description: createdReview.Anime.Description,
+			Rating:      createdReview.Anime.Rating,
+		},
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 		return
@@ -273,25 +305,38 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Review)
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewUpdateRequest)
 	if !ok {
 		log.Printf("Invalid payload: %v", payload)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
 		return
 	}
 
-	// Set the ID from the URL
-	payload.ID = id
+	// Get the existing review
+	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Failed to get review: %v", err)
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
+		return
+	}
+
+	// Update only the fields that were provided in the request
+	if payload.Content != "" {
+		review.Content = payload.Content
+	}
+	if payload.Rating != 0 {
+		review.Rating = payload.Rating
+	}
 
 	// Update review using service
-	if err := h.reviewService.UpdateReview(r.Context(), payload); err != nil {
+	if err := h.reviewService.UpdateReview(r.Context(), review); err != nil {
 		log.Printf("Failed to update review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.")
 		return
 	}
 
 	// Get the updated review
-	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	updatedReview, err := h.reviewService.GetReviewByID(r.Context(), id)
 	if err != nil {
 		log.Printf("Failed to get updated review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve updated review", "An internal server error occurred while retrieving the updated review.")
@@ -300,23 +345,23 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Create a custom response to exclude sensitive data
 	response := models.ReviewResponse{
-		ID:        review.ID,
-		CreatedAt: review.CreatedAt,
-		UpdatedAt: review.UpdatedAt,
-		UserID:    review.UserID,
-		AnimeID:   review.AnimeID,
-		Content:   review.Content,
-		Rating:    review.Rating,
+		ID:        updatedReview.ID,
+		CreatedAt: updatedReview.CreatedAt,
+		UpdatedAt: updatedReview.UpdatedAt,
+		UserID:    updatedReview.UserID,
+		AnimeID:   updatedReview.AnimeID,
+		Content:   updatedReview.Content,
+		Rating:    updatedReview.Rating,
 		User: models.UserResponse{
-			ID:       review.User.ID,
-			Username: review.User.Username,
-			IsAdmin:  review.User.IsAdmin,
+			ID:       updatedReview.User.ID,
+			Username: updatedReview.User.Username,
+			IsAdmin:  updatedReview.User.IsAdmin,
 		},
 		Anime: models.AnimeResponse{
-			ID:          review.Anime.ID,
-			Title:       review.Anime.Title,
-			Description: review.Anime.Description,
-			Rating:      review.Anime.Rating,
+			ID:          updatedReview.Anime.ID,
+			Title:       updatedReview.Anime.Title,
+			Description: updatedReview.Anime.Description,
+			Rating:      updatedReview.Anime.Rating,
 		},
 	}
 
@@ -390,7 +435,7 @@ func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
 
 	// Protected routes (require authentication)
-	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateReviewHandler), models.Review{})).Methods("POST")
-	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateReviewHandler), models.Review{})).Methods("PUT")
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateReviewHandler), models.ReviewCreateRequest{})).Methods("POST")
+	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateReviewHandler), models.ReviewUpdateRequest{})).Methods("PUT")
 	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteReviewHandler).Methods("DELETE")
 }

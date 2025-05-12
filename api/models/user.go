@@ -46,18 +46,18 @@ type User struct {
 //	  "profile_pic": "https://example.com/profile.jpg",
 //	  "bio": "Anime enthusiast",
 //	  "social_links": {
-//	    "twitter": "@johndoe",
-//	    "instagram": "@johndoe"
+//	    "twitter": "https://twitter.com/johndoe",
+//	    "instagram": "https://instagram.com/johndoe"
 //	  },
 //	  "genre_ids": [1, 2, 3]
 //	}
 type UserUpdateRequest struct {
-	Username    string `json:"username" validate:"omitempty,min=3,max=50" example:"johndoe"`                                      // New username (optional, 3-50 chars)
-	Email       string `json:"email" validate:"omitempty,email" example:"john@example.com"`                                       // New email address (optional, valid email)
-	ProfilePic  string `json:"profile_pic" validate:"omitempty,url" example:"https://example.com/profile.jpg"`                    // New profile picture URL (optional, valid URL)
-	Bio         string `json:"bio" validate:"omitempty,max=500" example:"Anime enthusiast"`                                       // New biography (optional, max 500 chars)
-	SocialLinks JSON   `json:"social_links" validate:"omitempty" example:"{\"twitter\":\"@johndoe\",\"instagram\":\"@johndoe\"}"` // New social media links (optional)
-	GenreIDs    []uint `json:"genre_ids" validate:"omitempty,dive,min=1" example:"[1,2,3]"`                                       // New preferred genre IDs (optional)
+	Username    string `json:"username" validate:"omitempty,min=3,max=50" example:"johndoe"`                   // New username (optional, 3-50 chars)
+	Email       string `json:"email" validate:"omitempty,email" example:"john@example.com"`                    // New email address (optional, valid email)
+	ProfilePic  string `json:"profile_pic" validate:"omitempty,url" example:"https://example.com/profile.jpg"` // New profile picture URL (optional, valid URL)
+	Bio         string `json:"bio" validate:"omitempty,max=500" example:"Anime enthusiast"`                    // New biography (optional, max 500 chars)
+	SocialLinks JSON   `json:"social_links" validate:"omitempty"`                                              // New social media links (optional)
+	GenreIDs    []uint `json:"genre_ids" validate:"omitempty,dive,min=1" example:"[1,2,3]"`                    // New preferred genre IDs (optional)
 }
 
 // ChangePasswordRequest represents the request payload for changing a user's password.
