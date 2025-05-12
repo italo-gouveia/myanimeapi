@@ -1,3 +1,38 @@
+# [1.7.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.6.0...v1.7.0) (2025-05-12)
+
+
+### Bug Fixes
+
+* **handlers:** add error handling for JSON encoding ([463a41b](https://github.com/italo-gouveia/myanimeapi/commit/463a41bfe19fc52816af5d1348e53dd87a3ed47e))
+* **handlers:** add error handling for JSON encoding ([3de2456](https://github.com/italo-gouveia/myanimeapi/commit/3de2456b1fdfd1f755fc70e5011a6cfb76533f2e))
+
+
+### Features
+
+* **api:** enhance API documentation and add new endpoints ([a9e16fe](https://github.com/italo-gouveia/myanimeapi/commit/a9e16feb3d9caf2bfedb960e69ef7c21a5168a23)), closes [#87](https://github.com/italo-gouveia/myanimeapi/issues/87) [#89](https://github.com/italo-gouveia/myanimeapi/issues/89) [#56](https://github.com/italo-gouveia/myanimeapi/issues/56)
+* **api:** improve review and user request handling ([1e629f2](https://github.com/italo-gouveia/myanimeapi/commit/1e629f2ff2ec61b7cbaf1d86f8c78df3f8fe1bb0))
+
+
+### BREAKING CHANGES
+
+* **handlers:** None
+* **handlers:** None
+* **api:** None
+* **api:** User endpoints have been restructured for better security and usability
+
+- Add health check and version endpoints with detailed documentation
+- Restructure user management endpoints with improved security
+- Add comprehensive request/response examples for user operations
+- Implement favorites functionality for anime
+- Enhance error handling with consistent response format
+- Add health monitoring and dependency management features
+- Improve API documentation with detailed endpoint descriptions
+
+This change improves the API's usability and security while providing better
+documentation for developers. The user endpoints have been restructured to
+follow better security practices, requiring authentication for sensitive
+operations.
+
 # [1.6.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.5.0...v1.6.0) (2025-05-11)
 
 
