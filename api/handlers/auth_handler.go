@@ -25,11 +25,18 @@ import (
 )
 
 // AuthHandler handles authentication-related HTTP requests.
+// It contains an auth service for handling authentication business logic.
 type AuthHandler struct {
 	authService *services.AuthService
 }
 
 // NewAuthHandler creates a new instance of AuthHandler.
+// It accepts an auth service and returns a pointer to an AuthHandler.
+//
+// Example:
+//
+//	authService := services.NewAuthService(userRepo)
+//	authHandler := NewAuthHandler(authService)
 func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
@@ -37,6 +44,9 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 }
 
 // RegisterUserHandler handles user registration requests.
+// It validates the input payload and uses the service to register the user.
+// If successful, it returns the created user as a JSON response.
+//
 // @Summary Register a new user
 // @Description Register a new user with the provided credentials
 // @Tags auth
@@ -44,9 +54,30 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 // @Produce json
 // @Param user body models.User true "User registration data"
 // @Success 201 {object} models.Response
-// @Failure 400 {object} models.Response
-// @Failure 409 {object} models.Response
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 409 {object} errors.ErrorResponse "Username or email already exists"
+// @Failure 500 {object} errors.ErrorResponse "Failed to register user"
 // @Router /auth/register [post]
+// @Example
+//
+//	{
+//	  "username": "johndoe",
+//	  "email": "john@example.com",
+//	  "password": "securepassword123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "User registered successfully",
+//	  "data": {
+//	    "id": 1,
+//	    "username": "johndoe",
+//	    "email": "john@example.com",
+//	    "created_at": "2024-02-20T19:27:00Z"
+//	  }
+//	}
 func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -74,6 +105,9 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 // AuthenticateHandler handles user authentication requests.
+// It validates the credentials and generates a JWT token upon successful authentication.
+// If successful, it returns the token as a JSON response.
+//
 // @Summary Authenticate a user
 // @Description Authenticate a user with username and password
 // @Tags auth
@@ -81,9 +115,26 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 // @Produce json
 // @Param credentials body models.UserCredentials true "User credentials"
 // @Success 200 {object} models.Response
-// @Failure 400 {object} models.Response
-// @Failure 401 {object} models.Response
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 401 {object} errors.ErrorResponse "Invalid credentials"
+// @Failure 500 {object} errors.ErrorResponse "Failed to authenticate user"
 // @Router /auth/login [post]
+// @Example
+//
+//	{
+//	  "username": "johndoe",
+//	  "password": "securepassword123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "Authentication successful",
+//	  "data": {
+//	    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+//	  }
+//	}
 func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials models.UserCredentials
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -113,7 +164,12 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// RegisterAuthRoutes registers all auth-related routes with a *mux.Router
+// RegisterAuthRoutes registers all auth-related routes with a *mux.Router.
+// It sets up the routes for user registration and authentication.
+//
+// Routes registered:
+// - POST /auth/register - Register a new user
+// - POST /auth/login - Authenticate a user
 func (h *AuthHandler) RegisterAuthRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/register", h.RegisterUserHandler).Methods("POST")
 	router.HandleFunc("/auth/login", h.AuthenticateHandler).Methods("POST")

@@ -1,9 +1,25 @@
+// Package services implements the business logic layer of the MyAnimeAPI application.
+// It provides service implementations that handle the core business operations,
+// working with repositories for data access and implementing business rules.
+//
+// The package includes:
+//   - User management (registration, authentication, profile updates)
+//   - Anime management (CRUD operations, favorites)
+//   - Review management
+//   - Genre and tag management
+//
+// Each service is responsible for:
+//   - Implementing business rules and validations
+//   - Coordinating between different repositories
+//   - Handling errors and providing meaningful error messages
+//   - Logging operations for debugging and monitoring
 package services
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
@@ -11,12 +27,25 @@ import (
 	"time"
 )
 
-// UserService handles business logic for user operations
+// UserService handles business logic for user operations.
+// It provides methods for user management including:
+//   - User registration and authentication
+//   - Profile management (view, update, delete)
+//   - Password management
+//   - Account deactivation
+//
+// The service ensures:
+//   - Data validation and business rule enforcement
+//   - Proper error handling and logging
+//   - Secure password handling
+//   - Unique username and email constraints
 type UserService struct {
 	userRepo repositories.UserRepository
 }
 
-// NewUserService creates a new UserService instance
+// NewUserService creates a new UserService instance.
+// It takes a UserRepository implementation as a dependency,
+// following the dependency injection pattern.
 func NewUserService(userRepo repositories.UserRepository) *UserService {
 	return &UserService{
 		userRepo: userRepo,
@@ -188,5 +217,52 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models
 	}
 
 	log.Printf("UserService.GetUserByEmail: Successfully retrieved user with email %s", email)
+	return user, nil
+}
+
+// Update updates a user in the database.
+func (s *UserService) Update(ctx context.Context, user *models.User) error {
+	return s.userRepo.Update(ctx, user)
+}
+
+// GetByID retrieves a user by ID.
+func (s *UserService) GetByID(ctx context.Context, id uint) (*models.User, error) {
+	userInterface, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	user, ok := userInterface.(*models.User)
+	if !ok {
+		return nil, fmt.Errorf("invalid user type returned from repository")
+	}
+	return user, nil
+}
+
+// GetByEmail retrieves a user by email.
+func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.userRepo.GetByEmail(ctx, email)
+}
+
+// GetByUsername retrieves a user by username.
+func (s *UserService) GetByUsername(ctx context.Context, username string) (*models.User, error) {
+	return s.userRepo.GetByUsername(ctx, username)
+}
+
+// ValidateUser validates a user's credentials.
+func (s *UserService) ValidateUser(ctx context.Context, email, password string) (*models.User, error) {
+	user, err := s.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	if !user.IsActive {
+		return nil, errors.NewError(errors.ErrUnauthorized, "Account is deactivated", "This account has been deactivated", http.StatusUnauthorized)
+	}
+
+	valid, err := auth.CheckPasswordHash(password, user.Password)
+	if err != nil || !valid {
+		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized)
+	}
+
 	return user, nil
 }

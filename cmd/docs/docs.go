@@ -685,15 +685,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to authenticate user",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -731,15 +737,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Username or email already exists",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to register user",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -995,6 +1007,165 @@ const docTemplate = `{
                 }
             }
         },
+        "/genres/bulk": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create multiple genres with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Create multiple genres",
+                "parameters": [
+                    {
+                        "description": "Bulk genre creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkCreateGenresRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.GenreResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "One or more genre names already exist",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create genres",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete multiple genres by their IDs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Delete multiple genres",
+                "parameters": [
+                    {
+                        "description": "Bulk genre deletion request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkDeleteGenresRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "One or more genres not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete genres",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/genres/search": {
+            "get": {
+                "description": "Search for genres by name",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "genres"
+                ],
+                "summary": "Search genres",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.GenreResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid search query",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to search genres",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/genres/{id}": {
             "get": {
                 "description": "Get a genre's details by its ID",
@@ -1084,7 +1255,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid genre ID or request body",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1115,7 +1286,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a genre by its ID",
+                "description": "Delete an existing genre by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1133,8 +1304,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
                     },
                     "400": {
                         "description": "Invalid genre ID",
@@ -1157,14 +1331,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/reviews/{id}": {
-            "delete": {
+        "/reviews": {
+            "post": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Delete a review by its ID",
+                "description": "Create a new review for an anime",
                 "consumes": [
                     "application/json"
                 ],
@@ -1174,7 +1348,56 @@ const docTemplate = `{
                 "tags": [
                     "reviews"
                 ],
-                "summary": "Delete a review by ID",
+                "summary": "Create a new review",
+                "parameters": [
+                    {
+                        "description": "Review data",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReviewCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User or anime not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create review",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reviews/{id}": {
+            "get": {
+                "description": "Retrieve a review by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Get a review by ID",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1185,11 +1408,138 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReviewResponse"
+                        }
                     },
                     "400": {
                         "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve review",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing review's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Update a review",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated review data",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReviewUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized to update this review",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update review",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an existing review by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reviews"
+                ],
+                "summary": "Delete a review",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized to delete this review",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1382,7 +1732,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid tag ID or request body",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1413,7 +1763,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a tag by its ID",
+                "description": "Delete an existing tag by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1431,8 +1781,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
                     },
                     "400": {
                         "description": "Invalid tag ID",
@@ -1455,14 +1808,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/genres/bulk": {
+        "/users/change-password": {
             "post": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Create multiple genres at once",
+                "description": "Change the authenticated user's password",
                 "consumes": [
                     "application/json"
                 ],
@@ -1470,143 +1823,41 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "genres"
+                    "users"
                 ],
-                "summary": "Bulk create genres",
+                "summary": "Change user password",
                 "parameters": [
                     {
-                        "description": "Genres to create",
-                        "name": "genres",
+                        "description": "Password change request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.BulkCreateGenresRequest"
+                            "$ref": "#/definitions/models.ChangePasswordRequest"
                         }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.GenreResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete multiple genres at once",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Bulk delete genres",
-                "parameters": [
-                    {
-                        "description": "Genre IDs to delete",
-                        "name": "ids",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.BulkDeleteGenresRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/genres/search": {
-            "get": {
-                "description": "Search genres by name or description",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Search genres",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search query",
-                        "name": "query",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Items per page (default: 10)",
-                        "name": "limit",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.GenreResponse"
-                            }
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid current password",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Failed to change password",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1614,14 +1865,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/reviews": {
+        "/users/deactivate": {
             "post": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Create a new review for an anime",
+                "description": "Deactivate the authenticated user's account",
                 "consumes": [
                     "application/json"
                 ],
@@ -1629,41 +1880,41 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "reviews"
+                    "users"
                 ],
-                "summary": "Create a new review",
+                "summary": "Deactivate user account",
                 "parameters": [
                     {
-                        "description": "Review data",
-                        "name": "review",
+                        "description": "Account deactivation request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ReviewCreateRequest"
+                            "$ref": "#/definitions/models.DeactivateAccountRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or missing required fields",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "Anime not found",
+                    "401": {
+                        "description": "Invalid password",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to create review",
+                        "description": "Failed to deactivate account",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1671,53 +1922,88 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/reviews/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "": [
-                            ""
-                        ]
-                    }
+        "/users/login": {
+            "post": {
+                "description": "Authenticate a user with username and password",
+                "consumes": [
+                    "application/json"
                 ],
-                "description": "Retrieve a review by its ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "reviews"
+                    "users"
                 ],
-                "summary": "Get a review by ID",
+                "summary": "Login user",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "User credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserCredentials"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "Review not found",
+                    "401": {
+                        "description": "Invalid credentials",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve review",
+                        "description": "Failed to authenticate user",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the authenticated user's profile information",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get user profile",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1727,10 +2013,10 @@ const docTemplate = `{
             "put": {
                 "security": [
                     {
-                        "ApiKeyAuth": []
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Update a review with the input payload",
+                "description": "Update the authenticated user's profile information",
                 "consumes": [
                     "application/json"
                 ],
@@ -1738,24 +2024,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "reviews"
+                    "users"
                 ],
-                "summary": "Update a review by ID",
+                "summary": "Update user profile",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated review data",
-                        "name": "review",
+                        "description": "Profile update request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ReviewCreateRequest"
+                            "$ref": "#/definitions/models.UserUpdateRequest"
                         }
                     }
                 ],
@@ -1763,23 +2042,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
-                        "description": "Invalid input or ID format",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "Review not found",
+                    "401": {
+                        "description": "User not authenticated",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to update review",
+                        "description": "Failed to update profile",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1787,70 +2066,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/users": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Retrieve a paginated list of all users. Restricted to admin users only.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get all users",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Number of items per page (default: 10, max: 100)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.User"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid pagination parameters",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve users",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
+        "/users/register": {
             "post": {
-                "description": "Create a new user account. This endpoint is public and does not require authentication.",
+                "description": "Register a new user with the provided credentials",
                 "consumes": [
                     "application/json"
                 ],
@@ -1860,15 +2078,15 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Create a new user",
+                "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "User object",
-                        "name": "user",
+                        "description": "User registration data",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.UserCreateRequest"
                         }
                     }
                 ],
@@ -1876,11 +2094,11 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
-                        "description": "Invalid input",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1893,188 +2111,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to create user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/users/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Retrieve a user by their ID. Requires authentication.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get a user by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Update an existing user. Requires authentication and the user can only update their own profile.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Update a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "User object",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Username or email already exists",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Delete a user by their ID. Requires authentication and the user can only delete their own profile.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Delete a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete user",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -2113,6 +2149,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "genres": {
+                    "description": "List of genres to create",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Genre"
@@ -2127,6 +2164,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "ids": {
+                    "description": "List of genre IDs to delete",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -2386,6 +2424,40 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "description": "Current password for verification",
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "oldpassword123"
+                },
+                "new_password": {
+                    "description": "New password to set",
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "newpassword123"
+                }
+            }
+        },
+        "models.DeactivateAccountRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "description": "User's password for verification",
+                    "type": "string",
+                    "example": "password123"
+                }
+            }
+        },
         "models.Favorite": {
             "type": "object",
             "properties": {
@@ -2490,6 +2562,10 @@ const docTemplate = `{
                     "example": "Action"
                 }
             }
+        },
+        "models.JSON": {
+            "type": "object",
+            "additionalProperties": true
         },
         "models.Response": {
             "type": "object",
@@ -2646,6 +2722,24 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ReviewUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "Updated content of the review (optional, max 500 characters)",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated review content"
+                },
+                "rating": {
+                    "description": "Updated rating (optional, 0-10)",
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 8
+                }
+            }
+        },
         "models.SuccessResponse": {
             "type": "object",
             "properties": {
@@ -2719,53 +2813,32 @@ const docTemplate = `{
             }
         },
         "models.User": {
+            "type": "object"
+        },
+        "models.UserCreateRequest": {
             "type": "object",
             "required": [
                 "email",
+                "password",
                 "username"
             ],
             "properties": {
-                "created_at": {
-                    "description": "Timestamp when the user was created",
-                    "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
-                },
                 "email": {
-                    "description": "Unique Email address of the user (omitted unless necessary)",
+                    "description": "Email address for the new user (required, valid email format, 5-100 characters)",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 5,
                     "example": "john@example.com"
                 },
-                "favorites": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Favorite"
-                    }
-                },
-                "id": {
-                    "description": "Unique identifier for the user",
-                    "type": "integer",
-                    "example": 1
-                },
-                "is_admin": {
-                    "description": "Indicates if the user has admin privileges",
-                    "type": "boolean",
-                    "example": false
-                },
-                "reviews": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Review"
-                    }
-                },
-                "updated_at": {
-                    "description": "Timestamp when the user was last updated",
+                "password": {
+                    "description": "Password for the new user (required, 5-100 characters)",
                     "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "password123"
                 },
                 "username": {
-                    "description": "Unique username for the user",
+                    "description": "Username for the new user (required, 3-50 characters)",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
@@ -2825,6 +2898,9 @@ const docTemplate = `{
                     "example": "john_doe"
                 }
             }
+        },
+        "models.UserUpdateRequest": {
+            "type": "object"
         }
     },
     "securityDefinitions": {

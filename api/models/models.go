@@ -1,6 +1,22 @@
 // Package models defines the data structures used in the MyAnimeAPI application.
-// It includes models for users, reviews, and related responses.
-// These models are used for database interactions, request/response payloads, and JWT claims.
+// It provides models for:
+//   - Users and authentication (User, UserCredentials, Claims)
+//   - Anime and related entities (Anime, Review, Genre, Tag)
+//   - Request/Response structures for API endpoints
+//   - Common utilities (JSON, BaseModel)
+//
+// These models are used for:
+//   - Database interactions through GORM
+//   - Request/response payloads in API endpoints
+//   - JWT authentication and authorization
+//   - Data validation using struct tags
+//
+// Each model includes:
+//   - JSON serialization tags
+//   - GORM database tags
+//   - Validation rules
+//   - Example values for documentation
+//   - Comprehensive godoc comments
 package models
 
 import (
@@ -8,6 +24,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+// JSON represents a JSON object that can be stored in the database
+type JSON map[string]interface{}
 
 // UserCredentials represents the credentials used for user authentication.
 // It includes a username and password.
@@ -29,31 +48,6 @@ type Claims struct {
 	UserID    uint  `json:"user_id" example:"1"`      // User ID in the JWT claims
 	ExpiresAt int64 `json:"exp" example:"1698765432"` // Expiration time of the JWT token
 	jwt.RegisteredClaims
-}
-
-// User represents a user in the system.
-// It includes fields for user details, authentication, and relationships with reviews.
-//
-// Example:
-//
-//	{
-//	  "id": 1,
-//	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:27:00Z",
-//	  "username": "john_doe",
-//	  "email": "john@example.com",
-//	  "is_admin": false
-//	}
-type User struct {
-	ID        uint       `json:"id" gorm:"primaryKey" example:"1"`                                                                 // Unique identifier for the user
-	CreatedAt time.Time  `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was created
-	UpdatedAt time.Time  `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                        // Timestamp when the user was last updated
-	Username  string     `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`              // Unique username for the user
-	Email     string     `json:"email,omitempty" gorm:"unique" validate:"required,email,min=5,max=100" example:"john@example.com"` // Unique Email address of the user (omitted unless necessary)
-	Password  string     `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                        // Password of the user (never serialized)
-	IsAdmin   bool       `json:"is_admin" gorm:"default:false" example:"false"`                                                    // Indicates if the user has admin privileges
-	Reviews   []Review   `json:"reviews,omitempty" gorm:"foreignKey:UserID"`
-	Favorites []Favorite `json:"favorites,omitempty" gorm:"foreignKey:UserID"`
 }
 
 // Review represents a review for an anime.
@@ -156,6 +150,20 @@ type ReviewCreateRequest struct {
 	Rating  int    `json:"rating" validate:"required,gte=0,lte=10" example:"9"`                  // Rating given in the review (0-10, required)
 }
 
+// ReviewUpdateRequest represents the request payload for updating a review.
+// It includes optional fields that can be updated, with validation rules for each field.
+//
+// Example:
+//
+//	{
+//	  "content": "Updated review content",
+//	  "rating": 8
+//	}
+type ReviewUpdateRequest struct {
+	Content string `json:"content" validate:"omitempty,max=500" example:"Updated review content"` // Updated content of the review (optional, max 500 characters)
+	Rating  int    `json:"rating" validate:"omitempty,gte=0,lte=10" example:"8"`                  // Updated rating (optional, 0-10)
+}
+
 // UserCreateRequest represents the request payload for creating a user.
 // It includes fields for the username, email, and password.
 //
@@ -172,8 +180,28 @@ type UserCreateRequest struct {
 	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`         // Password for the new user (required, 5-100 characters)
 }
 
-// Response represents a generic API response.
-// It includes a status, message, and data payload.
+// PasswordChangeRequest represents the request payload for changing a user's password.
+// It includes fields for the current password and the new password.
+//
+// Example:
+//
+//	{
+//	  "current_password": "old_password",
+//	  "new_password": "new_password"
+//	}
+type PasswordChangeRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required,min=5,max=100" example:"old_password"` // Current password (required, 5-100 characters)
+	NewPassword     string `json:"new_password" validate:"required,min=5,max=100" example:"new_password"`     // New password (required, 5-100 characters)
+}
+
+// Response represents a generic API response structure.
+// It provides a standardized format for all API responses with:
+//   - Status indicator (success/error)
+//   - Descriptive message
+//   - Optional data payload
+//
+// The Response type is used across all API endpoints to ensure
+// consistent response formatting and error handling.
 //
 // Example:
 //
@@ -189,9 +217,33 @@ type UserCreateRequest struct {
 // TODO: In the future, consider implementing a more comprehensive generic response type
 // that includes pagination metadata, error details, and other common response fields.
 // This would standardize API responses across all endpoints and make it easier to
-// add new features like pagination, filtering, and sorting.
+// add new features like pagination, filtering, and sorting
+// Error Response Example:
+//
+//	{
+//	  "status": "error",
+//	  "message": "Invalid input parameters",
+//	  "data": {
+//	    "field": "username",
+//	    "error": "must be between 3 and 50 characters"
+//	  }
+//	}
 type Response struct {
 	Status  string      `json:"status" example:"success"`               // Status of the response (success, error)
 	Message string      `json:"message" example:"Operation successful"` // Message describing the result
 	Data    interface{} `json:"data"`                                   // Data payload (can be any type)
+}
+
+// SocialLinks represents a user's social media links.
+// It includes fields for various social media platforms.
+//
+// Example:
+//
+//	{
+//	  "twitter": "https://twitter.com/johndoe",
+//	  "instagram": "https://instagram.com/johndoe"
+//	}
+type SocialLinks struct {
+	Twitter   string `json:"twitter,omitempty" validate:"omitempty,url" example:"https://twitter.com/johndoe"`     // Twitter profile URL
+	Instagram string `json:"instagram,omitempty" validate:"omitempty,url" example:"https://instagram.com/johndoe"` // Instagram profile URL
 }

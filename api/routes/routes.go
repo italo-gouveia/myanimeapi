@@ -6,9 +6,11 @@
 package routes
 
 import (
+	"encoding/json"
 	"log"
 	"myanimeapi/api/handlers"
 	"myanimeapi/api/middleware"
+	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/api/services"
 	"myanimeapi/internal/db"
@@ -68,9 +70,15 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 		}
 
 		if dbWrapper.IsHealthy() {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("OK")); err != nil {
-				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to write response", "An internal server error occurred while writing the response.")
+			response := models.Response{
+				Status:  "success",
+				Message: "Service is healthy",
+				Data:    "OK",
+			}
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
 				return
 			}
 		} else {
@@ -105,7 +113,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 
 	// Initialize handlers
 	animeHandler := handlers.NewAnimeHandler(animeService)
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, genreService)
 	reviewHandler := handlers.NewReviewHandler(reviewService)
 	authHandler := handlers.NewAuthHandler(authService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
