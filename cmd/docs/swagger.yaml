@@ -331,6 +331,39 @@ definitions:
   models.JSON:
     additionalProperties: true
     type: object
+  models.MediaAttachment:
+    properties:
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      id:
+        description: Media attachment ID
+        example: 1
+        type: integer
+      review_id:
+        description: Review ID with cascade delete constraint
+        example: 1
+        type: integer
+      type:
+        description: Type of media (image or video)
+        enum:
+        - image
+        - video
+        example: image
+        type: string
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      url:
+        description: URL to the media file
+        example: https://example.com/image.jpg
+        type: string
+    required:
+    - type
+    - url
+    type: object
   models.Response:
     properties:
       data:
@@ -363,6 +396,11 @@ definitions:
         description: Review ID
         example: 1
         type: integer
+      media_attachments:
+        description: Associated media attachments
+        items:
+          $ref: '#/definitions/models.MediaAttachment'
+        type: array
       rating:
         description: Rating (0-10)
         example: 9
@@ -392,6 +430,11 @@ definitions:
         example: This anime is amazing!
         maxLength: 500
         type: string
+      media_attachments:
+        description: Media attachments for the review (optional)
+        items:
+          $ref: '#/definitions/models.MediaAttachment'
+        type: array
       rating:
         description: Rating given in the review (0-10, required)
         example: 9
@@ -430,6 +473,11 @@ definitions:
         description: Unique identifier for the review
         example: 1
         type: integer
+      media_attachments:
+        description: Associated media attachments
+        items:
+          $ref: '#/definitions/models.MediaAttachment'
+        type: array
       rating:
         description: Rating given in the review (0-10)
         example: 9
@@ -454,6 +502,11 @@ definitions:
         example: Updated review content
         maxLength: 500
         type: string
+      media_attachments:
+        description: Updated media attachments (optional)
+        items:
+          $ref: '#/definitions/models.MediaAttachment'
+        type: array
       rating:
         description: Updated rating (optional, 0-10)
         example: 8
@@ -1448,7 +1501,7 @@ paths:
   /reviews:
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Create a new review for an anime
       parameters:
       - description: Review data
@@ -1457,6 +1510,10 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.ReviewCreateRequest'
+      - description: Media files (images or videos)
+        in: formData
+        name: media
+        type: file
       produces:
       - application/json
       responses:
@@ -1550,7 +1607,7 @@ paths:
       - reviews
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Update an existing review's details
       parameters:
       - description: Review ID
@@ -1564,6 +1621,10 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.ReviewUpdateRequest'
+      - description: Media files (images or videos)
+        in: formData
+        name: media
+        type: file
       produces:
       - application/json
       responses:

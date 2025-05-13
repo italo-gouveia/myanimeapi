@@ -20,14 +20,8 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [Version](#version)
     - [Authentication](#authentication)
     - [Users](#users)
-      - [User Profile Update](#user-profile-update)
-      - [Change Password](#change-password)
-      - [Deactivate Account](#deactivate-account)
     - [Anime](#anime)
     - [Genres](#genres)
-      - [Search Genres](#search-genres)
-      - [Bulk Create Genres](#bulk-create-genres)
-      - [Bulk Delete Genres](#bulk-delete-genres)
     - [Tags](#tags)
     - [Reviews](#reviews)
     - [Favorites](#favorites)
@@ -66,18 +60,20 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 
 - **Anime Management**: Create, read, update, and delete anime entries with support for genres and tags
 - **User Management**: Register, authenticate, and manage users
-- **Review Management**: Add, update, and delete reviews for anime
-- **Genre Management**: Manage anime genres with CRUD operations
-- **Tag Management**: Manage anime tags with CRUD operations
+- **Review Management**: Add, update, and delete reviews for anime with media attachments
+- **Genre Management**: Manage anime genres with CRUD operations and bulk operations
+- **Tag Management**: Manage anime tags with CRUD operations and bulk operations
 - **Authentication**: JWT-based authentication for secure access
 - **Pagination**: Paginated responses for large datasets
 - **Rate Limiting**: Protect endpoints from abuse with rate limiting
 - **Swagger Documentation**: Auto-generated API documentation
 - **Favorite Anime**: Add and manage favorite anime entries
-- **Error Handling**: Structured error responses with detailed information and consistent format
-- **Health Monitoring**: Comprehensive health check endpoint with detailed service status
+- **Error Handling**: Structured error responses with detailed information
+- **Health Monitoring**: Comprehensive health check endpoint
 - **Security**: Regular security scanning and vulnerability checks
 - **Dependency Management**: Proper dependency injection and service initialization
+- **Media Storage**: Support for both local and S3 storage of media files
+- **Bulk Operations**: Support for bulk create and delete operations for genres and tags
 
 ## Technologies Used
 
@@ -89,6 +85,8 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 - **Swagger**: API documentation (v1.16.4)
 - **Docker**: Containerization for easy deployment and development
 - **Validator**: Input validation (v10.25.0)
+- **AWS SDK**: For S3 storage integration (v1.50.35)
+- **Bluemonday**: HTML sanitization (v1.0.27)
 
 ## Getting Started
 
@@ -97,6 +95,7 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 - Go 1.23.0 or higher
 - PostgreSQL
 - Docker (optional)
+- AWS Account (for S3 storage, optional)
 
 ### Installation
 
@@ -176,18 +175,6 @@ myanimeapi/
 }
 ```
 
-**Error Response:**
-```json
-{
-  "status": "error",
-  "error": {
-    "code": "SERVICE_UNAVAILABLE",
-    "message": "Database connection failed",
-    "details": "The database connection is not healthy."
-  }
-}
-```
-
 ### Version
 
 - **GET** `/v1/version`: Get the current API version
@@ -195,7 +182,7 @@ myanimeapi/
 **Response:**
 ```json
 {
-  "version": "1.6.0"
+  "version": "1.7.0"
 }
 ```
 
@@ -209,61 +196,24 @@ myanimeapi/
 | Method | Endpoint | Description | Authentication Required |
 |--------|----------|-------------|------------------------|
 | POST | `/v1/users/register` | Register a new user | No |
-| POST | `/v1/users/login` | Authenticate a user and receive a JWT token | No |
-| GET | `/v1/users/profile` | Get the authenticated user's profile | Yes |
-| PUT | `/v1/users/profile` | Update the authenticated user's profile | Yes |
-| POST | `/v1/users/change-password` | Change the authenticated user's password | Yes |
-| POST | `/v1/users/deactivate` | Deactivate the authenticated user's account | Yes |
-
-#### User Profile Update
-Update the authenticated user's profile information.
-
-**Request Body:**
-```json
-{
-  "username": "new_username",
-  "email": "new_email@example.com",
-  "profile_pic": "https://example.com/profile.jpg",
-  "bio": "User's biography",
-  "social_links": {
-    "twitter": "https://twitter.com/username",
-    "instagram": "https://instagram.com/username"
-  },
-  "genre_ids": [1, 2, 3]
-}
-```
-
-#### Change Password
-Change the authenticated user's password.
-
-**Request Body:**
-```json
-{
-  "current_password": "old_password",
-  "new_password": "new_password"
-}
-```
-
-#### Deactivate Account
-Deactivate the authenticated user's account.
-
-**Request Body:**
-```json
-{
-  "password": "current_password"
-}
-```
+| POST | `/v1/users/login` | Authenticate a user | No |
+| GET | `/v1/users/profile` | Get user profile | Yes |
+| PUT | `/v1/users/profile` | Update user profile | Yes |
+| POST | `/v1/users/change-password` | Change password | Yes |
+| POST | `/v1/users/deactivate` | Deactivate account | Yes |
 
 ### Anime
 
-- **GET** `/v1/anime`: Get all anime entries with pagination
-- **GET** `/v1/anime/{id}`: Retrieve a specific anime by ID
-- **POST** `/v1/anime`: Create a new anime entry (Authenticated users only)
-- **PUT** `/v1/anime/{id}`: Update an existing anime entry (Authenticated users only)
-- **DELETE** `/v1/anime/{id}`: Delete an anime entry (Authenticated users only)
-- **POST** `/v1/anime/{id}/favorite`: Add anime to favorites (Authenticated users only)
-- **DELETE** `/v1/anime/{id}/favorite`: Remove anime from favorites (Authenticated users only)
-- **GET** `/v1/anime/favorites`: Get user's favorite anime (Authenticated users only)
+| Method | Endpoint | Description | Authentication Required |
+|--------|----------|-------------|------------------------|
+| GET | `/v1/anime` | Get all anime | No |
+| GET | `/v1/anime/{id}` | Get anime by ID | No |
+| POST | `/v1/anime` | Create anime | Yes |
+| PUT | `/v1/anime/{id}` | Update anime | Yes |
+| DELETE | `/v1/anime/{id}` | Delete anime | Yes |
+| POST | `/v1/anime/{id}/favorite` | Add to favorites | Yes |
+| DELETE | `/v1/anime/{id}/favorite` | Remove from favorites | Yes |
+| GET | `/v1/anime/favorites` | Get user's favorites | Yes |
 
 ### Genres
 
@@ -271,67 +221,12 @@ Deactivate the authenticated user's account.
 |--------|----------|-------------|------------------------|
 | GET | `/v1/genres` | Get all genres | No |
 | GET | `/v1/genres/{id}` | Get genre by ID | No |
-| POST | `/v1/genres` | Create a new genre | Yes |
-| PUT | `/v1/genres/{id}` | Update a genre | Yes |
-| DELETE | `/v1/genres/{id}` | Delete a genre | Yes |
-| GET | `/v1/genres/search` | Search genres by name or description | No |
-| POST | `/v1/genres/bulk` | Create multiple genres at once | Yes |
-| DELETE | `/v1/genres/bulk` | Delete multiple genres at once | Yes |
-
-#### Search Genres
-Search for genres by name or description with pagination support.
-
-**Query Parameters:**
-- `query` (required): Search term
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "name": "Action",
-      "created_at": "2024-02-20T19:27:00Z",
-      "updated_at": "2024-02-20T19:27:00Z"
-    }
-  ],
-  "pagination": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "pages": 10
-  }
-}
-```
-
-#### Bulk Create Genres
-Create multiple genres in a single request.
-
-**Request Body:**
-```json
-{
-  "genres": [
-    {
-      "name": "Action"
-    },
-    {
-      "name": "Comedy"
-    }
-  ]
-}
-```
-
-#### Bulk Delete Genres
-Delete multiple genres in a single request.
-
-**Request Body:**
-```json
-{
-  "ids": [1, 2, 3]
-}
-```
+| POST | `/v1/genres` | Create genre | Yes |
+| PUT | `/v1/genres/{id}` | Update genre | Yes |
+| DELETE | `/v1/genres/{id}` | Delete genre | Yes |
+| GET | `/v1/genres/search` | Search genres | No |
+| POST | `/v1/genres/bulk` | Bulk create genres | Yes |
+| DELETE | `/v1/genres/bulk` | Bulk delete genres | Yes |
 
 ### Tags
 
@@ -339,29 +234,33 @@ Delete multiple genres in a single request.
 |--------|----------|-------------|------------------------|
 | GET | `/v1/tags` | Get all tags | No |
 | GET | `/v1/tags/{id}` | Get tag by ID | No |
-| POST | `/v1/tags` | Create a new tag | Yes |
-| PUT | `/v1/tags/{id}` | Update a tag | Yes |
-| DELETE | `/v1/tags/{id}` | Delete a tag | Yes |
-| GET | `/v1/tags/search` | Search tags by name | No |
-| POST | `/v1/tags/bulk` | Create multiple tags at once | Yes |
-| DELETE | `/v1/tags/bulk` | Delete multiple tags at once | Yes |
+| POST | `/v1/tags` | Create tag | Yes |
+| PUT | `/v1/tags/{id}` | Update tag | Yes |
+| DELETE | `/v1/tags/{id}` | Delete tag | Yes |
+| GET | `/v1/tags/search` | Search tags | No |
+| POST | `/v1/tags/bulk` | Bulk create tags | Yes |
+| DELETE | `/v1/tags/bulk` | Bulk delete tags | Yes |
 
 ### Reviews
 
-- **GET** `/v1/reviews`: Get all reviews with pagination
-- **GET** `/v1/reviews/{id}`: Get a specific review by ID
-- **POST** `/v1/reviews`: Create a new review (Authenticated users only)
-- **PUT** `/v1/reviews/{id}`: Update an existing review (Authenticated users only)
-- **DELETE** `/v1/reviews/{id}`: Delete a review (Authenticated users only)
-- **GET** `/v1/reviews/user/{userId}`: Get all reviews by a specific user
-- **GET** `/v1/reviews/anime/{animeId}`: Get all reviews for a specific anime
+| Method | Endpoint | Description | Authentication Required |
+|--------|----------|-------------|------------------------|
+| GET | `/v1/reviews` | Get all reviews | No |
+| GET | `/v1/reviews/{id}` | Get review by ID | No |
+| POST | `/v1/reviews` | Create review | Yes |
+| PUT | `/v1/reviews/{id}` | Update review | Yes |
+| DELETE | `/v1/reviews/{id}` | Delete review | Yes |
+| GET | `/v1/reviews/user/{userId}` | Get user's reviews | No |
+| GET | `/v1/reviews/anime/{animeId}` | Get anime's reviews | No |
 
 ### Favorites
 
-- **GET** `/v1/favorites`: Get user's favorite anime (Authenticated users only)
-- **POST** `/v1/favorites/{animeId}`: Add anime to favorites (Authenticated users only)
-- **DELETE** `/v1/favorites/{animeId}`: Remove anime from favorites (Authenticated users only)
-- **GET** `/v1/favorites/check/{animeId}`: Check if anime is in user's favorites (Authenticated users only)
+| Method | Endpoint | Description | Authentication Required |
+|--------|----------|-------------|------------------------|
+| GET | `/v1/favorites` | Get user's favorites | Yes |
+| POST | `/v1/favorites/{animeId}` | Add to favorites | Yes |
+| DELETE | `/v1/favorites/{animeId}` | Remove from favorites | Yes |
+| GET | `/v1/favorites/check/{animeId}` | Check if favorited | Yes |
 
 ## Documentation
 
@@ -541,6 +440,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Swagger](https://swagger.io/) for API documentation
 - [Docker](https://www.docker.com/) for Containerization
 - [Validator](https://github.com/go-playground/validator) for input validation
+- [AWS SDK](https://aws.amazon.com/sdk-for-go/) for S3 storage integration
+- [Bluemonday](https://github.com/microcosm-cc/bluemonday) for HTML sanitization
 
 ## Contact
 For questions or feedback, please reach out to italogouveiadev@outlook.com.

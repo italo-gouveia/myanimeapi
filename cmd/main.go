@@ -24,15 +24,18 @@ import (
 	"syscall"
 	"time"
 
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"myanimeapi/api/database"
 	"myanimeapi/api/routes"
+	"myanimeapi/api/services"
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/db"
 
-	gorillahandlers "github.com/gorilla/handlers" // Alias for Gorilla's handlers package
+	// Alias for Gorilla's handlers package
+	gorillahandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 const (
@@ -85,6 +88,33 @@ func main() {
 	}
 	log.Println("Database schema migrated successfully")
 
+	// Initialize storage service
+	var storageSvc *services.StorageService
+	if os.Getenv("ENV") == "production" {
+		// Use S3 storage in production
+		s3Strategy, err := services.NewS3StorageStrategy(
+			os.Getenv("AWS_REGION"),
+			os.Getenv("AWS_S3_BUCKET"),
+			os.Getenv("AWS_S3_BASE_URL"),
+			"uploads",
+		)
+		if err != nil {
+			log.Fatalf("Failed to initialize S3 storage: %v", err)
+		}
+		storageSvc = services.NewStorageService(s3Strategy)
+	} else {
+		// Use local storage in development
+		localStrategy, err := services.NewLocalStorageStrategy(
+			".",
+			"/media",
+		)
+		if err != nil {
+			log.Fatalf("Failed to initialize local storage: %v", err)
+		}
+		storageSvc = services.NewStorageService(localStrategy)
+	}
+	log.Println("Storage service initialized successfully")
+
 	// Create a new router
 	router := mux.NewRouter()
 
@@ -99,8 +129,13 @@ func main() {
 	// Serve Swagger UI
 	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, dbWrapper, VERSION)
+	routes.RegisterRoutes(router, swaggerURL, dbWrapper, storageSvc, VERSION)
 	log.Println("Routes registered successfully")
+
+	// Serve static files for media
+	fs := http.FileServer(http.Dir("uploads"))
+	router.PathPrefix("/api/media/").Handler(http.StripPrefix("/api/media/", fs))
+	log.Println("Static file serving configured")
 
 	// Configure CORS
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
