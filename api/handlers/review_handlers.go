@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -32,6 +34,7 @@ import (
 // It contains a review service for handling business logic.
 type ReviewHandler struct {
 	reviewService *services.ReviewService
+	storageSvc    *services.StorageService
 }
 
 // NewReviewHandler creates a new instance of ReviewHandler.
@@ -41,8 +44,11 @@ type ReviewHandler struct {
 //
 //	reviewService := services.NewReviewService(repository)
 //	reviewHandler := NewReviewHandler(reviewService)
-func NewReviewHandler(reviewService *services.ReviewService) *ReviewHandler {
-	return &ReviewHandler{reviewService: reviewService}
+func NewReviewHandler(reviewService *services.ReviewService, storageSvc *services.StorageService) *ReviewHandler {
+	return &ReviewHandler{
+		reviewService: reviewService,
+		storageSvc:    storageSvc,
+	}
 }
 
 // GetReviewHandler retrieves a review by its ID.
@@ -144,9 +150,10 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 // @Summary Create a new review
 // @Description Create a new review for an anime
 // @Tags reviews
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Param review body models.ReviewCreateRequest true "Review data"
+// @Param media formData file false "Media files (images or videos)"
 // @Success 201 {object} models.ReviewResponse
 // @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
 // @Failure 404 {object} errors.ErrorResponse "User or anime not found"
@@ -184,6 +191,13 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 //	  }
 //	}
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form
+	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
+		log.Printf("Failed to parse multipart form: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.")
+		return
+	}
+
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
 	if !ok {
@@ -198,6 +212,35 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		AnimeID: payload.AnimeID,
 		Content: payload.Content,
 		Rating:  payload.Rating,
+	}
+
+	// Handle media file uploads
+	form := r.MultipartForm
+	if form != nil && form.File != nil {
+		for _, files := range form.File {
+			for _, file := range files {
+				// Determine media type from file extension
+				ext := strings.ToLower(filepath.Ext(file.Filename))
+				mediaType := "image"
+				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
+					mediaType = "video"
+				}
+
+				// Upload file
+				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
+				if err != nil {
+					log.Printf("Failed to upload file: %v", err)
+					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.")
+					return
+				}
+
+				// Add media attachment to review
+				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
+					Type: mediaType,
+					URL:  fileURL,
+				})
+			}
+		}
 	}
 
 	// Create review using service
@@ -215,7 +258,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Create a custom response to exclude sensitive data
+	// Create response
 	response := models.ReviewResponse{
 		ID:        createdReview.ID,
 		CreatedAt: createdReview.CreatedAt,
@@ -235,9 +278,12 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 			Description: createdReview.Anime.Description,
 			Rating:      createdReview.Anime.Rating,
 		},
+		MediaAttachments: createdReview.MediaAttachments,
 	}
 
+	// Set response headers and encode response
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
@@ -252,10 +298,11 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Summary Update a review
 // @Description Update an existing review's details
 // @Tags reviews
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Param id path int true "Review ID"
 // @Param review body models.ReviewUpdateRequest true "Updated review data"
+// @Param media formData file false "Media files (images or videos)"
 // @Success 200 {object} models.ReviewResponse
 // @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
 // @Failure 401 {object} errors.ErrorResponse "Unauthorized to update this review"
@@ -304,6 +351,13 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Parse multipart form
+	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
+		log.Printf("Failed to parse multipart form: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.")
+		return
+	}
+
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewUpdateRequest)
 	if !ok {
@@ -328,6 +382,35 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		review.Rating = payload.Rating
 	}
 
+	// Handle media file uploads
+	form := r.MultipartForm
+	if form != nil && form.File != nil {
+		for _, files := range form.File {
+			for _, file := range files {
+				// Determine media type from file extension
+				ext := strings.ToLower(filepath.Ext(file.Filename))
+				mediaType := "image"
+				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
+					mediaType = "video"
+				}
+
+				// Upload file
+				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
+				if err != nil {
+					log.Printf("Failed to upload file: %v", err)
+					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.")
+					return
+				}
+
+				// Add media attachment to review
+				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
+					Type: mediaType,
+					URL:  fileURL,
+				})
+			}
+		}
+	}
+
 	// Update review using service
 	if err := h.reviewService.UpdateReview(r.Context(), review); err != nil {
 		log.Printf("Failed to update review: %v", err)
@@ -335,8 +418,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get the updated review
-	updatedReview, err := h.reviewService.GetReviewByID(r.Context(), id)
+	// Get the updated review with user and anime details
+	updatedReview, err := h.reviewService.GetReviewByID(r.Context(), review.ID)
 	if err != nil {
 		log.Printf("Failed to get updated review: %v", err)
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve updated review", "An internal server error occurred while retrieving the updated review.")
@@ -363,6 +446,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 			Description: updatedReview.Anime.Description,
 			Rating:      updatedReview.Anime.Rating,
 		},
+		MediaAttachments: updatedReview.MediaAttachments,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
