@@ -1,3 +1,17 @@
+# [1.8.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.7.0...v1.8.0) (2025-05-13)
+
+
+### Features
+
+* **reviews:** add media attachment support with storage service ([0df0131](https://github.com/italo-gouveia/myanimeapi/commit/0df0131164c0123f284d011ff3cf74d3682802b1))
+* **reviews:** implement media file handling in review handlers ([802f73f](https://github.com/italo-gouveia/myanimeapi/commit/802f73faf9e090e12f5b4d8e7fc4373e32bec4b4))
+
+
+### BREAKING CHANGES
+
+* **reviews:** None
+* **reviews:** None
+
 # [1.7.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.6.0...v1.7.0) (2025-05-12)
 
 
