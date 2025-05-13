@@ -16,14 +16,16 @@ type ReviewService struct {
 	reviewRepo repositories.ReviewRepository
 	userRepo   repositories.UserRepository
 	animeRepo  repositories.AnimeRepository
+	storageSvc *StorageService
 }
 
 // NewReviewService creates a new ReviewService instance
-func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository) *ReviewService {
+func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository, storageSvc *StorageService) *ReviewService {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
 		userRepo:   userRepo,
 		animeRepo:  animeRepo,
+		storageSvc: storageSvc,
 	}
 }
 
@@ -107,6 +109,12 @@ func (s *ReviewService) CreateReview(ctx context.Context, review *models.Review)
 	review.CreatedAt = time.Now()
 	review.UpdatedAt = time.Now()
 
+	// Set timestamps for media attachments
+	for i := range review.MediaAttachments {
+		review.MediaAttachments[i].CreatedAt = time.Now()
+		review.MediaAttachments[i].UpdatedAt = time.Now()
+	}
+
 	// Create review
 	if err := s.reviewRepo.Create(ctx, review); err != nil {
 		log.Printf("ReviewService.CreateReview: Failed to create review: %v", err)
@@ -143,6 +151,14 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 		return errors.NewError(errors.ErrInvalidInput, "Invalid rating", "Rating must be between 1 and 10", http.StatusBadRequest)
 	}
 
+	// Set timestamps for new media attachments
+	for i := range review.MediaAttachments {
+		if review.MediaAttachments[i].ID == 0 { // New attachment
+			review.MediaAttachments[i].CreatedAt = time.Now()
+			review.MediaAttachments[i].UpdatedAt = time.Now()
+		}
+	}
+
 	// Update review
 	if err := s.reviewRepo.Update(ctx, review); err != nil {
 		log.Printf("ReviewService.UpdateReview: Failed to update review: %v", err)
@@ -157,11 +173,25 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 func (s *ReviewService) DeleteReview(ctx context.Context, id uint) error {
 	log.Printf("ReviewService.DeleteReview: Deleting review with ID %d", id)
 
-	// Check if review exists
-	_, err := s.reviewRepo.GetByID(ctx, id)
+	// Get the review first to handle media attachments
+	review, err := s.reviewRepo.GetByID(ctx, id)
 	if err != nil {
 		log.Printf("ReviewService.DeleteReview: Failed to retrieve review: %v", err)
 		return errors.NewError(errors.ErrResourceNotFound, "Review not found", err.Error(), http.StatusNotFound)
+	}
+
+	reviewModel, ok := review.(*models.Review)
+	if !ok {
+		log.Printf("ReviewService.DeleteReview: Invalid review type returned from repository")
+		return errors.NewError(errors.ErrInternalServer, "Invalid review type returned from repository", "Type assertion failed", http.StatusInternalServerError)
+	}
+
+	// Delete associated media files
+	for _, attachment := range reviewModel.MediaAttachments {
+		if err := s.storageSvc.DeleteFile(ctx, attachment.URL); err != nil {
+			log.Printf("ReviewService.DeleteReview: Failed to delete media file %s: %v", attachment.URL, err)
+			// Continue with deletion even if file deletion fails
+		}
 	}
 
 	// Delete review
