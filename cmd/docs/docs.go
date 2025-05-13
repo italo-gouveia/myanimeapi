@@ -1340,7 +1340,7 @@ const docTemplate = `{
                 ],
                 "description": "Create a new review for an anime",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1358,6 +1358,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.ReviewCreateRequest"
                         }
+                    },
+                    {
+                        "type": "file",
+                        "description": "Media files (images or videos)",
+                        "name": "media",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1442,7 +1448,7 @@ const docTemplate = `{
                 ],
                 "description": "Update an existing review's details",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1467,6 +1473,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.ReviewUpdateRequest"
                         }
+                    },
+                    {
+                        "type": "file",
+                        "description": "Media files (images or videos)",
+                        "name": "media",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -2567,6 +2579,49 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": true
         },
+        "models.MediaAttachment": {
+            "type": "object",
+            "required": [
+                "type",
+                "url"
+            ],
+            "properties": {
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "id": {
+                    "description": "Media attachment ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "review_id": {
+                    "description": "Review ID with cascade delete constraint",
+                    "type": "integer",
+                    "example": 1
+                },
+                "type": {
+                    "description": "Type of media (image or video)",
+                    "type": "string",
+                    "enum": [
+                        "image",
+                        "video"
+                    ],
+                    "example": "image"
+                },
+                "updated_at": {
+                    "description": "Update timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "url": {
+                    "description": "URL to the media file",
+                    "type": "string",
+                    "example": "https://example.com/image.jpg"
+                }
+            }
+        },
         "models.Response": {
             "type": "object",
             "properties": {
@@ -2613,6 +2668,13 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "media_attachments": {
+                    "description": "Associated media attachments",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MediaAttachment"
+                    }
+                },
                 "rating": {
                     "description": "Rating (0-10)",
                     "type": "integer",
@@ -2651,6 +2713,13 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500,
                     "example": "This anime is amazing!"
+                },
+                "media_attachments": {
+                    "description": "Media attachments for the review (optional)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MediaAttachment"
+                    }
                 },
                 "rating": {
                     "description": "Rating given in the review (0-10, required)",
@@ -2697,6 +2766,13 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "media_attachments": {
+                    "description": "Associated media attachments",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MediaAttachment"
+                    }
+                },
                 "rating": {
                     "description": "Rating given in the review (0-10)",
                     "type": "integer",
@@ -2730,6 +2806,13 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 500,
                     "example": "Updated review content"
+                },
+                "media_attachments": {
+                    "description": "Updated media attachments (optional)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MediaAttachment"
+                    }
                 },
                 "rating": {
                     "description": "Updated rating (optional, 0-10)",
