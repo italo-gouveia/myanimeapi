@@ -20,7 +20,6 @@ import (
 	"myanimeapi/internal/errors" // Import the errors package
 
 	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // RegisterRoutes registers all routes for the application.
@@ -31,14 +30,15 @@ import (
 //   - router: A pointer to a `mux.Router` instance to register routes.
 //   - swaggerURL: The URL path to the Swagger JSON file.
 //   - dbWrapper: A pointer to a `db.DBInterface` instance for database operations.
+//   - storageSvc: A pointer to a `services.StorageService` instance for file storage operations.
 //   - version: The current version of the API.
 //
 // Example usage:
 //
 //	router := mux.NewRouter()
-//	RegisterRoutes(router, "/swagger/doc.json", dbWrapper, version)
+//	RegisterRoutes(router, "/swagger/doc.json", dbWrapper, storageSvc, version)
 //	http.ListenAndServe(":8080", router)
-func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterface, version string) {
+func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterface, storageSvc *services.StorageService, version string) {
 	// Create a new rate limiter with a limit of 100 requests per minute
 	rateLimiter := middleware.NewRateLimiter()
 
@@ -104,7 +104,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Initialize services
 	animeService := services.NewAnimeService(animeRepo, genreRepo, tagRepo, reviewRepo)
 	userService := services.NewUserService(userRepo)
-	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo)
+	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc)
 	authService := services.NewAuthService(authRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
 	genreService := services.NewGenreService(genreRepo)
@@ -114,7 +114,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Initialize handlers
 	animeHandler := handlers.NewAnimeHandler(animeService)
 	userHandler := handlers.NewUserHandler(userService, genreService)
-	reviewHandler := handlers.NewReviewHandler(reviewService)
+	reviewHandler := handlers.NewReviewHandler(reviewService, storageSvc)
 	authHandler := handlers.NewAuthHandler(authService)
 	favoriteHandler := handlers.NewFavoriteHandler(favoriteService)
 	genreHandler := handlers.NewGenreHandler(genreService)
@@ -150,21 +150,9 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	log.Println("Tag routes registered")
 
 	// Register Swagger documentation
-	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL(swaggerURL), // Path to swagger.json
-		httpSwagger.UIConfig(map[string]string{
-			"theme": "swagger-ui-dark.css", // Use the dark theme
-			"title": "MyAnimeAPI",
-			//			"customStyle": `
-			//    	.topbar-wrapper img {
-			//        	content: url('https://example.com/logo.png');
-			//        	width: 100px;
-			//        	height: auto;
-			//    	}
-			//	`,*/ // it will be generated later
-			//"customFavicon": "https://example.com/favicon.ico", // Custom favicon(it will be generated later)
-		}),
-	))
+	if swaggerURL != "" {
+		router.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", http.FileServer(http.Dir(swaggerURL))))
+	}
 	log.Println("Swagger documentation registered")
 }
 
