@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.8.0...v1.9.0) (2025-05-14)
+
+
+### Bug Fixes
+
+* use custom type for request ID context key ([80c0501](https://github.com/italo-gouveia/myanimeapi/commit/80c05019040ee2e7812070a6a7c4d2f798dd3806))
+
+
+### Features
+
+* add request ID middleware for request traceability ([03ca20f](https://github.com/italo-gouveia/myanimeapi/commit/03ca20f87b42a6146c9c823b2a81b4e0a3beb471))
+
 # [1.8.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.7.0...v1.8.0) (2025-05-13)
 
 
