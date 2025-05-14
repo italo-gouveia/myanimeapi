@@ -28,6 +28,7 @@ import (
 	"gorm.io/gorm"
 
 	"myanimeapi/api/database"
+	"myanimeapi/api/middleware"
 	"myanimeapi/api/routes"
 	"myanimeapi/api/services"
 	"myanimeapi/internal/config"
@@ -117,6 +118,9 @@ func main() {
 
 	// Create a new router
 	router := mux.NewRouter()
+
+	// Add request ID middleware
+	router.Use(middleware.RequestIDMiddleware())
 
 	// Determine environment
 	env := os.Getenv("ENVIRONMENT")
