@@ -111,6 +111,7 @@ Set up the database:
 - Ensure PostgreSQL is running
 - Create a database named `myanimeapi`
 - Update the `.env` file with your PostgreSQL credentials
+- For features like "Forgot Password", ensure you also configure email-related environment variables in the `.env` file (e.g., `EMAIL_FROM`, `EMAIL_PASSWORD`, `SMTP_HOST`, `SMTP_PORT`, `FRONTEND_URL`).
 
 Run the application:
 
@@ -199,6 +200,8 @@ myanimeapi/
 | POST | `/v1/users/login` | Authenticate a user | No |
 | GET | `/v1/users/profile` | Get user profile | Yes |
 | PUT | `/v1/users/profile` | Update user profile | Yes |
+| POST | `/v1/users/forgot-password` | Request password reset | No |
+| POST | `/v1/users/reset-password` | Reset password with token | No |
 | POST | `/v1/users/change-password` | Change password | Yes |
 | POST | `/v1/users/deactivate` | Deactivate account | Yes |
 
