@@ -364,6 +364,24 @@ definitions:
     - type
     - url
     type: object
+  models.PasswordResetRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  models.ResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
   models.Response:
     properties:
       data:
@@ -568,6 +586,73 @@ definitions:
         type: string
     type: object
   models.User:
+    properties:
+      bio:
+        description: User's biography
+        example: Anime enthusiast
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      deleted_at:
+        description: Soft delete timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      email:
+        description: Unique Email address of the user
+        example: john@example.com
+        maxLength: 100
+        minLength: 5
+        type: string
+      favorites:
+        description: User's favorite anime
+        items:
+          $ref: '#/definitions/models.Anime'
+        type: array
+      genres:
+        description: User's preferred genres
+        items:
+          $ref: '#/definitions/models.Genre'
+        type: array
+      id:
+        description: Unique identifier
+        example: 1
+        type: integer
+      is_active:
+        description: Indicates if the user account is active
+        example: true
+        type: boolean
+      is_admin:
+        description: Indicates if the user has admin privileges
+        example: false
+        type: boolean
+      profile_pic:
+        description: URL to the user's profile picture
+        example: https://example.com/profile.jpg
+        type: string
+      reviews:
+        description: User's reviews
+        items:
+          $ref: '#/definitions/models.Review'
+        type: array
+      social_links:
+        allOf:
+        - $ref: '#/definitions/models.JSON'
+        description: User's social media links
+      updated_at:
+        description: Update timestamp
+        example: "2025-02-20T19:27:00Z"
+        type: string
+      username:
+        description: Unique username for the user
+        example: john_doe
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - username
     type: object
   models.UserCreateRequest:
     properties:
@@ -637,6 +722,39 @@ definitions:
         type: string
     type: object
   models.UserUpdateRequest:
+    properties:
+      bio:
+        description: New biography (optional, max 500 chars)
+        example: Anime enthusiast
+        maxLength: 500
+        type: string
+      email:
+        description: New email address (optional, valid email)
+        example: john@example.com
+        type: string
+      genre_ids:
+        description: New preferred genre IDs (optional)
+        example:
+        - 1
+        - 2
+        - 3
+        items:
+          type: integer
+        type: array
+      profile_pic:
+        description: New profile picture URL (optional, valid URL)
+        example: https://example.com/profile.jpg
+        type: string
+      social_links:
+        allOf:
+        - $ref: '#/definitions/models.JSON'
+        description: New social media links (optional)
+      username:
+        description: New username (optional, 3-50 chars)
+        example: johndoe
+        maxLength: 50
+        minLength: 3
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -1886,6 +2004,36 @@ paths:
       summary: Deactivate user account
       tags:
       - users
+  /users/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send a password reset email to the user's email address
+      parameters:
+      - description: Password reset request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to process password reset request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - users
   /users/login:
     post:
       consumes:
@@ -2010,6 +2158,36 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       summary: Register a new user
+      tags:
+      - users
+  /users/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset user's password using a valid reset token
+      parameters:
+      - description: Password reset request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Failed to reset password
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Reset password
       tags:
       - users
 schemes:

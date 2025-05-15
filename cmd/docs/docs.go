@@ -1934,6 +1934,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/forgot-password": {
+            "post": {
+                "description": "Send a password reset email to the user's email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Request password reset",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PasswordResetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to process password reset request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/login": {
             "post": {
                 "description": "Authenticate a user with username and password",
@@ -2123,6 +2169,52 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to create user",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/reset-password": {
+            "post": {
+                "description": "Reset user's password using a valid reset token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or token",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to reset password",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -2622,6 +2714,33 @@ const docTemplate = `{
                 }
             }
         },
+        "models.PasswordResetRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Response": {
             "type": "object",
             "properties": {
@@ -2896,7 +3015,96 @@ const docTemplate = `{
             }
         },
         "models.User": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "email",
+                "username"
+            ],
+            "properties": {
+                "bio": {
+                    "description": "User's biography",
+                    "type": "string",
+                    "example": "Anime enthusiast"
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "deleted_at": {
+                    "description": "Soft delete timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "email": {
+                    "description": "Unique Email address of the user",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 5,
+                    "example": "john@example.com"
+                },
+                "favorites": {
+                    "description": "User's favorite anime",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "genres": {
+                    "description": "User's preferred genres",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Genre"
+                    }
+                },
+                "id": {
+                    "description": "Unique identifier",
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_active": {
+                    "description": "Indicates if the user account is active",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_admin": {
+                    "description": "Indicates if the user has admin privileges",
+                    "type": "boolean",
+                    "example": false
+                },
+                "profile_pic": {
+                    "description": "URL to the user's profile picture",
+                    "type": "string",
+                    "example": "https://example.com/profile.jpg"
+                },
+                "reviews": {
+                    "description": "User's reviews",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Review"
+                    }
+                },
+                "social_links": {
+                    "description": "User's social media links",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.JSON"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "Update timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "username": {
+                    "description": "Unique username for the user",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "john_doe"
+                }
+            }
         },
         "models.UserCreateRequest": {
             "type": "object",
@@ -2983,7 +3191,52 @@ const docTemplate = `{
             }
         },
         "models.UserUpdateRequest": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "description": "New biography (optional, max 500 chars)",
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Anime enthusiast"
+                },
+                "email": {
+                    "description": "New email address (optional, valid email)",
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "genre_ids": {
+                    "description": "New preferred genre IDs (optional)",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                "profile_pic": {
+                    "description": "New profile picture URL (optional, valid URL)",
+                    "type": "string",
+                    "example": "https://example.com/profile.jpg"
+                },
+                "social_links": {
+                    "description": "New social media links (optional)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.JSON"
+                        }
+                    ]
+                },
+                "username": {
+                    "description": "New username (optional, 3-50 chars)",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "johndoe"
+                }
+            }
         }
     },
     "securityDefinitions": {
