@@ -22,17 +22,17 @@ package models
 //	}
 type User struct {
 	BaseModel
-	Username    string   `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`                         // Unique username for the user
-	Email       string   `json:"email" gorm:"unique;not null" validate:"required,email,min=5,max=100" example:"john@example.com"`             // Unique Email address of the user
-	Password    string   `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                                   // Password of the user (never serialized)
-	IsActive    bool     `json:"is_active" gorm:"default:true" example:"true"`                                                                // Indicates if the user account is active
-	ProfilePic  string   `json:"profile_pic" gorm:"default:null" example:"https://example.com/profile.jpg"`                                   // URL to the user's profile picture
-	Bio         string   `json:"bio" gorm:"type:text;default:null" example:"Anime enthusiast"`                                                // User's biography
-	SocialLinks JSON     `json:"social_links" gorm:"type:jsonb;default:null" example:"{\"twitter\":\"@johndoe\",\"instagram\":\"@johndoe\"}"` // User's social media links
-	IsAdmin     bool     `json:"is_admin" gorm:"default:false" example:"false"`                                                               // Indicates if the user has admin privileges
-	Reviews     []Review `json:"reviews,omitempty" gorm:"foreignKey:UserID"`                                                                  // User's reviews
-	Favorites   []Anime  `json:"favorites,omitempty" gorm:"many2many:user_favorites;"`                                                        // User's favorite anime
-	Genres      []Genre  `json:"genres,omitempty" gorm:"many2many:user_genres;"`                                                              // User's preferred genres
+	Username    string   `json:"username" gorm:"unique;not null" validate:"required,min=3,max=50" example:"john_doe"`             // Unique username for the user
+	Email       string   `json:"email" gorm:"unique;not null" validate:"required,email,min=5,max=100" example:"john@example.com"` // Unique Email address of the user
+	Password    string   `json:"-" gorm:"not null" validate:"required,min=5,max=100" example:"password123"`                       // Password of the user (never serialized)
+	IsActive    bool     `json:"is_active" gorm:"default:true" example:"true"`                                                    // Indicates if the user account is active
+	ProfilePic  string   `json:"profile_pic" gorm:"default:null" example:"https://example.com/profile.jpg"`                       // URL to the user's profile picture
+	Bio         string   `json:"bio" gorm:"type:text;default:null" example:"Anime enthusiast"`                                    // User's biography
+	SocialLinks JSON     `json:"social_links" gorm:"type:jsonb;default:null"`                                                     // User's social media links
+	IsAdmin     bool     `json:"is_admin" gorm:"default:false" example:"false"`                                                   // Indicates if the user has admin privileges
+	Reviews     []Review `json:"reviews,omitempty" gorm:"foreignKey:UserID"`                                                      // User's reviews
+	Favorites   []Anime  `json:"favorites,omitempty" gorm:"many2many:user_favorites;"`                                            // User's favorite anime
+	Genres      []Genre  `json:"genres,omitempty" gorm:"many2many:user_genres;"`                                                  // User's preferred genres
 }
 
 // UserUpdateRequest represents the request payload for updating a user's profile.
@@ -57,7 +57,7 @@ type UserUpdateRequest struct {
 	ProfilePic  string `json:"profile_pic" validate:"omitempty,url" example:"https://example.com/profile.jpg"` // New profile picture URL (optional, valid URL)
 	Bio         string `json:"bio" validate:"omitempty,max=500" example:"Anime enthusiast"`                    // New biography (optional, max 500 chars)
 	SocialLinks JSON   `json:"social_links" validate:"omitempty"`                                              // New social media links (optional)
-	GenreIDs    []uint `json:"genre_ids" validate:"omitempty,dive,min=1" example:"[1,2,3]"`                    // New preferred genre IDs (optional)
+	GenreIDs    []uint `json:"genre_ids" validate:"omitempty,dive,min=1" example:"1,2,3"`                      // New preferred genre IDs (optional)
 }
 
 // ChangePasswordRequest represents the request payload for changing a user's password.

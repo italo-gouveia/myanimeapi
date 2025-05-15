@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	stderrors "errors"
 	"log"
 	"net/http"
 
@@ -32,8 +33,9 @@ import (
 // UserHandler defines the handlers for user-related routes.
 // It contains a user service for handling user-related business logic and a genre service for managing user genre preferences.
 type UserHandler struct {
-	userService  *services.UserService
-	genreService *services.GenreService
+	userService      *services.UserService
+	genreService     *services.GenreService
+	passwordResetSvc *services.PasswordResetService
 }
 
 // NewUserHandler creates a new instance of UserHandler.
@@ -44,10 +46,11 @@ type UserHandler struct {
 //	userService := services.NewUserService(userRepo)
 //	genreService := services.NewGenreService(genreRepo)
 //	userHandler := NewUserHandler(userService, genreService)
-func NewUserHandler(userService *services.UserService, genreService *services.GenreService) *UserHandler {
+func NewUserHandler(userService *services.UserService, genreService *services.GenreService, passwordResetSvc *services.PasswordResetService) *UserHandler {
 	return &UserHandler{
-		userService:  userService,
-		genreService: genreService,
+		userService:      userService,
+		genreService:     genreService,
+		passwordResetSvc: passwordResetSvc,
 	}
 }
 
@@ -544,6 +547,115 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// RequestPasswordReset handles requests to reset a password
+// @Summary Request password reset
+// @Description Send a password reset email to the user's email address
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body models.PasswordResetRequest true "Password reset request"
+// @Success 200 {object} models.Response
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
+// @Failure 500 {object} errors.ErrorResponse "Failed to process password reset request"
+// @Router /users/forgot-password [post]
+// @Example
+//
+//	{
+//	  "email": "user@example.com"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "If an account exists with this email, you will receive password reset instructions."
+//	}
+func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var req models.PasswordResetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.")
+		return
+	}
+
+	if err := h.passwordResetSvc.RequestPasswordReset(r.Context(), req.Email); err != nil {
+		var appErr *errors.AppError
+		if stderrors.As(err, &appErr) {
+			log.Printf("Failed to process password reset request: %v", err)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+			return
+		}
+		log.Printf("Failed to process password reset request: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to process password reset request", "An internal server error occurred while processing the password reset request.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(models.Response{
+		Status:  "success",
+		Message: "If an account exists with this email, you will receive password reset instructions.",
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
+}
+
+// ResetPassword handles requests to set a new password
+// @Summary Reset password
+// @Description Reset user's password using a valid reset token
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body models.ResetPasswordRequest true "Password reset request"
+// @Success 200 {object} models.Response
+// @Failure 400 {object} errors.ErrorResponse "Invalid request body or token"
+// @Failure 500 {object} errors.ErrorResponse "Failed to reset password"
+// @Router /users/reset-password [post]
+// @Example
+//
+//	{
+//	  "token": "valid-reset-token",
+//	  "new_password": "newSecurePassword123"
+//	}
+//
+// @ExampleResponse
+//
+//	{
+//	  "status": "success",
+//	  "message": "Password has been reset successfully."
+//	}
+func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.")
+		return
+	}
+
+	if err := h.passwordResetSvc.ResetPassword(r.Context(), req.Token, req.NewPassword); err != nil {
+		var appErr *errors.AppError
+		if stderrors.As(err, &appErr) {
+			log.Printf("Failed to reset password: %v", err)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+			return
+		}
+		log.Printf("Failed to reset password: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to reset password", "An internal server error occurred while resetting the password.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(models.Response{
+		Status:  "success",
+		Message: "Password has been reset successfully.",
+	}); err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		return
+	}
+}
+
 // RegisterUserRoutes registers all user-related routes with a *mux.Router.
 // It sets up the routes for user registration, authentication, profile management, and account operations.
 //
@@ -554,10 +666,14 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 // - PUT /users/profile - Update user profile
 // - POST /users/change-password - Change user password
 // - POST /users/deactivate - Deactivate user account
+// - POST /users/forgot-password - Request password reset
+// - POST /users/reset-password - Reset password with token
 func (h *UserHandler) RegisterUserRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/users/register", h.Register).Methods("POST")
 	router.HandleFunc("/users/login", h.Login).Methods("POST")
+	router.HandleFunc("/users/forgot-password", h.RequestPasswordReset).Methods("POST")
+	router.HandleFunc("/users/reset-password", h.ResetPassword).Methods("POST")
 
 	// Create a subrouter for protected routes
 	protectedRouter := router.PathPrefix("/users").Subrouter()
