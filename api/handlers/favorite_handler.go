@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"myanimeapi/api/services"
+	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
 	"net/http"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// FavoriteHandler handles HTTP requests for favorite operations
+// FavoriteHandler handles favorite-related HTTP requests
 type FavoriteHandler struct {
 	favoriteService *services.FavoriteService
 }
@@ -112,16 +113,16 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 	// Get anime ID from URL
 	vars := mux.Vars(r)
 	animeIDStr := vars["anime_id"]
-	animeID, err := strconv.ParseUint(animeIDStr, 10, 32)
+	animeID, err := utils.ValidateID(animeIDStr)
 	if err != nil {
 		log.Printf("RemoveFavoriteHandler: Invalid anime ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, err.Error(), "")
 		return
 	}
 	log.Printf("RemoveFavoriteHandler: Retrieved anime ID from URL: %d", animeID)
 
 	// Remove favorite using service
-	if err := h.favoriteService.RemoveFavorite(r.Context(), userID, uint(animeID)); err != nil {
+	if err := h.favoriteService.RemoveFavorite(r.Context(), userID, animeID); err != nil {
 		log.Printf("RemoveFavoriteHandler: Failed to remove favorite: %v", err)
 		if appErr, ok := err.(*errors.AppError); ok {
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)

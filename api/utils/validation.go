@@ -5,11 +5,12 @@ package utils
 
 import (
 	"errors"
+	"math"
 	"strconv"
 )
 
 // ValidateID validates and converts a string ID to a uint.
-// It ensures the ID is a valid unsigned integer and returns an error if the format is invalid.
+// It ensures the ID is a valid positive unsigned integer and fits within the range of uint.
 //
 // Example:
 //
@@ -18,10 +19,30 @@ import (
 //	    log.Fatalf("Invalid ID: %v", err)
 //	}
 func ValidateID(idStr string) (uint, error) {
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseUint(idStr, 10, 64) // Parse as uint64 to detect overflow beyond typical int/uint32 ranges
 	if err != nil {
+		var numErr *strconv.NumError
+		if errors.As(err, &numErr) && numErr.Err == strconv.ErrRange {
+			return 0, errors.New("invalid ID: out of range")
+		}
 		return 0, errors.New("invalid ID format")
 	}
+
+	if id == 0 {
+		return 0, errors.New("invalid ID: must be a positive number")
+	}
+
+	// Check if it fits in a platform-dependent uint (typically uint32 or uint64)
+	// This check is more relevant if your model's ID field is specifically uint32
+	// and you want to ensure it doesn't overflow that before casting.
+	// If model.ID is uint (which can be uint64 on 64-bit systems), this specific check might be redundant
+	// as ParseUint(..., 64) already ensures it fits uint64.
+	// However, if `uint` is `uint32` on a target system, this is important.
+	// For simplicity and wider compatibility, we ensure it fits in what `uint` can represent.
+	if id > math.MaxUint {
+		return 0, errors.New("invalid ID: exceeds maximum value for uint type on this system")
+	}
+
 	return uint(id), nil
 }
 

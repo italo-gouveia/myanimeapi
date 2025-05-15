@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -198,13 +197,13 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 //	}
 func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	anime, err := h.service.GetAnimeByID(r.Context(), uint(id))
+	anime, err := h.service.GetAnimeByID(r.Context(), id)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -343,9 +342,9 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 //	}
 func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -355,7 +354,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	anime.ID = uint(id)
+	anime.ID = id
 	if err := h.service.UpdateAnime(r.Context(), &anime); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -390,13 +389,13 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 //	}
 func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.service.DeleteAnime(r.Context(), uint(id)); err != nil {
+	if err := h.service.DeleteAnime(r.Context(), id); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -438,9 +437,9 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 //	}
 func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -452,7 +451,7 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.service.AddGenresToAnime(r.Context(), uint(animeID), request.GenreIDs); err != nil {
+	if err := h.service.AddGenresToAnime(r.Context(), animeID, request.GenreIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -494,9 +493,9 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 //	}
 func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -508,7 +507,7 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := h.service.RemoveGenresFromAnime(r.Context(), uint(animeID), request.GenreIDs); err != nil {
+	if err := h.service.RemoveGenresFromAnime(r.Context(), animeID, request.GenreIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -550,9 +549,9 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 //	}
 func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -564,7 +563,7 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := h.service.AddTagsToAnime(r.Context(), uint(animeID), request.TagIDs); err != nil {
+	if err := h.service.AddTagsToAnime(r.Context(), animeID, request.TagIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
@@ -606,9 +605,9 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 //	}
 func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	animeID, err := strconv.ParseUint(vars["id"], 10, 32)
+	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid anime ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -620,7 +619,7 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	if err := h.service.RemoveTagsFromAnime(r.Context(), uint(animeID), request.TagIDs); err != nil {
+	if err := h.service.RemoveTagsFromAnime(r.Context(), animeID, request.TagIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
