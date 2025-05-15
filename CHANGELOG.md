@@ -1,3 +1,15 @@
+# [1.10.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.9.0...v1.10.0) (2025-05-15)
+
+
+### Bug Fixes
+
+* **models:** correct swagger example annotations for User and UserUpdateRequest ([e7418d5](https://github.com/italo-gouveia/myanimeapi/commit/e7418d5945f51d0d742e6a8405bc5c41aa1b33cc))
+
+
+### Features
+
+* **auth:** implement password reset functionality ([fc03c55](https://github.com/italo-gouveia/myanimeapi/commit/fc03c551adcaeba4e0080cffe29217f7888611c1))
+
 # [1.9.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.8.0...v1.9.0) (2025-05-14)
 
 
