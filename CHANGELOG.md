@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.10.1...v1.11.0) (2025-05-15)
+
+
+### Features
+
+* **db:** seed admin user during initial database setup ([8402563](https://github.com/italo-gouveia/myanimeapi/commit/84025635ca33b1e12814730c1b1e10602f334508))
+
 ## [1.10.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.10.0...v1.10.1) (2025-05-15)
 
 
