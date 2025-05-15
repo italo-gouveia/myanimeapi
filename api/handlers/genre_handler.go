@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -137,13 +136,13 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 //	}
 func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid genre ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	genre, err := h.genreService.GetGenreByID(r.Context(), uint(id))
+	genre, err := h.genreService.GetGenreByID(r.Context(), id)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -236,9 +235,9 @@ func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Reques
 //	}
 func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid genre ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -248,7 +247,7 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	genre.ID = uint(id)
+	genre.ID = id
 	if err := h.genreService.UpdateGenre(r.Context(), &genre); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -284,13 +283,13 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 //	}
 func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid genre ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.genreService.DeleteGenre(r.Context(), uint(id)); err != nil {
+	if err := h.genreService.DeleteGenre(r.Context(), id); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return

@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -144,13 +143,13 @@ func (h *TagHandler) CreateTagHandler(w http.ResponseWriter, r *http.Request) {
 //	}
 func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"]) // Use utils.ValidateID
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid tag ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error()) // Use err.Error()
 		return
 	}
 
-	tag, err := h.tagService.GetTagByID(r.Context(), uint(id))
+	tag, err := h.tagService.GetTagByID(r.Context(), id) // No uint() cast needed
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -243,9 +242,9 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 //	}
 func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"]) // Use utils.ValidateID
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid tag ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error()) // Use err.Error()
 		return
 	}
 
@@ -255,7 +254,7 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag.ID = uint(id)
+	tag.ID = id // No uint() cast needed
 	if err := h.tagService.UpdateTag(r.Context(), &tag); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
@@ -291,13 +290,13 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 //	}
 func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	id, err := utils.ValidateID(vars["id"]) // Use utils.ValidateID
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid tag ID")
+		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error()) // Use err.Error()
 		return
 	}
 
-	if err := h.tagService.DeleteTag(r.Context(), uint(id)); err != nil {
+	if err := h.tagService.DeleteTag(r.Context(), id); err != nil { // No uint() cast needed
 		if appErr, ok := err.(*errors.AppError); ok {
 			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
 			return
