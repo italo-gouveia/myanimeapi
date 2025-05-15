@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.10.0...v1.10.1) (2025-05-15)
+
+
+### Bug Fixes
+
+* **handlers:** improve ID validation for path parameters ([ac33400](https://github.com/italo-gouveia/myanimeapi/commit/ac33400e5932a849c5739c71b46be87c80164ed6))
+
 # [1.10.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.9.0...v1.10.0) (2025-05-15)
 
 
