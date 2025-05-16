@@ -4,26 +4,94 @@
 package middleware
 
 import (
-	"log"
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
 	"time"
+
+	"myanimeapi/internal/logger"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
-// LoggingMiddleware is an HTTP middleware that logs incoming requests.
-// It logs the start and completion of each request, including the HTTP method, URL path, and the time taken to process the request.
-// The middleware passes the request to the next handler in the chain after logging the start of the request.
-// After the next handler completes, it logs the completion of the request along with the duration.
-//
-// Example usage:
-//
-//	http.Handle("/path", LoggingMiddleware(myHandler))
-//
-// This will log all requests to "/path" with their method, path, and duration.
+// LoggingMiddleware logs incoming requests and their processing time.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.Get()
 		start := time.Now()
-		log.Printf("Started %s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
-		log.Printf("Completed %s %s in %v", r.Method, r.URL.Path, time.Since(start))
+		requestID := r.Context().Value(RequestIDContextKey)
+		if requestID == nil {
+			requestID = uuid.New().String()
+		}
+
+		lw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		// Log the incoming request details
+		log.WithFields(logrus.Fields{
+			"request_id":  requestID,
+			"method":      r.Method,
+			"path":        r.URL.Path,
+			"remote_addr": r.RemoteAddr,
+			"user_agent":  r.UserAgent(),
+		}).Info("Incoming request")
+
+		next.ServeHTTP(lw, r)
+
+		duration := time.Since(start)
+
+		// Determine log level based on status code
+		level := logrus.InfoLevel
+		if lw.statusCode >= 500 {
+			level = logrus.ErrorLevel
+		} else if lw.statusCode >= 400 {
+			level = logrus.WarnLevel
+		}
+
+		// Log the request completion with appropriate level
+		log.WithFields(logrus.Fields{
+			"request_id": requestID,
+			"method":     r.Method,
+			"path":       r.URL.Path,
+			"status":     lw.statusCode,
+			"duration":   duration.String(),
+			"size":       lw.size,
+		}).Log(level, "Request completed")
 	})
+}
+
+// loggingResponseWriter wraps http.ResponseWriter to capture status code and response size.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	size       int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := lrw.ResponseWriter.Write(b)
+	lrw.size += size
+	return size, err
+}
+
+// Ensure loggingResponseWriter implements http.Hijacker if the wrapped writer does.
+func (lrw *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := lrw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("http.Hijacker not supported")
+	}
+	return h.Hijack()
+}
+
+// Ensure loggingResponseWriter implements http.Flusher if the wrapped writer does.
+func (lrw *loggingResponseWriter) Flush() {
+	f, ok := lrw.ResponseWriter.(http.Flusher)
+	if ok {
+		f.Flush()
+	}
 }

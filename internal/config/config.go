@@ -6,9 +6,11 @@
 package config
 
 import (
-	"log"
+	"myanimeapi/internal/logger"
 	"os"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 // ServerConfig holds configuration settings for the server.
@@ -60,7 +62,11 @@ func LoadConfig() *Config {
 	// Load server configuration
 	cfg.Server.Host = getEnv("SERVER_HOST", "localhost")
 	cfg.Server.Port = getEnvAsInt("SERVER_PORT", 8080)
-	log.Printf("Loaded server configuration: Host=%s, Port=%d", cfg.Server.Host, cfg.Server.Port)
+	log := logger.Get()
+	log.WithFields(logrus.Fields{
+		"host": cfg.Server.Host,
+		"port": cfg.Server.Port,
+	}).Info("Loaded server configuration")
 
 	// Load database configuration
 	cfg.Database.Type = getEnv("DB_TYPE", "postgres")
@@ -69,27 +75,33 @@ func LoadConfig() *Config {
 	cfg.Database.User = getEnv("DB_USER", "user")
 	cfg.Database.Password = getEnv("DB_PASSWORD", "password")
 	cfg.Database.Name = getEnv("DB_NAME", "myanimeapi")
-	log.Printf("Loaded database configuration: Type=%s, Host=%s, Port=%d, User=%s, Name=%s",
-		cfg.Database.Type, cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Name)
+	log.WithFields(logrus.Fields{
+		"type": cfg.Database.Type,
+		"host": cfg.Database.Host,
+		"port": cfg.Database.Port,
+		"user": cfg.Database.User,
+		"name": cfg.Database.Name,
+	}).Info("Loaded database configuration")
 
-	// Validate database password
-	/*if cfg.Database.Password == "password" {
+	if cfg.Database.Password == "" {
 		log.Fatal("Database password must be set in environment variables (DB_PASSWORD)")
-	}*/
+	}
 
 	// Load logging configuration
 	cfg.Logging.Level = getEnv("LOG_LEVEL", "info")
 	cfg.Logging.File = getEnv("LOG_FILE", "/var/log/myapp.log")
-	log.Printf("Loaded logging configuration: Level=%s, File=%s", cfg.Logging.Level, cfg.Logging.File)
+	log.WithFields(logrus.Fields{
+		"level": cfg.Logging.Level,
+		"file":  cfg.Logging.File,
+	}).Info("Loaded logging configuration")
 
 	// Load API configuration
 	cfg.API.Key = getEnv("API_KEY", "your_api_key")
-	log.Printf("Loaded API configuration: Key=%s", cfg.API.Key)
+	log.WithField("key", cfg.API.Key).Info("Loaded API configuration")
 
-	// Validate API key
-	/*	if cfg.API.Key == "your_api_key" {
+	if cfg.API.Key == "" {
 		log.Fatal("API key must be set in environment variables (API_KEY)")
-	}*/
+	}
 
 	return &cfg
 }
