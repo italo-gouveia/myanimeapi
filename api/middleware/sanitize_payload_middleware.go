@@ -7,14 +7,15 @@ package middleware
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"reflect"
 
-	"myanimeapi/internal/errors" // Import the errors package
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/sirupsen/logrus"
 )
 
 var validate = validator.New() // Global validator instance
@@ -42,22 +43,34 @@ const ValidatedPayloadKey contextKeyValidation = "validatedPayload"
 // This will validate and sanitize the request payload for "/path".
 func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Log the start of the middleware
-		log.Println("Middleware: ValidateAndSanitizePayload started")
+		log := logger.Get()
+		log.WithFields(logrus.Fields{
+			"path":       r.URL.Path,
+			"method":     r.Method,
+			"request_id": r.Context().Value(RequestIDContextKey),
+		}).Debug("Starting payload validation and sanitization")
 
 		// Create a new instance of the payload type
 		payload := reflect.New(reflect.TypeOf(payloadType)).Interface()
 
 		// Decode the request body into the payload
 		if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
-			// Log the error
-			log.Printf("Middleware: Invalid input - %v", err)
+			log.WithError(err).WithFields(logrus.Fields{
+				"path":       r.URL.Path,
+				"method":     r.Method,
+				"request_id": r.Context().Value(RequestIDContextKey),
+			}).Warn("Failed to decode request body")
 			errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "The request body could not be decoded.")
 			return
 		}
 
 		// Log the decoded payload
-		log.Printf("Middleware: Decoded payload - %+v", payload)
+		log.WithFields(logrus.Fields{
+			"payload":    payload,
+			"path":       r.URL.Path,
+			"method":     r.Method,
+			"request_id": r.Context().Value(RequestIDContextKey),
+		}).Debug("Request body decoded successfully")
 
 		// Validate the payload
 		if err := validate.Struct(payload); err != nil {
@@ -83,14 +96,22 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 			}
 
 			// Log the validation errors
-			log.Printf("Middleware: Validation errors - %+v", errorMessages)
+			log.WithFields(logrus.Fields{
+				"errors":     errorMessages,
+				"path":       r.URL.Path,
+				"method":     r.Method,
+				"request_id": r.Context().Value(RequestIDContextKey),
+			}).Warn("Payload validation failed")
 
 			// Return the custom error messages as JSON
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			if err := json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages}); err != nil {
-				// Log the error
-				log.Printf("Middleware: Failed to encode error response - %v", err)
+				log.WithError(err).WithFields(logrus.Fields{
+					"path":       r.URL.Path,
+					"method":     r.Method,
+					"request_id": r.Context().Value(RequestIDContextKey),
+				}).Error("Failed to encode error response")
 				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode error response", "An internal server error occurred while encoding the response.")
 				return
 			}
@@ -101,7 +122,12 @@ func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http
 		sanitizePayload(payload)
 
 		// Log the sanitized payload
-		log.Printf("Middleware: Sanitized payload - %+v", payload)
+		log.WithFields(logrus.Fields{
+			"payload":    payload,
+			"path":       r.URL.Path,
+			"method":     r.Method,
+			"request_id": r.Context().Value(RequestIDContextKey),
+		}).Debug("Payload sanitized successfully")
 
 		// Store the validated and sanitized payload in the context using the custom key
 		ctx := context.WithValue(r.Context(), ValidatedPayloadKey, payload)

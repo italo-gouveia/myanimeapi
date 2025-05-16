@@ -5,15 +5,16 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"myanimeapi/internal/errors" // Import the errors package
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sirupsen/logrus"
 )
 
 // CustomClaims defines the JWT claims structure.
@@ -33,10 +34,12 @@ type CustomClaims struct {
 //	router.Use(middleware.Authenticate)
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Authenticate middleware triggered for: %s", r.URL.Path)
+		log := logger.Get()
+		log.WithField("path", r.URL.Path).Debug("Authenticate middleware triggered")
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			log.Println("Missing authorization header")
+			log.Warn("Missing authorization header")
 			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Missing authorization header", "The 'Authorization' header is required.")
 			return
 		}
@@ -47,14 +50,14 @@ func Authenticate(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			log.Printf("Invalid token: %v", err)
+			log.WithError(err).Warn("Invalid token")
 			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Invalid token", "The provided token is invalid or expired.")
 			return
 		}
 
 		claims, ok := token.Claims.(*CustomClaims)
 		if !ok {
-			log.Println("Invalid token claims")
+			log.Warn("Invalid token claims")
 			errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Invalid token claims", "The token claims are invalid or malformed.")
 			return
 		}
@@ -62,7 +65,10 @@ func Authenticate(next http.Handler) http.Handler {
 		// Store claims in context using the existing contextKey type
 		ctx := context.WithValue(r.Context(), UserContextKey, claims.UserID)
 		ctx = context.WithValue(ctx, IsAdminContextKey, claims.IsAdmin)
-		log.Printf("User %d authenticated, isAdmin: %v", claims.UserID, claims.IsAdmin)
+		log.WithFields(logrus.Fields{
+			"user_id":  claims.UserID,
+			"is_admin": claims.IsAdmin,
+		}).Info("User authenticated")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -76,14 +82,15 @@ func Authenticate(next http.Handler) http.Handler {
 //	router.Use(middleware.CheckAdmin)
 func CheckAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.Get()
 		isAdmin, ok := r.Context().Value(IsAdminContextKey).(bool)
 		if !ok || !isAdmin {
-			log.Println("Access denied: user is not an admin")
+			log.Warn("Access denied: user is not an admin")
 			errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Access denied", "You do not have permission to access this resource.")
 			return
 		}
 
-		log.Println("User is an admin, granting access")
+		log.Info("User is an admin, granting access")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -99,6 +106,7 @@ func CheckAdmin(next http.Handler) http.Handler {
 //	    log.Fatalf("Error generating token: %v", err)
 //	}
 func GenerateToken(userID uint, isAdmin bool) (string, error) {
+	log := logger.Get()
 	claims := CustomClaims{
 		UserID:  userID,
 		IsAdmin: isAdmin,
@@ -111,10 +119,13 @@ func GenerateToken(userID uint, isAdmin bool) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
+		log.WithError(err).Error("Error generating token")
 		return "", err
 	}
 
-	log.Printf("Token generated for user %d, isAdmin: %v", userID, isAdmin)
+	log.WithFields(logrus.Fields{
+		"user_id":  userID,
+		"is_admin": isAdmin,
+	}).Info("Token generated successfully")
 	return tokenString, nil
 }

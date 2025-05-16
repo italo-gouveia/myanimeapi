@@ -240,6 +240,7 @@ const (
 	ErrInternalServer     = "ERR-004" // Internal server error.
 	ErrUnauthorized       = "ERR-005" // Unauthorized access.
 	ErrRateLimitExceeded  = "ERR-006" // Rate limit exceeded.
+	ErrTooManyRequests    = "ERR-006" // Too many requests (rate limit exceeded).
 	ErrDatabaseConnection = "ERR-007" // Database connection error.
 	ErrConflict           = "ERR-008" // Conflict (e.g., duplicate resource).
 	ErrForbidden          = "ERR-009" // Forbidden access (e.g., insufficient permissions).

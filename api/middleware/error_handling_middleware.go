@@ -16,22 +16,36 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
+
+	"github.com/sirupsen/logrus"
 )
 
-// ErrorHandlingMiddleware is a middleware that catches and formats errors.
+// ErrorHandlingMiddleware provides robust error handling for HTTP requests.
+// It recovers from panics, logs them, and returns a generic 500 Internal Server Error.
+// It ensures that sensitive error details are not exposed to the client.
 func ErrorHandlingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.Get()
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Recovered from panic: %v", err)
-				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Internal Server Error", "An unexpected error occurred.")
+				requestID := r.Context().Value(RequestIDContextKey)
+				log.WithFields(logrus.Fields{
+					"request_id":  requestID,
+					"error":       err,
+					"method":      r.Method,
+					"path":        r.URL.Path,
+					"remote_addr": r.RemoteAddr,
+					"user_agent":  r.UserAgent(),
+				}).Error("Panic recovered in ErrorHandlingMiddleware")
+
+				// Use the centralized error response writer
+				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "An unexpected error occurred. Please try again later.", "")
 			}
 		}()
-
 		next.ServeHTTP(w, r)
 	})
 }
