@@ -9,8 +9,6 @@ import (
 	"myanimeapi/internal/logger"
 	"os"
 	"strconv"
-
-	"github.com/sirupsen/logrus"
 )
 
 // ServerConfig holds configuration settings for the server.
@@ -58,12 +56,12 @@ type Config struct {
 // This will load the configuration and print the server host.
 func LoadConfig() *Config {
 	var cfg Config
+	log := logger.New()
 
 	// Load server configuration
 	cfg.Server.Host = getEnv("SERVER_HOST", "localhost")
 	cfg.Server.Port = getEnvAsInt("SERVER_PORT", 8080)
-	log := logger.Get()
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"host": cfg.Server.Host,
 		"port": cfg.Server.Port,
 	}).Info("Loaded server configuration")
@@ -75,7 +73,7 @@ func LoadConfig() *Config {
 	cfg.Database.User = getEnv("DB_USER", "user")
 	cfg.Database.Password = getEnv("DB_PASSWORD", "password")
 	cfg.Database.Name = getEnv("DB_NAME", "myanimeapi")
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"type": cfg.Database.Type,
 		"host": cfg.Database.Host,
 		"port": cfg.Database.Port,
@@ -84,13 +82,14 @@ func LoadConfig() *Config {
 	}).Info("Loaded database configuration")
 
 	if cfg.Database.Password == "" {
-		log.Fatal("Database password must be set in environment variables (DB_PASSWORD)")
+		log.Error("Database password must be set in environment variables (DB_PASSWORD)")
+		os.Exit(1)
 	}
 
 	// Load logging configuration
 	cfg.Logging.Level = getEnv("LOG_LEVEL", "info")
 	cfg.Logging.File = getEnv("LOG_FILE", "/var/log/myapp.log")
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"level": cfg.Logging.Level,
 		"file":  cfg.Logging.File,
 	}).Info("Loaded logging configuration")
@@ -100,7 +99,8 @@ func LoadConfig() *Config {
 	log.WithField("key", cfg.API.Key).Info("Loaded API configuration")
 
 	if cfg.API.Key == "" {
-		log.Fatal("API key must be set in environment variables (API_KEY)")
+		log.Error("API key must be set in environment variables (API_KEY)")
+		os.Exit(1)
 	}
 
 	return &cfg
