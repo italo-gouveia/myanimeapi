@@ -36,7 +36,6 @@ import (
 
 	gorillahandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -66,13 +65,15 @@ func main() {
 	if logLevel == "" {
 		logLevel = "info"
 	}
-	logger.Init(logLevel)
-	log := logger.Get()
+	log := logger.New()
+	logger.SetDefaultLogger(log)
+	log.WithField("level", logLevel).Info("Logger initialized")
 
 	// Load configuration
 	cfg := config.LoadConfig()
 	if cfg == nil {
-		log.Fatal("Error loading config")
+		log.Error("Error loading config")
+		os.Exit(1)
 	}
 	log.WithField("version", VERSION).Info("Configuration loaded successfully")
 
@@ -83,7 +84,8 @@ func main() {
 	// Open a connection to the database
 	gormDB, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
-		log.WithError(err).Fatal("Error opening database connection")
+		log.WithField("error", err.Error()).Error("Error opening database connection")
+		os.Exit(1)
 	}
 	log.Info("Database connection established successfully")
 
@@ -93,7 +95,8 @@ func main() {
 	// AutoMigrate the database schema
 	err = database.SetupDatabase(gormDB)
 	if err != nil {
-		log.WithError(err).Fatal("Error setting up database")
+		log.WithField("error", err.Error()).Error("Error setting up database")
+		os.Exit(1)
 	}
 	log.Info("Database setup completed successfully")
 
@@ -108,7 +111,8 @@ func main() {
 			"uploads",
 		)
 		if errS3 != nil {
-			log.WithError(errS3).Fatal("Failed to initialize S3 storage")
+			log.WithField("error", errS3.Error()).Error("Failed to initialize S3 storage")
+			os.Exit(1)
 		}
 		storageSvc = services.NewStorageService(s3Strategy)
 	} else {
@@ -118,7 +122,8 @@ func main() {
 			"/media",
 		)
 		if errLocal != nil {
-			log.WithError(errLocal).Fatal("Failed to initialize local storage")
+			log.WithField("error", errLocal.Error()).Error("Failed to initialize local storage")
+			os.Exit(1)
 		}
 		storageSvc = services.NewStorageService(localStrategy)
 	}
@@ -134,14 +139,12 @@ func main() {
 	env := os.Getenv("ENVIRONMENT")
 	if env == "production" {
 		log.Info("Running in production mode")
-		// Apply HTTPS redirection middleware
-		//router.Use(middleware.HTTPSRedirectMiddleware)
+		// TODO: Implement HTTPS redirection middleware
+		// router.Use(middleware.HTTPSRedirectMiddleware)
 	}
 
-	// Serve Swagger UI
-	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, dbWrapper, storageSvc, VERSION)
+	routes.RegisterRoutes(router, os.Getenv("SWAGGER_URL"), dbWrapper, storageSvc, VERSION)
 	log.Info("Routes registered successfully")
 
 	// Serve static files for media
@@ -151,6 +154,10 @@ func main() {
 
 	// Configure CORS
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "*" // Default to allow all origins in development
+		log.Warning("ALLOWED_ORIGINS not set, defaulting to '*'")
+	}
 	corsHandler := gorillahandlers.CORS(
 		gorillahandlers.AllowedOrigins([]string{allowedOrigins}),
 		gorillahandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}),
@@ -170,13 +177,14 @@ func main() {
 
 	// Start the server in a goroutine
 	go func() {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"version": VERSION,
 			"port":    cfg.Server.Port,
 		}).Info("Starting MyAnimeAPI")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.WithError(err).Fatal("Error starting server")
+			log.WithField("error", err.Error()).Error("Error starting server")
+			os.Exit(1)
 		}
 	}()
 
@@ -190,7 +198,8 @@ func main() {
 
 	// Shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		log.WithError(err).Fatal("Error shutting down server")
+		log.WithField("error", err.Error()).Error("Error shutting down server")
+		os.Exit(1)
 	}
 	log.Info("Server shut down gracefully")
 }

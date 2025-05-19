@@ -17,14 +17,12 @@
 package database
 
 import (
-	// "log" // Will be replaced by structured logger
 	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"os"
 
 	"myanimeapi/internal/logger"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	gormErrors "gorm.io/gorm/logger"
 )
@@ -41,7 +39,7 @@ import (
 //	    log.Fatalf("Error setting up database schema: %v", err)
 //	}
 func SetupDatabase(db *gorm.DB) error {
-	log := logger.Get()
+	log := logger.New()
 
 	// AutoMigrate to create/update schema
 	err := db.AutoMigrate(
@@ -55,9 +53,7 @@ func SetupDatabase(db *gorm.DB) error {
 		&models.MediaAttachment{},
 	)
 	if err != nil {
-		log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Error setting up database schema during AutoMigrate")
+		log.WithField("error", err.Error()).Error("Error setting up database schema during AutoMigrate")
 		return err
 	}
 	log.Info("Database schema auto-migration completed successfully")
@@ -76,16 +72,16 @@ func SetupDatabase(db *gorm.DB) error {
 	var existingUserByEmail models.User
 	err = db.Where("email = ?", adminEmail).First(&existingUserByEmail).Error
 	if err == nil {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"email":  adminEmail,
 			"userID": existingUserByEmail.ID,
 		}).Info("Admin user with this email already exists. Skipping creation.")
 		return nil
 	}
 	if err != gorm.ErrRecordNotFound && err != gormErrors.ErrRecordNotFound {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"email": adminEmail,
-			"error": err,
+			"error": err.Error(),
 		}).Error("Error checking for admin user by email. Skipping admin creation.")
 		return err // Return actual DB error
 	}
@@ -94,30 +90,28 @@ func SetupDatabase(db *gorm.DB) error {
 	var existingUserByUsername models.User
 	err = db.Where("username = ?", adminUsername).First(&existingUserByUsername).Error
 	if err == nil {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"username": adminUsername,
 			"userID":   existingUserByUsername.ID,
 		}).Info("Admin user with this username already exists. Skipping creation.")
 		return nil
 	}
 	if err != gorm.ErrRecordNotFound && err != gormErrors.ErrRecordNotFound {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"username": adminUsername,
-			"error":    err,
+			"error":    err.Error(),
 		}).Error("Error checking for admin user by username. Skipping admin creation.")
 		return err // Return actual DB error
 	}
 
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"username": adminUsername,
 		"email":    adminEmail,
 	}).Info("Creating admin user.")
 
 	hashedPassword, err := auth.HashPassword(adminPassword)
 	if err != nil {
-		log.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Error hashing admin password")
+		log.WithField("error", err.Error()).Error("Error hashing admin password")
 		return err
 	}
 
@@ -130,14 +124,14 @@ func SetupDatabase(db *gorm.DB) error {
 	}
 
 	if err := db.Create(&adminUser).Error; err != nil {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"username": adminUsername,
-			"error":    err,
+			"error":    err.Error(),
 		}).Error("Error creating admin user")
 		return err
 	}
 
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"username": adminUsername,
 		"userID":   adminUser.ID,
 	}).Info("Admin user created successfully.")
