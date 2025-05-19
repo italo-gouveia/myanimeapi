@@ -28,14 +28,14 @@ import (
 //	}
 //	fmt.Println(randomString)
 func GenerateRandomString(length int) (string, error) {
-	log := logger.Get()
+	log := logger.New()
 
 	if length <= 0 {
 		return "", fmt.Errorf("length must be greater than 0")
 	}
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
-		log.WithError(err).Error("Error generating random bytes")
+		log.WithField("error", err.Error()).Error("Error generating random bytes")
 		return "", err
 	}
 

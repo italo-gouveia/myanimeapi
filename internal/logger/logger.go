@@ -142,6 +142,11 @@ func SetDefaultLogger(logger *Logger) {
 	defaultLogger = logger
 }
 
+// Get returns the default logger instance
+func Get() *Logger {
+	return defaultLogger
+}
+
 // WithField adds a field to the default logger
 func WithField(key string, value interface{}) *Logger {
 	return defaultLogger.WithField(key, value)
