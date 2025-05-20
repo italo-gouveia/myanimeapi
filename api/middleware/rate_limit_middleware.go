@@ -11,8 +11,6 @@ import (
 
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
-
-	"github.com/sirupsen/logrus"
 )
 
 // RateLimiter is a struct that holds rate-limiting data for clients.
@@ -92,7 +90,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 
 		// Check if the request count exceeds the limit
 		if rl.clients[ip].count >= limit {
-			log.WithFields(logrus.Fields{
+			log.WithFields(map[string]interface{}{
 				"ip":         ip,
 				"path":       r.URL.Path,
 				"count":      rl.clients[ip].count,
@@ -101,9 +99,9 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 				"last_seen":  rl.clients[ip].lastSeen,
 				"user_agent": r.UserAgent(),
 				"request_id": r.Context().Value(RequestIDContextKey),
-			}).Warn("Rate limit exceeded")
+			}).Warning("Rate limit exceeded")
 
-			errors.WriteErrorResponse(w, http.StatusTooManyRequests, errors.ErrTooManyRequests, "Rate limit exceeded. Please try again later.", "")
+			errors.WriteErrorResponse(w, http.StatusTooManyRequests, errors.ErrTooManyRequests, "Rate limit exceeded", "Please try again later.", nil)
 			return
 		}
 
@@ -112,7 +110,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		rl.clients[ip].lastSeen = rl.clock()
 
 		// Log the current state for debugging
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"ip":         ip,
 			"path":       r.URL.Path,
 			"count":      rl.clients[ip].count,

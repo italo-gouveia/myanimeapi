@@ -13,12 +13,6 @@ const (
 	RequestIDHeader = "X-Request-ID"
 )
 
-// requestIDKey is a custom type for the context key
-type requestIDKey struct{}
-
-// RequestIDContextKey is the context key for the request ID
-var RequestIDContextKey = requestIDKey{}
-
 // RequestIDMiddleware adds a unique request ID to each request
 func RequestIDMiddleware() mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {

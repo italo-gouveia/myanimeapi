@@ -133,6 +133,30 @@ type AnimeCreateRequest struct {
 	TagIDs      []uint    `json:"tag_ids" validate:"omitempty,dive,gt=0" example:"1,2,3"`        // IDs of tags to associate with the anime
 }
 
+// AnimeUpdateRequest represents the request payload for updating an existing anime.
+// It includes the fields that can be updated for an anime entry.
+//
+// Example:
+//
+//	{
+//	  "title": "Naruto Shippuden",
+//	  "description": "The continuation of Naruto's story.",
+//	  "episodes": 500,
+//	  "status": "Completed",
+//	  "start_date": "2007-02-15T00:00:00Z",
+//	  "end_date": "2017-03-23T00:00:00Z",
+//	  "rating": 8.7
+//	}
+type AnimeUpdateRequest struct {
+	Title       string    `json:"title" validate:"omitempty" example:"Naruto Shippuden"`          // Title of the anime
+	Description string    `json:"description" example:"The continuation of Naruto's story."`      // Description of the anime
+	Episodes    int       `json:"episodes" validate:"omitempty" example:"500"`                    // Number of episodes
+	Status      string    `json:"status" validate:"omitempty" example:"Completed"`                // Current status of the anime
+	StartDate   time.Time `json:"start_date" validate:"omitempty" example:"2007-02-15T00:00:00Z"` // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2017-03-23T00:00:00Z"`                        // Date when the anime finished airing
+	Rating      float64   `json:"rating" validate:"omitempty,gte=0,lte=10" example:"8.7"`         // Updated rating for the anime
+}
+
 // ToResponse converts an Anime model to an AnimeResponse.
 // This method is used to serialize anime data for API responses.
 func (a Anime) ToResponse() AnimeResponse {
