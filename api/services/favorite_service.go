@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 	"net/http"
 	"time"
 )
@@ -16,6 +16,7 @@ type FavoriteService struct {
 	favoriteRepo repositories.FavoriteRepository
 	userRepo     repositories.UserRepository
 	animeRepo    repositories.AnimeRepository
+	logger       *logger.Logger
 }
 
 // NewFavoriteService creates a new FavoriteService instance
@@ -28,46 +29,80 @@ func NewFavoriteService(
 		favoriteRepo: favoriteRepo,
 		userRepo:     userRepo,
 		animeRepo:    animeRepo,
+		logger:       logger.New(),
 	}
 }
 
 // AddFavorite adds an anime to a user's favorites
 func (s *FavoriteService) AddFavorite(ctx context.Context, userID uint, animeID uint) (*models.Favorite, error) {
-	log.Printf("AddFavorite: Starting to add favorite for user %d and anime %d", userID, animeID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Starting to add favorite")
 
 	// Get user from database
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
-		log.Printf("AddFavorite: Failed to get user from database: %v", err)
-		return nil, errors.NewError(errors.ErrUnauthorized, "User not found", err.Error(), http.StatusUnauthorized)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to get user from database")
+		return nil, errors.NewError(errors.ErrUnauthorized, "User not found", err.Error(), http.StatusUnauthorized,
+			map[string]interface{}{
+				"user_id": userID,
+			},
+			err)
 	}
 	userModel, ok := user.(*models.User)
 	if !ok {
-		log.Printf("AddFavorite: Invalid user type")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed for user model", http.StatusInternalServerError)
+		s.logger.WithField("user_id", userID).Error("Invalid user type")
+		return nil, errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed for user model", http.StatusInternalServerError,
+			map[string]interface{}{
+				"user_id": userID,
+			},
+			nil)
 	}
-	log.Printf("AddFavorite: Found user in database: %s", userModel.Username)
+	s.logger.WithField("username", userModel.Username).Info("Found user in database")
 
 	// Check if anime exists
 	anime, err := s.animeRepo.GetByID(ctx, animeID)
 	if err != nil {
-		log.Printf("AddFavorite: Failed to find anime: %v", err)
-		return nil, errors.NewError(errors.ErrResourceNotFound, "Anime not found", err.Error(), http.StatusNotFound)
+		s.logger.WithFields(map[string]interface{}{
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to find anime")
+		return nil, errors.NewError(errors.ErrResourceNotFound, "Anime not found", err.Error(), http.StatusNotFound,
+			map[string]interface{}{
+				"anime_id": animeID,
+			},
+			err)
 	}
 	animeModel, ok := anime.(*models.Anime)
 	if !ok {
-		log.Printf("AddFavorite: Invalid anime type")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed for anime model", http.StatusInternalServerError)
+		s.logger.WithField("anime_id", animeID).Error("Invalid anime type")
+		return nil, errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed for anime model", http.StatusInternalServerError,
+			map[string]interface{}{
+				"anime_id": animeID,
+			},
+			nil)
 	}
-	log.Printf("AddFavorite: Found anime in database: %s", animeModel.Title)
+	s.logger.WithField("title", animeModel.Title).Info("Found anime in database")
 
 	// Check if favorite already exists
 	_, err = s.favoriteRepo.GetByUserAndAnime(ctx, userID, animeID)
 	if err == nil {
-		log.Printf("AddFavorite: Anime already in favorites for user %d", userID)
-		return nil, errors.NewError(errors.ErrConflict, "Anime already in favorites", fmt.Sprintf("User %d already has anime %d in favorites", userID, animeID), http.StatusConflict)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+		}).Warning("Anime already in favorites for user")
+		return nil, errors.NewError(errors.ErrConflict, "Anime already in favorites", fmt.Sprintf("User %d already has anime %d in favorites", userID, animeID), http.StatusConflict,
+			map[string]interface{}{
+				"user_id":  userID,
+				"anime_id": animeID,
+			},
+			nil)
 	}
-	log.Printf("AddFavorite: Anime not already in favorites, proceeding to create")
+	s.logger.Info("Anime not already in favorites, proceeding to create")
 
 	// Create new favorite
 	favorite := &models.Favorite{
@@ -78,66 +113,134 @@ func (s *FavoriteService) AddFavorite(ctx context.Context, userID uint, animeID 
 	}
 
 	if err := s.favoriteRepo.Create(ctx, favorite); err != nil {
-		log.Printf("AddFavorite: Failed to create favorite: %v", err)
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to add favorite", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to create favorite")
+		return nil, errors.NewError(errors.ErrInternalServer, "Failed to add favorite", err.Error(), http.StatusInternalServerError,
+			map[string]interface{}{
+				"user_id":  userID,
+				"anime_id": animeID,
+			},
+			err)
 	}
-	log.Printf("AddFavorite: Successfully created favorite for user %d and anime %d", userID, animeID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Successfully created favorite")
 
 	// Get the created favorite with preloaded data
 	result, err := s.favoriteRepo.GetByID(ctx, favorite.ID)
 	if err != nil {
-		log.Printf("AddFavorite: Failed to get created favorite: %v", err)
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to load favorite details", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"favorite_id": favorite.ID,
+			"error":       err.Error(),
+		}).Error("Failed to get created favorite")
+		return nil, errors.NewError(errors.ErrInternalServer, "Failed to load favorite details", err.Error(), http.StatusInternalServerError,
+			map[string]interface{}{
+				"favorite_id": favorite.ID,
+				"user_id":     userID,
+				"anime_id":    animeID,
+			},
+			err)
 	}
 	createdFavorite, ok := result.(*models.Favorite)
 	if !ok {
-		log.Printf("AddFavorite: Invalid favorite type")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid favorite type", "Type assertion failed for favorite model", http.StatusInternalServerError)
+		s.logger.WithField("favorite_id", favorite.ID).Error("Invalid favorite type")
+		return nil, errors.NewError(errors.ErrInternalServer, "Invalid favorite type", "Type assertion failed for favorite model", http.StatusInternalServerError,
+			map[string]interface{}{
+				"favorite_id": favorite.ID,
+				"user_id":     userID,
+				"anime_id":    animeID,
+			},
+			nil)
 	}
-	log.Printf("AddFavorite: Successfully retrieved created favorite with related data")
+	s.logger.Info("Successfully retrieved created favorite with related data")
 
 	return createdFavorite, nil
 }
 
 // RemoveFavorite removes an anime from a user's favorites
 func (s *FavoriteService) RemoveFavorite(ctx context.Context, userID uint, animeID uint) error {
-	log.Printf("RemoveFavorite: Starting to remove favorite for user %d and anime %d", userID, animeID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Starting to remove favorite")
 
 	// Check if favorite exists
 	_, err := s.favoriteRepo.GetByUserAndAnime(ctx, userID, animeID)
 	if err != nil {
-		log.Printf("RemoveFavorite: Favorite not found: %v", err)
-		return errors.NewError(errors.ErrResourceNotFound, "Favorite not found", err.Error(), http.StatusNotFound)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Favorite not found")
+		return errors.NewError(errors.ErrResourceNotFound, "Favorite not found", err.Error(), http.StatusNotFound,
+			map[string]interface{}{
+				"user_id":  userID,
+				"anime_id": animeID,
+			},
+			err)
 	}
 
 	// Delete favorite
 	if err := s.favoriteRepo.DeleteByUserAndAnime(ctx, userID, animeID); err != nil {
-		log.Printf("RemoveFavorite: Failed to delete favorite: %v", err)
-		return errors.NewError(errors.ErrInternalServer, "Failed to remove favorite", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to delete favorite")
+		return errors.NewError(errors.ErrInternalServer, "Failed to remove favorite", err.Error(), http.StatusInternalServerError,
+			map[string]interface{}{
+				"user_id":  userID,
+				"anime_id": animeID,
+			},
+			err)
 	}
 
-	log.Printf("RemoveFavorite: Successfully removed favorite for user %d and anime %d", userID, animeID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Successfully removed favorite")
 	return nil
 }
 
 // GetFavorites retrieves all favorites for a user
 func (s *FavoriteService) GetFavorites(ctx context.Context, userID uint) ([]models.Favorite, error) {
-	log.Printf("GetFavorites: Retrieving favorites for user %d", userID)
+	s.logger.WithField("user_id", userID).Info("Retrieving favorites for user")
 
 	// Check if user exists
 	_, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
-		log.Printf("GetFavorites: Failed to find user: %v", err)
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to find user")
+		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound,
+			map[string]interface{}{
+				"user_id": userID,
+			},
+			err)
 	}
 
 	// Get favorites
 	favorites, err := s.favoriteRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		log.Printf("GetFavorites: Failed to retrieve favorites: %v", err)
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve favorites", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve favorites")
+		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve favorites", err.Error(), http.StatusInternalServerError,
+			map[string]interface{}{
+				"user_id": userID,
+			},
+			err)
 	}
 
-	log.Printf("GetFavorites: Successfully retrieved %d favorites for user %d", len(favorites), userID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id": userID,
+		"count":   len(favorites),
+	}).Info("Successfully retrieved favorites for user")
 	return favorites, nil
 }
