@@ -56,3 +56,27 @@ func (t *Tag) ToResponse() TagResponse {
 		Anime: t.Anime,
 	}
 }
+
+// TagCreateRequest represents the request format for creating a tag.
+// It includes only the necessary fields for tag creation.
+//
+// Example:
+//
+//	{
+//	  "name": "Action"
+//	}
+type TagCreateRequest struct {
+	Name string `json:"name" validate:"required,min=1,max=50" example:"Action"` // Name of the tag
+}
+
+// TagUpdateRequest represents the request format for updating a tag.
+// It includes only the necessary fields for tag updates.
+//
+// Example:
+//
+//	{
+//	  "name": "Updated Action"
+//	}
+type TagUpdateRequest struct {
+	Name string `json:"name" validate:"required,min=1,max=50" example:"Updated Action"` // Name of the tag
+}
