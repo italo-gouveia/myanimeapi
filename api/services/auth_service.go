@@ -15,6 +15,14 @@ import (
 	"myanimeapi/internal/logger"
 )
 
+// AuthServiceInterface defines the interface for authentication service operations
+type AuthServiceInterface interface {
+	// RegisterUser handles user registration
+	RegisterUser(ctx context.Context, user *models.User) error
+	// AuthenticateUser handles user authentication and returns a JWT token
+	AuthenticateUser(ctx context.Context, credentials *models.UserCredentials) (string, error)
+}
+
 // AuthService handles authentication-related business logic.
 // It implements the AuthServiceInterface.
 type AuthService struct {
