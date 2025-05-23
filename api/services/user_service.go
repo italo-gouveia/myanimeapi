@@ -27,6 +27,26 @@ import (
 	"time"
 )
 
+// UserServiceInterface defines the interface for user service operations
+type UserServiceInterface interface {
+	// GetAllUsers retrieves all users with pagination
+	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, int64, error)
+	// CreateUser creates a new user
+	CreateUser(ctx context.Context, user *models.User) error
+	// DeleteUser deletes a user by ID
+	DeleteUser(ctx context.Context, id uint) error
+	// GetByID retrieves a user by ID
+	GetByID(ctx context.Context, id uint) (*models.User, error)
+	// GetByEmail retrieves a user by email
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	// GetByUsername retrieves a user by username
+	GetByUsername(ctx context.Context, username string) (*models.User, error)
+	// ValidateUser validates a user's credentials
+	ValidateUser(ctx context.Context, username, password string) (*models.User, error)
+	// UpdateUser updates an existing user
+	UpdateUser(ctx context.Context, user *models.User) error
+}
+
 // UserService handles business logic for user operations.
 // It provides methods for user management including:
 //   - User registration and authentication
@@ -47,7 +67,7 @@ type UserService struct {
 // NewUserService creates a new UserService instance.
 // It takes a UserRepository implementation as a dependency,
 // following the dependency injection pattern.
-func NewUserService(userRepo repositories.UserRepository) *UserService {
+func NewUserService(userRepo repositories.UserRepository) UserServiceInterface {
 	return &UserService{
 		userRepo: userRepo,
 		logger:   logger.New(),
