@@ -324,7 +324,7 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 	// Check if username is being changed and if it's already taken
 	if user.Username != existingUser.(*models.User).Username {
 		existingUser, err = s.userRepo.GetByUsername(ctx, user.Username)
-		if err == nil && existingUser != nil {
+		if err == nil {
 			s.logger.WithField("username", user.Username).Warning("Username already exists")
 			return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
 				"username": user.Username,
@@ -336,7 +336,7 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 	// Check if email is being changed and if it's already taken
 	if user.Email != existingUser.(*models.User).Email {
 		existingUser, err = s.userRepo.GetByEmail(ctx, user.Email)
-		if err == nil && existingUser != nil {
+		if err == nil {
 			s.logger.WithField("email", user.Email).Warning("Email already exists")
 			return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
 				"email":   user.Email,
