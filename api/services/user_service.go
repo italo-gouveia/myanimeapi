@@ -45,6 +45,10 @@ type UserServiceInterface interface {
 	ValidateUser(ctx context.Context, username, password string) (*models.User, error)
 	// UpdateUser updates an existing user
 	UpdateUser(ctx context.Context, user *models.User) error
+	// ChangePassword changes a user's password
+	ChangePassword(ctx context.Context, userID uint, currentPassword, newPassword string) error
+	// DeactivateAccount deactivates a user's account
+	DeactivateAccount(ctx context.Context, userID uint, password string) error
 }
 
 // UserService handles business logic for user operations.
@@ -358,5 +362,118 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 		"user_id":  user.ID,
 		"username": user.Username,
 	}).Info("Successfully updated user")
+	return nil
+}
+
+// ChangePassword changes a user's password
+func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPassword, newPassword string) error {
+	s.logger.WithField("user_id", userID).Info("Changing user password")
+
+	userInterface, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user, ok := userInterface.(*models.User)
+	if !ok {
+		s.logger.WithField("user_id", userID).Error("Invalid user type returned from repository")
+		return errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, nil)
+	}
+
+	valid, err := auth.CheckPasswordHash(currentPassword, user.Password)
+	if err != nil || !valid {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Invalid current password")
+		return errors.NewError(errors.ErrUnauthorized, "Invalid current password", "The provided current password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to hash new password")
+		return errors.NewError(errors.ErrInternalServer, "Failed to hash new password", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+	user.Password = hashedPassword
+
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to update user password")
+		return errors.NewError(errors.ErrInternalServer, "Failed to update user password", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	s.logger.WithField("user_id", userID).Info("Successfully updated user password")
+	return nil
+}
+
+// DeactivateAccount deactivates a user's account
+func (s *UserService) DeactivateAccount(ctx context.Context, userID uint, password string) error {
+	s.logger.WithField("user_id", userID).Info("Deactivating user account")
+
+	userInterface, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user, ok := userInterface.(*models.User)
+	if !ok {
+		s.logger.WithField("user_id", userID).Error("Invalid user type returned from repository")
+		return errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, nil)
+	}
+
+	valid, err := auth.CheckPasswordHash(password, user.Password)
+	if err != nil || !valid {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Invalid password")
+		return errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user.IsActive = false
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to deactivate user account")
+		return errors.NewError(errors.ErrInternalServer, "Failed to deactivate user account", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	s.logger.WithField("user_id", userID).Info("Successfully deactivated user account")
 	return nil
 }
