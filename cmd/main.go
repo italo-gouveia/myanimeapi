@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -39,7 +40,7 @@ import (
 )
 
 const (
-	VERSION = "1.9.0"
+	version = "1.9.0"
 )
 
 // @title MyAnimeAPI
@@ -75,7 +76,7 @@ func main() {
 		log.Error("Error loading config")
 		os.Exit(1)
 	}
-	log.WithField("version", VERSION).Info("Configuration loaded successfully")
+	log.WithField("version", version).Info("Configuration loaded successfully")
 
 	// Build the connection string for PostgreSQL
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
@@ -101,7 +102,7 @@ func main() {
 	log.Info("Database setup completed successfully")
 
 	// Initialize storage service
-	var storageSvc *services.StorageService
+	var storageSvc services.StorageServiceInterface
 	if os.Getenv("ENV") == "production" {
 		// Use S3 storage in production
 		s3Strategy, errS3 := services.NewS3StorageStrategy(
@@ -135,16 +136,15 @@ func main() {
 	// Add request ID middleware
 	router.Use(middleware.RequestIDMiddleware())
 
-	// Determine environment
-	env := os.Getenv("ENVIRONMENT")
-	if env == "production" {
+	// Determine environment and configure accordingly
+	if os.Getenv("ENV") == "production" {
 		log.Info("Running in production mode")
 		// TODO: Implement HTTPS redirection middleware
 		// router.Use(middleware.HTTPSRedirectMiddleware)
 	}
 
 	// Register all routes
-	routes.RegisterRoutes(router, os.Getenv("SWAGGER_URL"), dbWrapper, storageSvc, VERSION)
+	routes.RegisterRoutes(router, os.Getenv("SWAGGER_URL"), dbWrapper, storageSvc, version)
 	log.Info("Routes registered successfully")
 
 	// Serve static files for media
@@ -158,8 +158,15 @@ func main() {
 		allowedOrigins = "*" // Default to allow all origins in development
 		log.Warning("ALLOWED_ORIGINS not set, defaulting to '*'")
 	}
+
+	// Split allowed origins by comma and trim spaces
+	origins := strings.Split(allowedOrigins, ",")
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+
 	corsHandler := gorillahandlers.CORS(
-		gorillahandlers.AllowedOrigins([]string{allowedOrigins}),
+		gorillahandlers.AllowedOrigins(origins),
 		gorillahandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}),
 		gorillahandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
@@ -178,7 +185,7 @@ func main() {
 	// Start the server in a goroutine
 	go func() {
 		log.WithFields(map[string]interface{}{
-			"version": VERSION,
+			"version": version,
 			"port":    cfg.Server.Port,
 		}).Info("Starting MyAnimeAPI")
 

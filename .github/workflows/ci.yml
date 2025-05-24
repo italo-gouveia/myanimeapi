@@ -9,126 +9,50 @@ on:
       - main
 
 jobs:
-#  pre-build-validation:
-#    runs-on: ubuntu-latest
-#    permissions:
-#      pull-requests: write  # Allow updating PR descriptions
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0  # Fetch full Git history
+  pre-build-validation:
+    name: Pre-build Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#      - name: Set up Python
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: '3.9'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
 
-#      - name: Run Pre-Build Validation
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
-#          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
-#        run: |
-#          python3 - <<EOF
-#          import os
-#          import subprocess
-#          import json
+      - name: Run go mod tidy
+        run: go mod tidy
 
-#          def analyze_changes():
-#              # Get the base and head SHAs for the PR
-#              base_sha = os.getenv("BASE_SHA")
-#              head_sha = os.getenv("HEAD_SHA")
+      - name: Check for uncommitted changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::error::There are uncommitted changes after running 'go mod tidy'"
+            git status
+            exit 1
+          fi
 
-#              if not base_sha or not head_sha:
-#                  raise ValueError("BASE_SHA and HEAD_SHA environment variables are required")
+      - name: Validate go.mod and go.sum
+        run: |
+          go mod verify
+          go mod download
 
-              # Get the list of all changed files in the PR
-#              changed_files = subprocess.check_output(
-#                  ["git", "diff", "--name-only", base_sha, head_sha]
-#              ).decode("utf-8").splitlines()
+      - name: Check for common issues
+        run: |
+          # Check for TODO comments
+          if grep -r "TODO:" . --include="*.go"; then
+            echo "::warning::Found TODO comments in code"
+          fi
 
-              # Analyze changes (example logic)
-#              feedback = "## Pre-Build Validation Feedback\n"
-#              feedback += "The following files were modified:\n"
-#              for file in changed_files:
-#                  feedback += f"- **{file}**: Modified\n"
+          # Check for FIXME comments
+          if grep -r "FIXME:" . --include="*.go"; then
+            echo "::warning::Found FIXME comments in code"
+          fi
 
-              # Add a summary
-#              feedback += "\n### Recommendations\n"
-#              feedback += "1. Ensure all changes are properly tested.\n"
-#              feedback += "2. Verify that no sensitive data is exposed.\n"
-#              feedback += "3. Check for any potential build issues.\n"
-
-#              return feedback
-
-#          def update_pr_description(existing_description, feedback):
-              # Combine the existing description with the new feedback
-#              updated_description = f"{existing_description}\n\n---\n{feedback}"
-
-              # Update the PR description using the GitHub API
-#              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
-#              repo = os.getenv("GITHUB_REPOSITORY")
-#              github_token = os.getenv("GITHUB_TOKEN")
-
-#              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-#              headers = {
-#                  "Authorization": f"Bearer {github_token}",
-#                  "Accept": "application/vnd.github.v3+json",
-#              }
-#              data = {"body": updated_description}
-
-              # Use `json.dumps` to properly format the JSON payload
-#              json_data = json.dumps(data)
-
-#              subprocess.run(
-#                  [
-#                      "curl",
-#                      "-X", "PATCH",
-#                      "-H", f"Authorization: Bearer {github_token}",
-#                      "-H", "Content-Type: application/json",
-#                      "-d", json_data,
-#                      update_url,
-#                  ],
-#                  check=True,
-#              )
-
-#          def get_existing_pr_description():
-              # Fetch the current PR description using the GitHub API
-#              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
-#              repo = os.getenv("GITHUB_REPOSITORY")
-#              github_token = os.getenv("GITHUB_TOKEN")
-
-#              pr_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-#              headers = {
-#                  "Authorization": f"Bearer {github_token}",
-#                  "Accept": "application/vnd.github.v3+json",
-#              }
-
-              # Fetch the PR details
-#              pr_details = subprocess.check_output(
-#                  [
-#                      "curl",
-#                      "-H", f"Authorization: Bearer {github_token}",
-#                      "-H", "Accept: application/vnd.github.v3+json",
-#                      pr_url,
-#                  ]
-#              ).decode("utf-8")
-
-              # Parse the JSON response to get the current description
-#              pr_data = json.loads(pr_details)
-#              return pr_data.get("body", "")
-
-#          if __name__ == "__main__":
-#              # Get the existing PR description
-#              existing_description = get_existing_pr_description()
-
-              # Generate the feedback
-#              feedback = analyze_changes()
-
-              # Update the PR description by appending the feedback
-#              update_pr_description(existing_description, feedback)
-#          EOF
+          # Check for debug prints
+          if grep -r "fmt.Print" . --include="*.go"; then
+            echo "::warning::Found debug print statements in code"
+          fi
           
   lint:
     name: Lint
@@ -240,31 +164,34 @@ jobs:
         uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'MyAnimeAPI'
+          path: '.'
           format: 'ALL'
-          fail_on_cvss: 7
-          exclude: |
-            **/vendor/**
-            **/node_modules/**
-            **/test/**
-            **/tests/**
-            **/docs/**
+          args: '--failOnCVSS 7 --exclude "**/vendor/**,**/node_modules/**,**/test/**,**/tests/**,**/docs/**"'
 
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
         with:
           config: p/security-audit
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-          publishDeployment: ${{ github.repository_owner }}/myanimeapi
 
-#      - name: Run Gitleaks
-#        uses: gitleaks/gitleaks-action@v2
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}} # Only required for organizations, not individual users.
-#        with:
-#          # Pass command line arguments to gitleaks. Flags like --redact, --verbose, --exit-code can be added here.
-#          # The action automatically detects .gitleaks.toml at the root.
-#          gitleaks_flags: "--redact --exit-code 1 -v --report-format sarif --report-path results.sarif"
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml
+          report-format: sarif
+          report-path: gitleaks-report.sarif
+          exit-code: 1
+          verbose: true
+
+      - name: Upload Gitleaks report
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: gitleaks-report.sarif
+          category: gitleaks
+          wait-for-processing: true
 
   swagger:
     name: Validate Swagger Docs
