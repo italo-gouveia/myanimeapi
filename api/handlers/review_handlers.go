@@ -16,7 +16,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
 	"github.com/gorilla/mux"
 )
@@ -33,8 +33,9 @@ import (
 // ReviewHandler defines the handlers for review-related routes.
 // It contains a review service for handling business logic.
 type ReviewHandler struct {
-	reviewService *services.ReviewService
-	storageSvc    *services.StorageService
+	reviewService services.ReviewServiceInterface
+	storageSvc    services.StorageServiceInterface
+	logger        *logger.Logger
 }
 
 // NewReviewHandler creates a new instance of ReviewHandler.
@@ -44,11 +45,34 @@ type ReviewHandler struct {
 //
 //	reviewService := services.NewReviewService(repository)
 //	reviewHandler := NewReviewHandler(reviewService)
-func NewReviewHandler(reviewService *services.ReviewService, storageSvc *services.StorageService) *ReviewHandler {
+func NewReviewHandler(reviewService services.ReviewServiceInterface, storageSvc services.StorageServiceInterface) *ReviewHandler {
 	return &ReviewHandler{
 		reviewService: reviewService,
 		storageSvc:    storageSvc,
+		logger:        logger.New(),
 	}
+}
+
+// RegisterReviewRoutes registers all review-related routes with a *mux.Router.
+// It sets up the routes for review management, including public and protected endpoints.
+//
+// Routes registered:
+// - GET /reviews/{id} - Get a specific review (public)
+// - POST /reviews - Create a new review (protected)
+// - PUT /reviews/{id} - Update a review (protected)
+// - DELETE /reviews/{id} - Delete a review (protected)
+func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
+	// Public routes (no authentication required)
+	router.HandleFunc("/reviews/{id}", h.GetReviewHandler).Methods("GET")
+
+	// Create a subrouter for protected routes
+	protectedRouter := router.PathPrefix("/reviews").Subrouter()
+	protectedRouter.Use(middleware.AuthMiddleware) // Apply authentication middleware
+
+	// Protected routes with payload validation
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(models.ReviewCreateRequest{})(http.HandlerFunc(h.CreateReviewHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(models.ReviewUpdateRequest{})(http.HandlerFunc(h.UpdateReviewHandler))).Methods("PUT")
+	protectedRouter.HandleFunc("/{id}", h.DeleteReviewHandler).Methods("DELETE")
 }
 
 // GetReviewHandler retrieves a review by its ID.
@@ -92,24 +116,28 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	idStr := vars["id"]
 
 	// Debug: Log the raw ID string
-	log.Printf("Raw ID string: %s", idStr)
+	h.logger.WithField("raw_id", idStr).Debug("Raw ID string")
 
 	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		h.logger.WithField("err", err).Warning("Invalid ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": idStr,
+		})
 		return
 	}
 
 	// Debug: Log the parsed ID
-	log.Printf("Parsed ID: %d", id)
+	h.logger.WithField("parsed_id", id).Debug("Parsed ID")
 
 	// Get review from service
 	review, err := h.reviewService.GetReviewByID(r.Context(), id)
 	if err != nil {
-		log.Printf("Failed to get review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
+		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
+			"id": id,
+		})
 		return
 	}
 
@@ -137,8 +165,10 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		h.logger.WithField("err", err).Error("Failed to encode response")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 }
@@ -193,22 +223,32 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form
 	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
-		log.Printf("Failed to parse multipart form: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.")
+		h.logger.WithField("err", err).Warning("Failed to parse multipart form")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
 	if !ok {
-		log.Printf("Invalid payload: %v", payload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
+		h.logger.Warning("Invalid payload")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		return
+	}
+
+	// Get user ID from context
+	userID := middleware.GetUserFromContext(r.Context())
+	if userID == 0 {
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to create a review.", nil)
 		return
 	}
 
 	// Create a new Review from the request
 	review := &models.Review{
-		UserID:  payload.UserID,
+		UserID:  userID,
 		AnimeID: payload.AnimeID,
 		Content: payload.Content,
 		Rating:  payload.Rating,
@@ -229,8 +269,10 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 				// Upload file
 				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
 				if err != nil {
-					log.Printf("Failed to upload file: %v", err)
-					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.")
+					h.logger.WithField("err", err).Warning("Failed to upload file")
+					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
+						"error": err.Error(),
+					})
 					return
 				}
 
@@ -245,16 +287,20 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Create review using service
 	if err := h.reviewService.CreateReview(r.Context(), review); err != nil {
-		log.Printf("Failed to create review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create review", "An internal server error occurred while creating the review.")
+		h.logger.WithField("err", err).Warning("Failed to create review")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create review", "An internal server error occurred while creating the review.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Get the created review with user and anime details
 	createdReview, err := h.reviewService.GetReviewByID(r.Context(), review.ID)
 	if err != nil {
-		log.Printf("Failed to get created review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve created review", "An internal server error occurred while retrieving the created review.")
+		h.logger.WithField("err", err).Warning("Failed to get created review")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve created review", "An internal server error occurred while retrieving the created review.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
@@ -285,8 +331,10 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		h.logger.WithField("err", err).Error("Failed to encode response")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 }
@@ -346,31 +394,55 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		h.logger.WithField("err", err).Warning("Invalid ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": idStr,
+		})
 		return
 	}
 
 	// Parse multipart form
 	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
-		log.Printf("Failed to parse multipart form: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.")
+		h.logger.WithField("err", err).Warning("Failed to parse multipart form")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewUpdateRequest)
 	if !ok {
-		log.Printf("Invalid payload: %v", payload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.")
+		h.logger.Warning("Invalid payload")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		return
+	}
+
+	// Get user ID from context
+	userID := middleware.GetUserFromContext(r.Context())
+	if userID == 0 {
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to update a review.", nil)
 		return
 	}
 
 	// Get the existing review
 	review, err := h.reviewService.GetReviewByID(r.Context(), id)
 	if err != nil {
-		log.Printf("Failed to get review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id))
+		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
+			"id": id,
+		})
+		return
+	}
+
+	// Check if user is authorized to update the review
+	if review.UserID != userID {
+		h.logger.WithFields(map[string]interface{}{
+			"review_user_id":  review.UserID,
+			"request_user_id": userID,
+		}).Warning("Unauthorized review update attempt")
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", "You are not authorized to update this review.", nil)
 		return
 	}
 
@@ -397,8 +469,10 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 				// Upload file
 				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
 				if err != nil {
-					log.Printf("Failed to upload file: %v", err)
-					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.")
+					h.logger.WithField("err", err).Warning("Failed to upload file")
+					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
+						"error": err.Error(),
+					})
 					return
 				}
 
@@ -413,16 +487,20 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	// Update review using service
 	if err := h.reviewService.UpdateReview(r.Context(), review); err != nil {
-		log.Printf("Failed to update review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.")
+		h.logger.WithField("err", err).Warning("Failed to update review")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Get the updated review with user and anime details
 	updatedReview, err := h.reviewService.GetReviewByID(r.Context(), review.ID)
 	if err != nil {
-		log.Printf("Failed to get updated review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve updated review", "An internal server error occurred while retrieving the updated review.")
+		h.logger.WithField("err", err).Warning("Failed to get updated review")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve updated review", "An internal server error occurred while retrieving the updated review.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
@@ -451,8 +529,10 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.")
+		h.logger.WithField("err", err).Error("Failed to encode response")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 }
@@ -466,7 +546,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Tags reviews
 // @Produce json
 // @Param id path int true "Review ID"
-// @Success 200 {object} models.Response
+// @Success 204 "No Content"
 // @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
 // @Failure 401 {object} errors.ErrorResponse "Unauthorized to delete this review"
 // @Failure 404 {object} errors.ErrorResponse "Review not found"
@@ -486,40 +566,49 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		log.Printf("Invalid ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.")
+		h.logger.WithField("err", err).Warning("Invalid ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": idStr,
+		})
+		return
+	}
+
+	// Get user ID from context
+	userID := middleware.GetUserFromContext(r.Context())
+	if userID == 0 {
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to delete a review.", nil)
+		return
+	}
+
+	// Get the existing review
+	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	if err != nil {
+		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
+			"id": id,
+		})
+		return
+	}
+
+	// Check if user is authorized to delete the review
+	if review.UserID != userID {
+		h.logger.WithFields(map[string]interface{}{
+			"review_user_id":  review.UserID,
+			"request_user_id": userID,
+		}).Warning("Unauthorized review deletion attempt")
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", "You are not authorized to delete this review.", nil)
 		return
 	}
 
 	// Delete review using service
 	if err := h.reviewService.DeleteReview(r.Context(), id); err != nil {
-		log.Printf("Failed to delete review: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete review", "An internal server error occurred while deleting the review.")
+		h.logger.WithField("err", err).Warning("Failed to delete review")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete review", "An internal server error occurred while deleting the review.", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	log.Printf("Review deleted successfully: ID %d", id)
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// RegisterReviewRoutes registers all review-related routes with a *mux.Router.
-// It sets up the routes for review management, including public and protected endpoints.
-//
-// Routes registered:
-// - GET /reviews/{id} - Get a specific review (public)
-// - POST /reviews - Create a new review (protected)
-// - PUT /reviews/{id} - Update a review (protected)
-// - DELETE /reviews/{id} - Delete a review (protected)
-func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
-	// Public routes (no authentication required)
-	router.HandleFunc("/reviews/{id:[0-9]+}", h.GetReviewHandler).Methods("GET")
-
-	// Create a subrouter for protected routes
-	protectedRouter := router.PathPrefix("/reviews").Subrouter()
-	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
-
-	// Protected routes (require authentication)
-	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateReviewHandler), models.ReviewCreateRequest{})).Methods("POST")
-	protectedRouter.Handle("/{id:[0-9]+}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateReviewHandler), models.ReviewUpdateRequest{})).Methods("PUT")
-	protectedRouter.HandleFunc("/{id:[0-9]+}", h.DeleteReviewHandler).Methods("DELETE")
 }
