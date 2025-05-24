@@ -15,6 +15,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// PasswordResetServiceInterface defines the interface for password reset operations
+type PasswordResetServiceInterface interface {
+	// RequestPasswordReset initiates a password reset request for a user
+	RequestPasswordReset(ctx context.Context, email string) error
+	// ResetPassword resets a user's password using a valid token
+	ResetPassword(ctx context.Context, token, newPassword string) error
+}
+
 // PasswordResetService handles password reset operations
 type PasswordResetService struct {
 	userRepo    repositories.UserRepository

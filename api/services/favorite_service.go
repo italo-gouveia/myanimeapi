@@ -11,7 +11,18 @@ import (
 	"time"
 )
 
+// FavoriteServiceInterface defines the interface for favorite operations
+type FavoriteServiceInterface interface {
+	// AddFavorite adds an anime to a user's favorites
+	AddFavorite(ctx context.Context, userID uint, animeID uint) (*models.Favorite, error)
+	// RemoveFavorite removes an anime from a user's favorites
+	RemoveFavorite(ctx context.Context, userID uint, animeID uint) error
+	// GetFavorites retrieves all favorites for a user
+	GetFavorites(ctx context.Context, userID uint) ([]models.Favorite, error)
+}
+
 // FavoriteService handles business logic for favorite operations
+// It implements the FavoriteServiceInterface.
 type FavoriteService struct {
 	favoriteRepo repositories.FavoriteRepository
 	userRepo     repositories.UserRepository
