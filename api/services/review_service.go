@@ -35,13 +35,13 @@ type ReviewService struct {
 	reviewRepo repositories.ReviewRepository
 	userRepo   repositories.UserRepository
 	animeRepo  repositories.AnimeRepository
-	storageSvc *StorageService
+	storageSvc StorageServiceInterface
 	logger     *logger.Logger
 }
 
 // NewReviewService creates a new ReviewService instance
 // It returns a ReviewServiceInterface implementation.
-func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository, storageSvc *StorageService) ReviewServiceInterface {
+func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository, storageSvc StorageServiceInterface) ReviewServiceInterface {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
 		userRepo:   userRepo,

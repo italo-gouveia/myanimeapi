@@ -2,25 +2,28 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"net/http"
+
+	"myanimeapi/api/middleware"
 	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
-	"net/http"
-	"strconv"
+	"myanimeapi/internal/logger"
 
 	"github.com/gorilla/mux"
 )
 
 // FavoriteHandler handles favorite-related HTTP requests
 type FavoriteHandler struct {
-	favoriteService *services.FavoriteService
+	favoriteService services.FavoriteServiceInterface
+	logger          *logger.Logger
 }
 
 // NewFavoriteHandler creates a new FavoriteHandler instance
-func NewFavoriteHandler(favoriteService *services.FavoriteService) *FavoriteHandler {
+func NewFavoriteHandler(favoriteService services.FavoriteServiceInterface) *FavoriteHandler {
 	return &FavoriteHandler{
 		favoriteService: favoriteService,
+		logger:          logger.New(),
 	}
 }
 
@@ -40,49 +43,63 @@ func NewFavoriteHandler(favoriteService *services.FavoriteService) *FavoriteHand
 // @Router /favorites/{anime_id} [post]
 // @Security BearerAuth
 func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("AddFavoriteHandler: Starting to add favorite")
+	h.logger.Info("Starting to add favorite")
 
 	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.Println("AddFavoriteHandler: Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "")
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
-	log.Printf("AddFavoriteHandler: Retrieved user ID from context: %d", userID)
+	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
 
 	// Get anime ID from URL
 	vars := mux.Vars(r)
 	animeIDStr := vars["anime_id"]
-	animeID, err := strconv.ParseUint(animeIDStr, 10, 32)
+	animeID, err := utils.ValidateID(animeIDStr)
 	if err != nil {
-		log.Printf("AddFavoriteHandler: Invalid anime ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", err.Error())
+		h.logger.WithFields(map[string]interface{}{
+			"anime_id": animeIDStr,
+			"error":    err.Error(),
+		}).Error("Invalid anime ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", map[string]interface{}{"anime_id": animeIDStr})
 		return
 	}
-	log.Printf("AddFavoriteHandler: Retrieved anime ID from URL: %d", animeID)
+	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	// Add favorite using service
-	favorite, err := h.favoriteService.AddFavorite(r.Context(), userID, uint(animeID))
+	favorite, err := h.favoriteService.AddFavorite(r.Context(), userID, animeID)
 	if err != nil {
-		log.Printf("AddFavoriteHandler: Failed to add favorite: %v", err)
+		h.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to add favorite")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID, "anime_id": animeID})
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add favorite", err.Error())
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add favorite", "An internal server error occurred while adding the favorite", map[string]interface{}{"user_id": userID, "anime_id": animeID})
 		return
 	}
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(favorite); err != nil {
-		log.Printf("AddFavoriteHandler: Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", err.Error())
+	if err := json.NewEncoder(w).Encode(favorite.ToResponse()); err != nil {
+		h.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to encode response")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", map[string]interface{}{"user_id": userID, "anime_id": animeID})
 		return
 	}
-	log.Printf("AddFavoriteHandler: Successfully added favorite for user %d and anime %d", userID, animeID)
+	h.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Successfully added favorite")
 }
 
 // RemoveFavoriteHandler handles removing an anime from user's favorites
@@ -99,42 +116,52 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 // @Router /favorites/{anime_id} [delete]
 // @Security BearerAuth
 func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("RemoveFavoriteHandler: Starting to remove favorite")
+	h.logger.Info("Starting to remove favorite")
 
 	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.Println("RemoveFavoriteHandler: Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "")
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
-	log.Printf("RemoveFavoriteHandler: Retrieved user ID from context: %d", userID)
+	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
 
 	// Get anime ID from URL
 	vars := mux.Vars(r)
 	animeIDStr := vars["anime_id"]
 	animeID, err := utils.ValidateID(animeIDStr)
 	if err != nil {
-		log.Printf("RemoveFavoriteHandler: Invalid anime ID format: %v", err)
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, err.Error(), "")
+		h.logger.WithFields(map[string]interface{}{
+			"anime_id": animeIDStr,
+			"error":    err.Error(),
+		}).Error("Invalid anime ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", map[string]interface{}{"anime_id": animeIDStr})
 		return
 	}
-	log.Printf("RemoveFavoriteHandler: Retrieved anime ID from URL: %d", animeID)
+	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	// Remove favorite using service
 	if err := h.favoriteService.RemoveFavorite(r.Context(), userID, animeID); err != nil {
-		log.Printf("RemoveFavoriteHandler: Failed to remove favorite: %v", err)
+		h.logger.WithFields(map[string]interface{}{
+			"user_id":  userID,
+			"anime_id": animeID,
+			"error":    err.Error(),
+		}).Error("Failed to remove favorite")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID, "anime_id": animeID})
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove favorite", err.Error())
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove favorite", "An internal server error occurred while removing the favorite", map[string]interface{}{"user_id": userID, "anime_id": animeID})
 		return
 	}
 
 	// Return success response
 	w.WriteHeader(http.StatusNoContent)
-	log.Printf("RemoveFavoriteHandler: Successfully removed favorite for user %d and anime %d", userID, animeID)
+	h.logger.WithFields(map[string]interface{}{
+		"user_id":  userID,
+		"anime_id": animeID,
+	}).Info("Successfully removed favorite")
 }
 
 // GetFavoritesHandler handles retrieving all favorites for a user
@@ -149,43 +176,63 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 // @Router /favorites [get]
 // @Security BearerAuth
 func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetFavoritesHandler: Starting to retrieve favorites")
+	h.logger.Info("Starting to retrieve favorites")
 
 	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(uint)
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.Println("GetFavoritesHandler: Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "")
+		h.logger.Error("Failed to get user ID from context")
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
-	log.Printf("GetFavoritesHandler: Retrieved user ID from context: %d", userID)
+	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
 
 	// Get favorites using service
 	favorites, err := h.favoriteService.GetFavorites(r.Context(), userID)
 	if err != nil {
-		log.Printf("GetFavoritesHandler: Failed to retrieve favorites: %v", err)
+		h.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve favorites")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID})
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve favorites", err.Error())
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve favorites", "An internal server error occurred while retrieving favorites", map[string]interface{}{"user_id": userID})
 		return
+	}
+
+	// Convert to response format
+	responses := make([]interface{}, 0, len(favorites))
+	for _, fav := range favorites {
+		responses = append(responses, fav.ToResponse())
 	}
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(favorites); err != nil {
-		log.Printf("GetFavoritesHandler: Failed to encode response: %v", err)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", err.Error())
+	if err := json.NewEncoder(w).Encode(responses); err != nil {
+		h.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to encode response")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", map[string]interface{}{"user_id": userID})
 		return
 	}
-	log.Printf("GetFavoritesHandler: Successfully retrieved %d favorites for user %d", len(favorites), userID)
+	h.logger.WithFields(map[string]interface{}{
+		"user_id": userID,
+		"count":   len(favorites),
+	}).Info("Successfully retrieved favorites")
 }
 
 // RegisterFavoriteRoutes registers all favorite-related routes
 func (h *FavoriteHandler) RegisterFavoriteRoutes(router *mux.Router) {
-	router.HandleFunc("/favorites", h.GetFavoritesHandler).Methods("GET")
-	router.HandleFunc("/favorites/{anime_id}", h.AddFavoriteHandler).Methods("POST")
-	router.HandleFunc("/favorites/{anime_id}", h.RemoveFavoriteHandler).Methods("DELETE")
+	// Create a subrouter for protected routes
+	protectedRouter := router.PathPrefix("/favorites").Subrouter()
+	protectedRouter.Use(middleware.AuthMiddleware) // Apply authentication middleware
+
+	// Protected routes
+	protectedRouter.HandleFunc("", h.GetFavoritesHandler).Methods("GET")
+	protectedRouter.HandleFunc("/{anime_id}", h.AddFavoriteHandler).Methods("POST")
+	protectedRouter.HandleFunc("/{anime_id}", h.RemoveFavoriteHandler).Methods("DELETE")
 }
