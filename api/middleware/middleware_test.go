@@ -155,13 +155,11 @@ func TestRateLimiter(t *testing.T) {
 
 		// Make requests up to the limit
 		for i := 0; i < 50; i++ {
-			rr = httptest.NewRecorder()
 			middleware.ServeHTTP(rr, req)
 			assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
 		}
 
 		// Make one more request that should be rate limited
-		rr = httptest.NewRecorder()
 		middleware.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusTooManyRequests, rr.Code, "Status code should be 429")
 	})
@@ -187,13 +185,11 @@ func TestRateLimiter(t *testing.T) {
 
 		// Make requests up to the limit (5 requests per minute for auth endpoints)
 		for i := 0; i < 5; i++ {
-			rr = httptest.NewRecorder()
 			middleware.ServeHTTP(rr, req)
 			assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
 		}
 
 		// Make one more request that should be rate limited
-		rr = httptest.NewRecorder()
 		middleware.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusTooManyRequests, rr.Code, "Status code should be 429")
 	})
