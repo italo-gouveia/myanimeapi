@@ -7,6 +7,10 @@ definitions:
           code:
             description: A unique error code for categorization.
             type: string
+          context:
+            additionalProperties: true
+            description: Additional context fields for debugging.
+            type: object
           details:
             description: Additional context or details about the error.
             type: string
@@ -226,6 +230,39 @@ definitions:
       updated_at:
         description: Timestamp when the anime was last updated
         example: "2025-02-20T19:27:00Z"
+        type: string
+    type: object
+  models.AnimeUpdateRequest:
+    properties:
+      description:
+        description: Description of the anime
+        example: The continuation of Naruto's story.
+        type: string
+      end_date:
+        description: Date when the anime finished airing
+        example: "2017-03-23T00:00:00Z"
+        type: string
+      episodes:
+        description: Number of episodes
+        example: 500
+        type: integer
+      rating:
+        description: Updated rating for the anime
+        example: 8.7
+        maximum: 10
+        minimum: 0
+        type: number
+      start_date:
+        description: Date when the anime started airing
+        example: "2007-02-15T00:00:00Z"
+        type: string
+      status:
+        description: Current status of the anime
+        example: Completed
+        type: string
+      title:
+        description: Title of the anime
+        example: Naruto Shippuden
         type: string
     type: object
   models.ChangePasswordRequest:
@@ -569,6 +606,17 @@ definitions:
         example: "2025-02-20T19:27:00Z"
         type: string
     type: object
+  models.TagCreateRequest:
+    properties:
+      name:
+        description: Name of the tag
+        example: Action
+        maxLength: 50
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
   models.TagResponse:
     properties:
       anime:
@@ -584,6 +632,17 @@ definitions:
         description: Name of the tag
         example: Ninja
         type: string
+    type: object
+  models.TagUpdateRequest:
+    properties:
+      name:
+        description: Name of the tag
+        example: Updated Action
+        maxLength: 50
+        minLength: 1
+        type: string
+    required:
+    - name
     type: object
   models.User:
     properties:
@@ -910,7 +969,7 @@ paths:
         name: anime
         required: true
         schema:
-          $ref: '#/definitions/models.Anime'
+          $ref: '#/definitions/models.AnimeUpdateRequest'
       produces:
       - application/json
       responses:
@@ -1179,11 +1238,11 @@ paths:
       summary: Search animes by title
       tags:
       - anime
-  /auth/login:
+  /auth/authenticate:
     post:
       consumes:
       - application/json
-      description: Authenticate a user with username and password
+      description: Authenticate a user and return a JWT token
       parameters:
       - description: User credentials
         in: body
@@ -1199,15 +1258,15 @@ paths:
           schema:
             $ref: '#/definitions/models.Response'
         "400":
-          description: Invalid request body
+          description: Bad Request
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "401":
-          description: Invalid credentials
+          description: Unauthorized
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to authenticate user
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       summary: Authenticate a user
@@ -1219,7 +1278,7 @@ paths:
       - application/json
       description: Register a new user with the provided credentials
       parameters:
-      - description: User registration data
+      - description: User registration information
         in: body
         name: user
         required: true
@@ -1233,15 +1292,11 @@ paths:
           schema:
             $ref: '#/definitions/models.Response'
         "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/errors.ErrorResponse'
-        "409":
-          description: Username or email already exists
+          description: Bad Request
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
-          description: Failed to register user
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
       summary: Register a new user
@@ -1409,7 +1464,7 @@ paths:
       - genres
   /genres/{id}:
     delete:
-      description: Delete an existing genre by its ID
+      description: Delete a genre by its ID
       parameters:
       - description: Genre ID
         in: path
@@ -1419,10 +1474,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
+        "204":
+          description: No Content
         "400":
           description: Invalid genre ID
           schema:
@@ -1518,9 +1571,9 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete multiple genres by their IDs
+      description: Delete multiple genres in bulk
       parameters:
-      - description: Bulk genre deletion request
+      - description: List of genre IDs to delete
         in: body
         name: request
         required: true
@@ -1529,16 +1582,14 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
+        "204":
+          description: No Content
         "400":
           description: Invalid request body
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "404":
-          description: One or more genres not found
+          description: Genre not found
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
@@ -1553,9 +1604,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create multiple genres with the provided details
+      description: Create multiple genres in bulk
       parameters:
-      - description: Bulk genre creation request
+      - description: List of genres to create
         in: body
         name: request
         required: true
@@ -1575,7 +1626,7 @@ paths:
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "409":
-          description: One or more genre names already exist
+          description: Genre name already exists
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
@@ -1589,13 +1640,21 @@ paths:
       - genres
   /genres/search:
     get:
-      description: Search for genres by name
+      description: Search genres by name
       parameters:
       - description: Search query
         in: query
         name: query
         required: true
         type: string
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1606,7 +1665,7 @@ paths:
               $ref: '#/definitions/models.GenreResponse'
             type: array
         "400":
-          description: Invalid search query
+          description: Missing search query
           schema:
             $ref: '#/definitions/errors.ErrorResponse'
         "500":
@@ -1668,10 +1727,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
+        "204":
+          description: No Content
         "400":
           description: Invalid ID format
           schema:
@@ -1774,6 +1831,15 @@ paths:
   /tags:
     get:
       description: Get a list of all tags
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1783,6 +1849,10 @@ paths:
             items:
               $ref: '#/definitions/models.TagResponse'
             type: array
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Failed to retrieve tags
           schema:
@@ -1800,7 +1870,7 @@ paths:
         name: tag
         required: true
         schema:
-          $ref: '#/definitions/models.Tag'
+          $ref: '#/definitions/models.TagCreateRequest'
       produces:
       - application/json
       responses:
@@ -1837,10 +1907,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
+        "204":
+          description: No Content
         "400":
           description: Invalid tag ID
           schema:
@@ -1903,7 +1971,7 @@ paths:
         name: tag
         required: true
         schema:
-          $ref: '#/definitions/models.Tag'
+          $ref: '#/definitions/models.TagUpdateRequest'
       produces:
       - application/json
       responses:
