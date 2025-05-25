@@ -335,8 +335,8 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 
 	// Check if email is being changed and if it's already taken
 	if user.Email != existingUser.(*models.User).Email {
-		existingUser, err = s.userRepo.GetByEmail(ctx, user.Email)
-		if err == nil {
+		existingUserByEmail, err := s.userRepo.GetByEmail(ctx, user.Email)
+		if err == nil && existingUserByEmail != nil {
 			s.logger.WithField("email", user.Email).Warning("Email already exists")
 			return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
 				"email":   user.Email,

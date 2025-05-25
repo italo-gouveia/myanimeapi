@@ -182,15 +182,27 @@ jobs:
         with:
           config-path: .gitleaks.toml
           report-format: sarif
-          report-path: ./gitleaks-report.sarif
+          report-path: gitleaks-report.sarif
           exit-code: 1
           verbose: true
+
+      - name: Debug workspace
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Checking for SARIF file:"
+          if [ -f gitleaks-report.sarif ]; then
+            echo "SARIF file exists"
+            cat gitleaks-report.sarif
+          else
+            echo "SARIF file not found"
+          fi
 
       - name: Upload Gitleaks report
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: ./gitleaks-report.sarif
+          sarif_file: gitleaks-report.sarif
           category: gitleaks
           wait-for-processing: true
 

@@ -89,7 +89,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Check if the request count exceeds the limit
-		if rl.clients[ip].count >= limit {
+		if rl.clients[ip].count > limit {
 			log.WithFields(map[string]interface{}{
 				"ip":         ip,
 				"path":       r.URL.Path,
