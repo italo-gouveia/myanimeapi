@@ -88,6 +88,10 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 			rl.clients[ip].count = 0
 		}
 
+		// Increment the request count and update the last seen time
+		rl.clients[ip].count++
+		rl.clients[ip].lastSeen = rl.clock()
+
 		// Check if the request count exceeds the limit
 		if rl.clients[ip].count > limit {
 			log.WithFields(map[string]interface{}{
@@ -104,10 +108,6 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 			errors.WriteErrorResponse(w, http.StatusTooManyRequests, errors.ErrTooManyRequests, "Rate limit exceeded", "Please try again later.", nil)
 			return
 		}
-
-		// Increment the request count and update the last seen time
-		rl.clients[ip].count++
-		rl.clients[ip].lastSeen = rl.clock()
 
 		// Log the current state for debugging
 		log.WithFields(map[string]interface{}{
