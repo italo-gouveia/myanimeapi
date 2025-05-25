@@ -155,7 +155,7 @@ func TestRateLimiter(t *testing.T) {
 
 		// Make requests up to the limit
 		for i := 0; i < 50; i++ {
-			rr := httptest.NewRecorder()
+			rr = httptest.NewRecorder()
 			middleware.ServeHTTP(rr, req)
 			assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
 		}
