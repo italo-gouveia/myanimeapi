@@ -176,13 +176,11 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: zricethezav/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
           report-format: sarif
-          report-path: gitleaks-report.sarif
+          report-path: ${{ github.workspace }}/gitleaks-report.sarif
           exit-code: 1
           verbose: true
 
@@ -191,9 +189,9 @@ jobs:
           echo "Current directory contents:"
           ls -la
           echo "Checking for SARIF file:"
-          if [ -f gitleaks-report.sarif ]; then
+          if [ -f "${{ github.workspace }}/gitleaks-report.sarif" ]; then
             echo "SARIF file exists"
-            cat gitleaks-report.sarif
+            cat "${{ github.workspace }}/gitleaks-report.sarif"
           else
             echo "SARIF file not found"
           fi
@@ -202,7 +200,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: gitleaks-report.sarif
+          sarif_file: ${{ github.workspace }}/gitleaks-report.sarif
           category: gitleaks
           wait-for-processing: true
 
