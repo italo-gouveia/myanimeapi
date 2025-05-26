@@ -194,6 +194,8 @@ jobs:
             cat "./gitleaks-report.sarif"
           else
             echo "SARIF file not found"
+            # Create an empty SARIF file if none exists
+            echo '{"version": "2.1.0", "runs": []}' > ./gitleaks-report.sarif
           fi
 
       - name: Upload SARIF

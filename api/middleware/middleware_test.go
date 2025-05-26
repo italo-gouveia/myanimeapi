@@ -142,9 +142,6 @@ func TestRateLimiter(t *testing.T) {
 		req, err := http.NewRequest("GET", "/api/test", nil)
 		assert.NoError(t, err)
 
-		// Create a response recorder
-		rr := httptest.NewRecorder()
-
 		// Create a handler to use the middleware
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -155,13 +152,13 @@ func TestRateLimiter(t *testing.T) {
 
 		// Make requests up to the limit
 		for i := 0; i < 50; i++ {
-			rr = httptest.NewRecorder()
+			rr := httptest.NewRecorder()
 			middleware.ServeHTTP(rr, req)
 			assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
 		}
 
 		// Make one more request that should be rate limited
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		middleware.ServeHTTP(rr, req)
 		assert.Equal(t, http.StatusTooManyRequests, rr.Code, "Status code should be 429")
 	})
