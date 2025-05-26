@@ -1,3 +1,101 @@
+# [1.12.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.11.0...v1.12.0) (2025-05-26)
+
+
+### Bug Fixes
+
+* **ci:** ensure SARIF file exists for Gitleaks report ([e48c00e](https://github.com/italo-gouveia/myanimeapi/commit/e48c00ea1afe392d0696158fd56919a75eea5be4))
+* **ci:** improve security scanning and rate limiting ([e34e8f0](https://github.com/italo-gouveia/myanimeapi/commit/e34e8f0d85bac07a8da559b71ba3913eddb59cd5))
+* **ci:** resolve SARIF file path issues in security workflow ([c049983](https://github.com/italo-gouveia/myanimeapi/commit/c049983e985a538af012da23f0106945960adddb))
+* **ci:** update Gitleaks action and SARIF file paths ([2abc53e](https://github.com/italo-gouveia/myanimeapi/commit/2abc53ea44a8edc5b28add1bf01a6950f8114f69))
+* comment out problematic SARIF upload steps ([09dd851](https://github.com/italo-gouveia/myanimeapi/commit/09dd85100b061fc014ce206b86c54a0c92e43fed))
+* enable CGO for race detection in pre-push hook ([6a47d82](https://github.com/italo-gouveia/myanimeapi/commit/6a47d82302098a443e5be1b79ca8c2e469eded38))
+* ensure SARIF file exists before upload ([4c7181f](https://github.com/italo-gouveia/myanimeapi/commit/4c7181facb38c610ccb91a2f423d15f02de5c3f5))
+* handle missing bc command in pre-push hook ([11bd021](https://github.com/italo-gouveia/myanimeapi/commit/11bd021619a8cf879985a831bab09a274f702ade))
+* make pre-push hook handle missing gcc gracefully ([c243a36](https://github.com/italo-gouveia/myanimeapi/commit/c243a3633ad261712c05d4e3b39e008316b161ff))
+* temporarily lower test coverage threshold to 5% ([549641c](https://github.com/italo-gouveia/myanimeapi/commit/549641c28d9b0a60b709949765f67873aa563d14))
+
+
+### Code Refactoring
+
+* **logger:** implement custom structured logger ([f4ba061](https://github.com/italo-gouveia/myanimeapi/commit/f4ba061aa108a5011b5dd98f18a06f39635d2856))
+* **services:** enhance error handling and logging in anime service ([823d5c6](https://github.com/italo-gouveia/myanimeapi/commit/823d5c6cd71aa839467f801f81d4e56f79c254db))
+* **services:** enhance error handling and logging in genre and tag services ([6eba7e0](https://github.com/italo-gouveia/myanimeapi/commit/6eba7e09ca85f1f36ac2db55a6143cf01a74cfaa))
+
+
+### Features
+
+* **auth:** enhance authentication handler with improved error handling and logging ([fe5b537](https://github.com/italo-gouveia/myanimeapi/commit/fe5b5379820cc2151c53a8b59636b7832d1359d5))
+* **auth:** enhance error handling and logging in auth services ([2105996](https://github.com/italo-gouveia/myanimeapi/commit/210599638f2fa54f14004913a32a6cd55be20cc8))
+* **auth:** enhance JWT authentication and authorization ([dbe62bc](https://github.com/italo-gouveia/myanimeapi/commit/dbe62bc05e12c6c53f8099cdaaa13d7340359933))
+* **ci:** enhance CI/CD pipeline and improve application logging ([24f1e8c](https://github.com/italo-gouveia/myanimeapi/commit/24f1e8ca02ffabb428a96157a9a72f6317d61fbb))
+* **genres:** enhance genre handlers with improved error handling and logging ([0f92b8d](https://github.com/italo-gouveia/myanimeapi/commit/0f92b8dccd2ec05037978f054bdcf2880e816b7f))
+* **handlers:** enhance anime handlers with improved error handling and validation ([51285d8](https://github.com/italo-gouveia/myanimeapi/commit/51285d8801c98be752afe1198b9ad73aa2e19bf1))
+* **handlers:** enhance favorite handlers with improved error handling and logging ([cd8de45](https://github.com/italo-gouveia/myanimeapi/commit/cd8de451a7c0c0da3e0739250dd8b12f1a79fc60))
+* **handlers:** enhance user handlers with improved error handling and logging ([7379e3d](https://github.com/italo-gouveia/myanimeapi/commit/7379e3db02e90ccd6cdbfc229317d804a747e7bf))
+* **logger:** add Get() function and update error logging ([e26489b](https://github.com/italo-gouveia/myanimeapi/commit/e26489b867b74f1101bbfa781d964e3c744aabc9))
+* **logging:** implement structured logging with logrus across core layers ([4bd6207](https://github.com/italo-gouveia/myanimeapi/commit/4bd62074712ee86e5e5297e5a8951e701397097a))
+* **middleware:** enhance error handling and logging system ([9aad8c9](https://github.com/italo-gouveia/myanimeapi/commit/9aad8c977b2028589436f67c86ec4af8f7abf92c))
+* **middleware:** enhance middleware tests and add new test cases ([48320a9](https://github.com/italo-gouveia/myanimeapi/commit/48320a93026bc0eaf2e066252f2aeb0647b9cdea))
+* **middleware:** enhance payload validation and sanitization ([986f5c9](https://github.com/italo-gouveia/myanimeapi/commit/986f5c93ddc07d7fc522301612e7c09b6f6b886b))
+* **password-reset:** enhance error handling and add logging ([7e83b3d](https://github.com/italo-gouveia/myanimeapi/commit/7e83b3de182f4906f6269a10aaa575012536bcc1))
+* **repositories:** enhance logging and error handling ([77cbea0](https://github.com/italo-gouveia/myanimeapi/commit/77cbea0a8fdccdcf2dd44813906da14e3f7a2c7d))
+* **reviews:** enhance review handlers with improved security and logging ([6fb0fb3](https://github.com/italo-gouveia/myanimeapi/commit/6fb0fb3ef4b4a2a94f97ecb63ae8cdbcf6d9de7b))
+* **security:** enhance HTTPS middleware with improved security features ([1616943](https://github.com/italo-gouveia/myanimeapi/commit/16169435504a0a32e51bb250072709f56c0ffe1c))
+
+
+### BREAKING CHANGES
+
+* **ci:** The Docker build process now uses buildx and the error response
+structure includes additional fields for logging context. Update your deployment
+scripts and error handling accordingly.
+
+This change improves the CI/CD pipeline's reliability and security while adding
+better logging and error handling throughout the application. The enhanced PR
+description analysis provides better visibility into changes, and the improved
+security scanning helps identify potential issues earlier in the development
+process.
+* **middleware:** The Authenticate middleware has been renamed to AuthMiddleware
+and CustomClaims UserID type has been changed from uint to string. Update your
+code accordingly.
+
+This change improves the middleware test coverage and reliability while adding
+new test cases for recently added middleware components. The enhanced error
+handling tests ensure proper error responses across all middleware functions.
+* **genres:** The genre handler now uses AuthMiddleware instead of Authenticate
+and has updated response formats for bulk operations. Update your API clients accordingly.
+
+This change improves the genre handlers' reliability, maintainability, and
+error handling capabilities while providing better logging and response formatting.
+The new error handling system provides more detailed information about failures,
+making it easier to debug issues.
+* **reviews:** The review handler constructor now requires interface types
+instead of concrete types. Update your service initialization accordingly.
+
+This change improves the review handlers' security, maintainability, and
+reliability while providing better error handling and logging capabilities.
+The new authorization checks ensure users can only modify their own reviews.
+* **auth:** The /auth/login endpoint has been renamed to /auth/authenticate
+for better clarity and consistency. Update your API clients accordingly.
+
+This change improves the authentication handler's reliability, maintainability,
+and security while providing better error handling and logging capabilities.
+* **services:** This commit introduces breaking changes to error handling and logging formats. Clients need to update their error handling logic and log parsing mechanisms to accommodate the new structured format and additional context data.
+* **services:** This commit introduces breaking changes to error handling and logging formats. Clients need to update their error handling logic and log parsing mechanisms to accommodate the new structured format and additional context data.
+* **logger:** Replace logrus with custom structured logger implementation
+
+- Remove logrus dependency in favor of standard library
+- Add structured logging with JSON output format
+- Implement log levels (DEBUG, INFO, WARNING, ERROR)
+- Add field-based context to log entries
+- Add formatted logging methods (Debugf, Infof, etc.)
+- Add default logger instance with global methods
+- Improve timestamp formatting using RFC3339
+- Add proper JSON marshaling for log entries
+
+This change improves logging consistency and removes external dependencies.
+All code using the logger package will need to be updated to use the new API.
+* **logging:** All logging is now structured and uses logrus; any custom log parsing or monitoring should be updated accordingly.
+
 # [1.11.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.10.1...v1.11.0) (2025-05-15)
 
 
