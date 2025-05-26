@@ -43,9 +43,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run tests with CGO enabled for race detection
-echo -e "${YELLOW}Running tests...${NC}"
-CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
+# Check if gcc is installed for race detection
+if command_exists gcc; then
+    echo -e "${YELLOW}Running tests with race detection...${NC}"
+    CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
+else
+    echo -e "${YELLOW}GCC not found. Running tests without race detection...${NC}"
+    go test -v -coverprofile=coverage.out ./...
+fi
+
 if [ $? -ne 0 ]; then
     echo -e "${RED}Tests failed${NC}"
     exit 1
