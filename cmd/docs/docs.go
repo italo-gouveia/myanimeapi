@@ -307,7 +307,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Anime"
+                            "$ref": "#/definitions/models.AnimeUpdateRequest"
                         }
                     }
                 ],
@@ -653,9 +653,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/login": {
+        "/auth/authenticate": {
             "post": {
-                "description": "Authenticate a user with username and password",
+                "description": "Authenticate a user and return a JWT token",
                 "consumes": [
                     "application/json"
                 ],
@@ -685,19 +685,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to authenticate user",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -720,7 +720,7 @@ const docTemplate = `{
                 "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "User registration data",
+                        "description": "User registration information",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -737,19 +737,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Username or email already exists",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to register user",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1014,7 +1008,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create multiple genres with the provided details",
+                "description": "Create multiple genres in bulk",
                 "consumes": [
                     "application/json"
                 ],
@@ -1027,7 +1021,7 @@ const docTemplate = `{
                 "summary": "Create multiple genres",
                 "parameters": [
                     {
-                        "description": "Bulk genre creation request",
+                        "description": "List of genres to create",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1053,7 +1047,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "One or more genre names already exist",
+                        "description": "Genre name already exists",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1072,7 +1066,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete multiple genres by their IDs",
+                "description": "Delete multiple genres in bulk",
                 "consumes": [
                     "application/json"
                 ],
@@ -1085,7 +1079,7 @@ const docTemplate = `{
                 "summary": "Delete multiple genres",
                 "parameters": [
                     {
-                        "description": "Bulk genre deletion request",
+                        "description": "List of genre IDs to delete",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1095,11 +1089,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Invalid request body",
@@ -1108,7 +1099,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "One or more genres not found",
+                        "description": "Genre not found",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1124,7 +1115,7 @@ const docTemplate = `{
         },
         "/genres/search": {
             "get": {
-                "description": "Search for genres by name",
+                "description": "Search genres by name",
                 "produces": [
                     "application/json"
                 ],
@@ -1139,6 +1130,18 @@ const docTemplate = `{
                         "name": "query",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default: 10)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1152,7 +1155,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid search query",
+                        "description": "Missing search query",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1286,7 +1289,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an existing genre by its ID",
+                "description": "Delete a genre by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1304,11 +1307,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Invalid genre ID",
@@ -1538,11 +1538,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Invalid ID format",
@@ -1581,6 +1578,20 @@ const docTemplate = `{
                     "tags"
                 ],
                 "summary": "Get all tags",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default: 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1589,6 +1600,12 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/models.TagResponse"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid pagination parameters",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1623,7 +1640,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Tag"
+                            "$ref": "#/definitions/models.TagCreateRequest"
                         }
                     }
                 ],
@@ -1732,7 +1749,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Tag"
+                            "$ref": "#/definitions/models.TagUpdateRequest"
                         }
                     }
                 ],
@@ -1793,11 +1810,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Invalid tag ID",
@@ -2234,6 +2248,11 @@ const docTemplate = `{
                             "description": "A unique error code for categorization.",
                             "type": "string"
                         },
+                        "context": {
+                            "description": "Additional context fields for debugging.",
+                            "type": "object",
+                            "additionalProperties": true
+                        },
                         "details": {
                             "description": "Additional context or details about the error.",
                             "type": "string"
@@ -2525,6 +2544,48 @@ const docTemplate = `{
                     "description": "Timestamp when the anime was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
+        "models.AnimeUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description of the anime",
+                    "type": "string",
+                    "example": "The continuation of Naruto's story."
+                },
+                "end_date": {
+                    "description": "Date when the anime finished airing",
+                    "type": "string",
+                    "example": "2017-03-23T00:00:00Z"
+                },
+                "episodes": {
+                    "description": "Number of episodes",
+                    "type": "integer",
+                    "example": 500
+                },
+                "rating": {
+                    "description": "Updated rating for the anime",
+                    "type": "number",
+                    "maximum": 10,
+                    "minimum": 0,
+                    "example": 8.7
+                },
+                "start_date": {
+                    "description": "Date when the anime started airing",
+                    "type": "string",
+                    "example": "2007-02-15T00:00:00Z"
+                },
+                "status": {
+                    "description": "Current status of the anime",
+                    "type": "string",
+                    "example": "Completed"
+                },
+                "title": {
+                    "description": "Title of the anime",
+                    "type": "string",
+                    "example": "Naruto Shippuden"
                 }
             }
         },
@@ -2992,6 +3053,21 @@ const docTemplate = `{
                 }
             }
         },
+        "models.TagCreateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the tag",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1,
+                    "example": "Action"
+                }
+            }
+        },
         "models.TagResponse": {
             "type": "object",
             "properties": {
@@ -3011,6 +3087,21 @@ const docTemplate = `{
                     "description": "Name of the tag",
                     "type": "string",
                     "example": "Ninja"
+                }
+            }
+        },
+        "models.TagUpdateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Name of the tag",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1,
+                    "example": "Updated Action"
                 }
             }
         },

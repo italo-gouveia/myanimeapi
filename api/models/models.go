@@ -42,6 +42,18 @@ type UserCredentials struct {
 	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"` // Password for authentication
 }
 
+// AuthResponse represents the response payload for successful authentication.
+// It includes the JWT token for subsequent authenticated requests.
+//
+// Example:
+//
+//	{
+//	  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+//	}
+type AuthResponse struct {
+	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT token for authentication
+}
+
 // Claims represents the JWT claims used for authentication.
 // It includes the user ID and expiration time.
 type Claims struct {

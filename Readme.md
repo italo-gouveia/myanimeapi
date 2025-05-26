@@ -24,7 +24,6 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [Genres](#genres)
     - [Tags](#tags)
     - [Reviews](#reviews)
-    - [Favorites](#favorites)
   - [Documentation](#documentation)
     - [Swagger Documentation](#swagger-documentation)
     - [GoDoc Documentation](#godoc-documentation)
@@ -34,6 +33,7 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
     - [End-to-End Tests](#end-to-end-tests)
     - [Smoke Tests](#smoke-tests)
     - [Test Coverage](#test-coverage)
+- [TODO: Need to be updated the images/diagrams](#todo-need-to-be-updated-the-imagesdiagrams)
   - [Diagrams](#diagrams)
     - [**1. Architecture Diagram**](#1-architecture-diagram)
     - [**2. Database Schema (ER Diagram)**](#2-database-schema-er-diagram)
@@ -59,25 +59,28 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 ## Features
 
 - **Anime Management**: Create, read, update, and delete anime entries with support for genres and tags
-- **User Management**: Register, authenticate, and manage users
+- **User Management**: Register, authenticate, and manage users with enhanced security
 - **Review Management**: Add, update, and delete reviews for anime with media attachments
 - **Genre Management**: Manage anime genres with CRUD operations and bulk operations
 - **Tag Management**: Manage anime tags with CRUD operations and bulk operations
-- **Authentication**: JWT-based authentication for secure access
-- **Pagination**: Paginated responses for large datasets
-- **Rate Limiting**: Protect endpoints from abuse with rate limiting
-- **Swagger Documentation**: Auto-generated API documentation
-- **Favorite Anime**: Add and manage favorite anime entries
-- **Error Handling**: Structured error responses with detailed information
-- **Health Monitoring**: Comprehensive health check endpoint
-- **Security**: Regular security scanning and vulnerability checks
+- **Authentication**: JWT-based authentication with enhanced security features
+- **Pagination**: Improved pagination with cursor-based navigation
+- **Rate Limiting**: Enhanced rate limiting with different limits for auth and non-auth endpoints
+- **Swagger Documentation**: Auto-generated API documentation with detailed examples
+- **Favorite Anime**: Add and manage favorite anime entries with bulk operations
+- **Error Handling**: Structured error responses with detailed information and context
+- **Health Monitoring**: Comprehensive health check endpoint with dependency status
+- **Security**: Regular security scanning with OWASP Dependency-Check, Semgrep, and Gitleaks
 - **Dependency Management**: Proper dependency injection and service initialization
 - **Media Storage**: Support for both local and S3 storage of media files
-- **Bulk Operations**: Support for bulk create and delete operations for genres and tags
+- **Bulk Operations**: Enhanced bulk operations for genres and tags with validation
+- **Request Validation**: Comprehensive request validation and sanitization
+- **Logging**: Structured logging with request ID tracking
+- **Metrics**: Prometheus metrics for monitoring and alerting
 
 ## Technologies Used
 
-- **Go**: Backend programming language (v1.23.0)
+- **Go**: Backend programming language (v1.22)
 - **Gorilla Mux**: HTTP router and dispatcher (v1.8.1)
 - **GORM**: ORM for database interactions (v1.25.12)
 - **PostgreSQL**: Relational database
@@ -87,12 +90,16 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 - **Validator**: Input validation (v10.25.0)
 - **AWS SDK**: For S3 storage integration (v1.50.35)
 - **Bluemonday**: HTML sanitization (v1.0.27)
+- **Prometheus**: Metrics collection and monitoring
+- **GolangCI-Lint**: Code quality and style checking
+- **SonarCloud**: Code quality and security analysis
+- **Semantic Release**: Automated version management
 
 ## Getting Started
 
 ### Prerequisites
 
-- Go 1.23.0 or higher
+- Go 1.22 or higher
 - PostgreSQL
 - Docker (optional)
 - AWS Account (for S3 storage, optional)
@@ -146,19 +153,24 @@ myanimeapi/
 │   ├── repositories/ # Data access layer
 │   ├── middleware/   # HTTP middleware
 │   ├── auth/         # Authentication related code
-│   └── utils/        # Utility functions
+│   ├── utils/        # Utility functions
+│   └── mocks/        # Mock implementations for testing
 ├── cmd/
-│   └── main.go       # Application entry point
+│   ├── main.go       # Application entry point
+│   └── docs/         # Swagger documentation
 ├── internal/
 │   ├── config/       # Configuration management
 │   ├── database/     # Database connection and setup
 │   ├── errors/       # Custom error types
+│   ├── logger/       # Logging configuration
+│   ├── services/     # Internal services
 │   └── utils/        # Internal utilities
 ├── tests/
 │   ├── e2e/         # End-to-end tests
 │   ├── integration/ # Integration tests
 │   └── smoke/       # Smoke tests
-└── frontend/        # Next.js frontend application
+├── frontend/        # Next.js frontend application
+└── assets/         # Project diagrams and documentation
 ```
 
 ## API Endpoints
@@ -172,7 +184,11 @@ myanimeapi/
 {
   "status": "success",
   "message": "Service is healthy",
-  "data": "OK"
+  "data": {
+    "database": "OK",
+    "cache": "OK",
+    "storage": "OK"
+  }
 }
 ```
 
@@ -183,7 +199,9 @@ myanimeapi/
 **Response:**
 ```json
 {
-  "version": "1.7.0"
+  "version": "1.7.0",
+  "build_time": "2025-05-12T10:00:00Z",
+  "git_commit": "a9e16fe"
 }
 ```
 
@@ -191,6 +209,8 @@ myanimeapi/
 
 - **POST** `/v1/auth/register`: Register a new user
 - **POST** `/v1/auth/login`: Authenticate a user and receive a JWT token
+- **POST** `/v1/auth/refresh`: Refresh an expired JWT token
+- **POST** `/v1/auth/logout`: Invalidate the current JWT token
 
 ### Users
 
@@ -204,16 +224,20 @@ myanimeapi/
 | POST | `/v1/users/reset-password` | Reset password with token | No |
 | POST | `/v1/users/change-password` | Change password | Yes |
 | POST | `/v1/users/deactivate` | Deactivate account | Yes |
+| GET | `/v1/users/{id}/reviews` | Get user's reviews | No |
+| GET | `/v1/users/{id}/favorites` | Get user's favorites | No |
 
 ### Anime
 
 | Method | Endpoint | Description | Authentication Required |
 |--------|----------|-------------|------------------------|
-| GET | `/v1/anime` | Get all anime | No |
+| GET | `/v1/anime` | Get all anime with pagination | No |
 | GET | `/v1/anime/{id}` | Get anime by ID | No |
 | POST | `/v1/anime` | Create anime | Yes |
 | PUT | `/v1/anime/{id}` | Update anime | Yes |
 | DELETE | `/v1/anime/{id}` | Delete anime | Yes |
+| GET | `/v1/anime/search` | Search anime | No |
+| GET | `/v1/anime/{id}/reviews` | Get anime reviews | No |
 | POST | `/v1/anime/{id}/favorite` | Add to favorites | Yes |
 | DELETE | `/v1/anime/{id}/favorite` | Remove from favorites | Yes |
 | GET | `/v1/anime/favorites` | Get user's favorites | Yes |
@@ -230,6 +254,7 @@ myanimeapi/
 | GET | `/v1/genres/search` | Search genres | No |
 | POST | `/v1/genres/bulk` | Bulk create genres | Yes |
 | DELETE | `/v1/genres/bulk` | Bulk delete genres | Yes |
+| GET | `/v1/genres/{id}/anime` | Get anime by genre | No |
 
 ### Tags
 
@@ -243,27 +268,19 @@ myanimeapi/
 | GET | `/v1/tags/search` | Search tags | No |
 | POST | `/v1/tags/bulk` | Bulk create tags | Yes |
 | DELETE | `/v1/tags/bulk` | Bulk delete tags | Yes |
+| GET | `/v1/tags/{id}/anime` | Get anime by tag | No |
 
 ### Reviews
 
 | Method | Endpoint | Description | Authentication Required |
 |--------|----------|-------------|------------------------|
-| GET | `/v1/reviews` | Get all reviews | No |
+| GET | `/v1/reviews` | Get all reviews with pagination | No |
 | GET | `/v1/reviews/{id}` | Get review by ID | No |
 | POST | `/v1/reviews` | Create review | Yes |
 | PUT | `/v1/reviews/{id}` | Update review | Yes |
 | DELETE | `/v1/reviews/{id}` | Delete review | Yes |
-| GET | `/v1/reviews/user/{userId}` | Get user's reviews | No |
-| GET | `/v1/reviews/anime/{animeId}` | Get anime's reviews | No |
-
-### Favorites
-
-| Method | Endpoint | Description | Authentication Required |
-|--------|----------|-------------|------------------------|
-| GET | `/v1/favorites` | Get user's favorites | Yes |
-| POST | `/v1/favorites/{animeId}` | Add to favorites | Yes |
-| DELETE | `/v1/favorites/{animeId}` | Remove from favorites | Yes |
-| GET | `/v1/favorites/check/{animeId}` | Check if favorited | Yes |
+| GET | `/v1/reviews/user/{id}` | Get user's reviews | No |
+| GET | `/v1/reviews/anime/{id}` | Get anime's reviews | No |
 
 ## Documentation
 
@@ -275,7 +292,14 @@ Generate Swagger documentation:
 swag init --dir ./cmd,./api/handlers,./api/models,./internal/errors --output ./cmd/docs
 ```
 
-Access the Swagger UI at `http://localhost:8080/swagger/index.html`
+
+The API documentation is available at `/swagger/index.html` when running the server. It provides detailed information about:
+
+- Available endpoints
+- Request/response schemas
+- Authentication requirements
+- Example requests and responses
+- Error codes and their meanings
 
 ### GoDoc Documentation
 
@@ -286,35 +310,52 @@ godoc -http=:6060
 ```
 
 Access the documentation at `http://localhost:6060/pkg/myanimeapi/`
+The GoDoc documentation is available at [pkg.go.dev](https://pkg.go.dev/github.com/italo-gouveia/myanimeapi).
 
 ## Testing
 
 ### Unit Tests
+
+Run unit tests:
+
 ```bash
-go test -v ./api/handlers
+go test ./... -v
 ```
 
 ### Integration Tests
+
+Run integration tests:
+
 ```bash
-go test -v ./tests/integration
+go test ./tests/integration/... -v
 ```
 
 ### End-to-End Tests
+
+Run end-to-end tests:
+
 ```bash
-go test -v ./tests/e2e
+go test ./tests/e2e/... -v
 ```
 
 ### Smoke Tests
+
+Run smoke tests:
+
 ```bash
-go test -v ./tests/smoke
+go test ./tests/smoke/... -v
 ```
 
 ### Test Coverage
+
+Generate test coverage report:
+
 ```bash
-go test -coverprofile=coverage.out ./...
+go test ./... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 ```
 
+# TODO: Need to be updated the images/diagrams
 ## Diagrams
 
 This section provides visual representations of the application's architecture, database schema, component interactions, deployment flow, and key workflows.
@@ -408,44 +449,39 @@ The sequence of steps involved in creating a new anime entry.
 ## Contributing
 
 1. Fork the repository
-2. Create a new branch for your feature or bugfix
-3. Commit your changes with clear and descriptive messages
-4. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## Changelog
 
-See the [CHANGELOG.md](CHANGELOG.md) file for a detailed list of changes.
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 ## Badges
-[![Build Status](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/italo-gouveia/myAnimeAPI/actions)
-[![Test Coverage](https://codecov.io/gh/italo-gouveia/myAnimeAPI/branch/main/graph/badge.svg)](https://codecov.io/gh/italo-gouveia/myAnimeAPI)
-[![Security Scan](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/security.yml/badge.svg)](https://github.com/italo-gouveia/myAnimeAPI/actions/workflows/security.yml)
-[![Swagger](https://img.shields.io/badge/docs-swagger-blue)](https://github.com/italo-gouveia/myAnimeAPI/blob/main/cmd/docs/swagger.yaml)
-[![GitHub release](https://img.shields.io/github/release/italo-gouveia/myAnimeAPI.svg)](https://github.com/italo-gouveia/myAnimeAPI/releases)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI)
-[![GitHub stars](https://img.shields.io/github/stars/italo-gouveia/myAnimeAPI.svg?style=social)](https://github.com/italo-gouveia/myAnimeAPI/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/italo-gouveia/myAnimeAPI.svg?style=social)](https://github.com/italo-gouveia/myAnimeAPI/network/members)
-[![GitHub last commit](https://img.shields.io/github/last-commit/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/commits/main)
-[![GitHub issues](https://img.shields.io/github/issues/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/italo-gouveia/myAnimeAPI)](https://github.com/italo-gouveia/myAnimeAPI/pulls)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/italo-gouveia/myanimeapi)](https://goreportcard.com/report/github.com/italo-gouveia/myanimeapi)
+[![GoDoc](https://godoc.org/github.com/italo-gouveia/myanimeapi?status.svg)](https://godoc.org/github.com/italo-gouveia/myanimeapi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![DeepWiki Documentation](https://img.shields.io/badge/docs-DeepWiki-blue)](https://deepwiki.com/italo-gouveia/myanimeapi)
-[![GitDiagram](https://img.shields.io/badge/architecture-GitDiagram-blue)](https://gitdiagram.com/italo-gouveia/myanimeapi)
+[![Build Status](https://github.com/italo-gouveia/myanimeapi/workflows/CI/badge.svg)](https://github.com/italo-gouveia/myanimeapi/actions)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=italo-gouveia_myanimeapi&metric=coverage)](https://sonarcloud.io/dashboard?id=italo-gouveia_myanimeapi)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=italo-gouveia_myanimeapi&metric=alert_status)](https://sonarcloud.io/dashboard?id=italo-gouveia_myanimeapi)
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
-- [Gorilla Mux](https://github.com/gorilla/mux) for routing
-- [GORM](https://gorm.io/) for database interactions
-- [JWT](https://jwt.io/) for authentication
-- [Swagger](https://swagger.io/) for API documentation
-- [Docker](https://www.docker.com/) for Containerization
-- [Validator](https://github.com/go-playground/validator) for input validation
-- [AWS SDK](https://aws.amazon.com/sdk-for-go/) for S3 storage integration
-- [Bluemonday](https://github.com/microcosm-cc/bluemonday) for HTML sanitization
+
+- [Gorilla Mux](https://github.com/gorilla/mux)
+- [GORM](https://gorm.io/)
+- [Swagger](https://swagger.io/)
+- [JWT-Go](https://github.com/golang-jwt/jwt)
+- [Validator](https://github.com/go-playground/validator)
+- [Bluemonday](https://github.com/microcosm-cc/bluemonday)
 
 ## Contact
 For questions or feedback, please reach out to italogouveiadev@outlook.com.
 
+
+Project Link: [https://github.com/italo-gouveia/myanimeapi](https://github.com/italo-gouveia/myanimeapi)

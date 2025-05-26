@@ -17,10 +17,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,14 +33,14 @@ import (
 	"myanimeapi/api/services"
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/db"
+	"myanimeapi/internal/logger"
 
-	// Alias for Gorilla's handlers package
 	gorillahandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
 const (
-	VERSION = "1.4.0" // Current version of the API
+	version = "1.9.0"
 )
 
 // @title MyAnimeAPI
@@ -61,12 +61,22 @@ const (
 // @description Use the format "Bearer <JWT_TOKEN>". Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 // @security ApiKeyAuth
 func main() {
+	// Initialize logger with environment-based level
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	log := logger.New()
+	logger.SetDefaultLogger(log)
+	log.WithField("level", logLevel).Info("Logger initialized")
+
 	// Load configuration
 	cfg := config.LoadConfig()
 	if cfg == nil {
-		log.Fatal("Error loading config")
+		log.Error("Error loading config")
+		os.Exit(1)
 	}
-	log.Println("Configuration loaded successfully")
+	log.WithField("version", version).Info("Configuration loaded successfully")
 
 	// Build the connection string for PostgreSQL
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
@@ -75,9 +85,10 @@ func main() {
 	// Open a connection to the database
 	gormDB, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
+		log.WithField("error", err.Error()).Error("Error opening database connection")
+		os.Exit(1)
 	}
-	log.Println("Database connection established successfully")
+	log.Info("Database connection established successfully")
 
 	// Wrap the *gorm.DB instance in the GormDB struct
 	dbWrapper := db.NewGormDB(gormDB)
@@ -85,36 +96,39 @@ func main() {
 	// AutoMigrate the database schema
 	err = database.SetupDatabase(gormDB)
 	if err != nil {
-		log.Fatalf("Error migrating database schema: %v", err)
+		log.WithField("error", err.Error()).Error("Error setting up database")
+		os.Exit(1)
 	}
-	log.Println("Database schema migrated successfully")
+	log.Info("Database setup completed successfully")
 
 	// Initialize storage service
-	var storageSvc *services.StorageService
+	var storageSvc services.StorageServiceInterface
 	if os.Getenv("ENV") == "production" {
 		// Use S3 storage in production
-		s3Strategy, err := services.NewS3StorageStrategy(
+		s3Strategy, errS3 := services.NewS3StorageStrategy(
 			os.Getenv("AWS_REGION"),
 			os.Getenv("AWS_S3_BUCKET"),
 			os.Getenv("AWS_S3_BASE_URL"),
 			"uploads",
 		)
-		if err != nil {
-			log.Fatalf("Failed to initialize S3 storage: %v", err)
+		if errS3 != nil {
+			log.WithField("error", errS3.Error()).Error("Failed to initialize S3 storage")
+			os.Exit(1)
 		}
 		storageSvc = services.NewStorageService(s3Strategy)
 	} else {
 		// Use local storage in development
-		localStrategy, err := services.NewLocalStorageStrategy(
+		localStrategy, errLocal := services.NewLocalStorageStrategy(
 			".",
 			"/media",
 		)
-		if err != nil {
-			log.Fatalf("Failed to initialize local storage: %v", err)
+		if errLocal != nil {
+			log.WithField("error", errLocal.Error()).Error("Failed to initialize local storage")
+			os.Exit(1)
 		}
 		storageSvc = services.NewStorageService(localStrategy)
 	}
-	log.Println("Storage service initialized successfully")
+	log.Info("Storage service initialized successfully")
 
 	// Create a new router
 	router := mux.NewRouter()
@@ -122,29 +136,37 @@ func main() {
 	// Add request ID middleware
 	router.Use(middleware.RequestIDMiddleware())
 
-	// Determine environment
-	env := os.Getenv("ENVIRONMENT")
-	if env == "production" {
-		log.Println("Running in production mode")
-		// Apply HTTPS redirection middleware
-		//router.Use(middleware.HTTPSRedirectMiddleware)
+	// Determine environment and configure accordingly
+	if os.Getenv("ENV") == "production" {
+		log.Info("Running in production mode")
+		// TODO: Implement HTTPS redirection middleware
+		// router.Use(middleware.HTTPSRedirectMiddleware)
 	}
 
-	// Serve Swagger UI
-	swaggerURL := os.Getenv("SWAGGER_URL")
 	// Register all routes
-	routes.RegisterRoutes(router, swaggerURL, dbWrapper, storageSvc, VERSION)
-	log.Println("Routes registered successfully")
+	routes.RegisterRoutes(router, os.Getenv("SWAGGER_URL"), dbWrapper, storageSvc, version)
+	log.Info("Routes registered successfully")
 
 	// Serve static files for media
 	fs := http.FileServer(http.Dir("uploads"))
 	router.PathPrefix("/api/media/").Handler(http.StripPrefix("/api/media/", fs))
-	log.Println("Static file serving configured")
+	log.Info("Static file serving configured")
 
 	// Configure CORS
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "*" // Default to allow all origins in development
+		log.Warning("ALLOWED_ORIGINS not set, defaulting to '*'")
+	}
+
+	// Split allowed origins by comma and trim spaces
+	origins := strings.Split(allowedOrigins, ",")
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+
 	corsHandler := gorillahandlers.CORS(
-		gorillahandlers.AllowedOrigins([]string{allowedOrigins}),
+		gorillahandlers.AllowedOrigins(origins),
 		gorillahandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}),
 		gorillahandlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
@@ -153,7 +175,7 @@ func main() {
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:           corsHandler(router),
-		ReadHeaderTimeout: 10 * time.Second, // Add a timeout for reading headers
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Channel to listen for interrupt signals
@@ -162,15 +184,20 @@ func main() {
 
 	// Start the server in a goroutine
 	go func() {
-		log.Printf("Starting MyAnimeAPI version %s on :%d", VERSION, cfg.Server.Port)
+		log.WithFields(map[string]interface{}{
+			"version": version,
+			"port":    cfg.Server.Port,
+		}).Info("Starting MyAnimeAPI")
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error starting server: %v", err)
+			log.WithField("error", err.Error()).Error("Error starting server")
+			os.Exit(1)
 		}
 	}()
 
 	// Wait for interrupt signal
 	<-done
-	log.Println("Server is shutting down...")
+	log.Info("Server is shutting down...")
 
 	// Create a context with a timeout for graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -178,7 +205,8 @@ func main() {
 
 	// Shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Error shutting down server: %v", err)
+		log.WithField("error", err.Error()).Error("Error shutting down server")
+		os.Exit(1)
 	}
-	log.Println("Server shut down gracefully")
+	log.Info("Server shut down gracefully")
 }

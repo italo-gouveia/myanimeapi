@@ -4,11 +4,13 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 )
 
 // RateLimiter is a struct that holds rate-limiting data for clients.
@@ -54,6 +56,7 @@ func (rl *RateLimiter) SetClock(clock func() time.Time) {
 // This will enforce rate limits for requests to "/path".
 func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.Get()
 		rl.mu.Lock()
 		defer rl.mu.Unlock()
 
@@ -85,23 +88,38 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 			rl.clients[ip].count = 0
 		}
 
-		// Check if the request count exceeds the limit
-		if rl.clients[ip].count >= limit {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusTooManyRequests)
-			_, err := w.Write([]byte(`{"error": "Rate limit exceeded. Please try again later."}`))
-			if err != nil {
-				log.Printf("Failed to write response: %v", err)
-			}
-			return
-		}
-
 		// Increment the request count and update the last seen time
 		rl.clients[ip].count++
 		rl.clients[ip].lastSeen = rl.clock()
 
+		// Check if the request count exceeds the limit
+		if rl.clients[ip].count > limit {
+			log.WithFields(map[string]interface{}{
+				"ip":         ip,
+				"path":       r.URL.Path,
+				"count":      rl.clients[ip].count,
+				"limit":      limit,
+				"window":     window.String(),
+				"last_seen":  rl.clients[ip].lastSeen,
+				"user_agent": r.UserAgent(),
+				"request_id": r.Context().Value(RequestIDContextKey),
+			}).Warning("Rate limit exceeded")
+
+			errors.WriteErrorResponse(w, http.StatusTooManyRequests, errors.ErrTooManyRequests, "Rate limit exceeded", "Please try again later.", nil)
+			return
+		}
+
 		// Log the current state for debugging
-		log.Printf("IP: %s, Path: %s, Count: %d, LastSeen: %v", ip, r.URL.Path, rl.clients[ip].count, rl.clients[ip].lastSeen)
+		log.WithFields(map[string]interface{}{
+			"ip":         ip,
+			"path":       r.URL.Path,
+			"count":      rl.clients[ip].count,
+			"limit":      limit,
+			"window":     window.String(),
+			"last_seen":  rl.clients[ip].lastSeen,
+			"user_agent": r.UserAgent(),
+			"request_id": r.Context().Value(RequestIDContextKey),
+		}).Debug("Rate limit check passed")
 
 		// Call the next handler
 		next.ServeHTTP(w, r)

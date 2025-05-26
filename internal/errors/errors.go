@@ -17,6 +17,7 @@ package errors
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -30,24 +31,31 @@ import (
 //	  "error": {
 //	    "code": "ERR-001",
 //	    "message": "Invalid input: title is required",
-//	    "details": "The 'title' field is missing in the request body."
+//	    "details": "The 'title' field is missing in the request body.",
+//	    "context": {
+//	      "field": "title",
+//	      "value": null
+//	    }
 //	  }
 //	}
 type ErrorResponse struct {
 	Error struct {
-		Code    string `json:"code"`              // A unique error code for categorization.
-		Message string `json:"message"`           // A human-readable error message.
-		Details string `json:"details,omitempty"` // Additional context or details about the error.
+		Code    string                 `json:"code"`              // A unique error code for categorization.
+		Message string                 `json:"message"`           // A human-readable error message.
+		Details string                 `json:"details,omitempty"` // Additional context or details about the error.
+		Context map[string]interface{} `json:"context,omitempty"` // Additional context fields for debugging.
 	} `json:"error"`
 }
 
 // AppError represents a structured application error.
 // It includes an error code, a message, and optional details for additional context.
 type AppError struct {
-	Code       string // A unique error code for categorization.
-	Message    string // A human-readable error message.
-	Details    string // Additional context or details about the error.
-	StatusCode int    // HTTP status code for the error.
+	Code       string                 `json:"code"`              // A unique error code for categorization.
+	Message    string                 `json:"message"`           // A human-readable error message.
+	Details    string                 `json:"details,omitempty"` // Additional context or details about the error.
+	StatusCode int                    `json:"status_code"`       // HTTP status code for the error.
+	Context    map[string]interface{} `json:"context,omitempty"` // Additional context fields for debugging.
+	Err        error                  `json:"-"`                 // The original error, if any.
 }
 
 // Error returns a formatted error message for the AppError.
@@ -58,23 +66,27 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
-// NewError creates a new AppError instance.
-// It initializes the AppError with the provided code, message, and details.
+// NewError creates a new AppError instance with context.
+// It initializes the AppError with the provided code, message, details, and context.
 //
 // Parameters:
 //   - code: A unique error code (e.g., errors.ErrInvalidInput).
 //   - message: A human-readable error message.
 //   - details: Additional context or details about the error (optional).
 //   - statusCode: HTTP status code for the error.
+//   - context: Additional context fields for debugging (optional).
+//   - err: The original error, if any (optional).
 //
 // Returns:
 //   - *AppError: A pointer to the newly created AppError.
-func NewError(code, message, details string, statusCode int) *AppError {
+func NewError(code, message, details string, statusCode int, context map[string]interface{}, err error) *AppError {
 	return &AppError{
 		Code:       code,
 		Message:    message,
 		Details:    details,
 		StatusCode: statusCode,
+		Context:    context,
+		Err:        err,
 	}
 }
 
@@ -105,10 +117,15 @@ func NewErrorResponse(code, message, details string) *ErrorResponse {
 //   - code: A unique error code (e.g., errors.ErrInvalidInput).
 //   - message: A human-readable error message.
 //   - details: Additional context or details about the error (optional).
-func WriteErrorResponse(w http.ResponseWriter, statusCode int, code, message, details string) {
+//   - context: Additional context fields for debugging (optional).
+func WriteErrorResponse(w http.ResponseWriter, statusCode int, code, message, details string, context map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	errResp := NewErrorResponse(code, message, details)
+	errResp := &ErrorResponse{}
+	errResp.Error.Code = code
+	errResp.Error.Message = message
+	errResp.Error.Details = details
+	errResp.Error.Context = context
 	if err := json.NewEncoder(w).Encode(errResp); err != nil {
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
@@ -134,16 +151,16 @@ func WriteAppErrorResponse(w http.ResponseWriter, err error) {
 		validationErr = e
 	default:
 		// Default to internal server error if the error type is unknown
-		WriteErrorResponse(w, http.StatusInternalServerError, ErrInternalServer, "An unexpected error occurred", err.Error())
+		WriteErrorResponse(w, http.StatusInternalServerError, ErrInternalServer, "An unexpected error occurred", err.Error(), nil)
 		return
 	}
 
 	if appErr != nil {
-		WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
+		WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 	} else if notFoundErr != nil {
-		WriteErrorResponse(w, http.StatusNotFound, notFoundErr.Code, notFoundErr.Error(), "")
+		WriteErrorResponse(w, http.StatusNotFound, notFoundErr.Code, notFoundErr.Error(), "", nil)
 	} else if validationErr != nil {
-		WriteErrorResponse(w, http.StatusBadRequest, validationErr.Code, validationErr.Error(), "")
+		WriteErrorResponse(w, http.StatusBadRequest, validationErr.Code, validationErr.Error(), "", nil)
 	}
 }
 
@@ -240,8 +257,42 @@ const (
 	ErrInternalServer     = "ERR-004" // Internal server error.
 	ErrUnauthorized       = "ERR-005" // Unauthorized access.
 	ErrRateLimitExceeded  = "ERR-006" // Rate limit exceeded.
+	ErrTooManyRequests    = "ERR-006" // Too many requests (rate limit exceeded).
 	ErrDatabaseConnection = "ERR-007" // Database connection error.
 	ErrConflict           = "ERR-008" // Conflict (e.g., duplicate resource).
 	ErrForbidden          = "ERR-009" // Forbidden access (e.g., insufficient permissions).
 	ErrServiceUnavailable = "ERR-010" // Service unavailable (e.g., third-party service down).
 )
+
+// IsUnauthorized checks if the error is an unauthorized error.
+func IsUnauthorized(err error) bool {
+	var appErr *AppError
+	if errors.As(err, &appErr) {
+		return appErr.Code == ErrUnauthorized
+	}
+	return false
+}
+
+// IsForbidden checks if the error is a forbidden error.
+func IsForbidden(err error) bool {
+	var appErr *AppError
+	if errors.As(err, &appErr) {
+		return appErr.Code == ErrForbidden
+	}
+	return false
+}
+
+// IsNotFound checks if the error is a not found error.
+func IsNotFound(err error) bool {
+	var notFoundErr *NotFoundError
+	return errors.As(err, &notFoundErr)
+}
+
+// IsInvalidInput checks if the error is an invalid input error.
+func IsInvalidInput(err error) bool {
+	var appErr *AppError
+	if errors.As(err, &appErr) {
+		return appErr.Code == ErrInvalidInput
+	}
+	return false
+}

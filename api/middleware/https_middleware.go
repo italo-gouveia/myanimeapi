@@ -1,51 +1,93 @@
 // api/middleware/https_middleware.go
-// Package middleware provides HTTP middleware functions for the MyAnimeAPI application.
-// This file contains middleware for enforcing HTTPS connections.
+// Package middleware provides HTTP middleware utilities for handling requests in the MyAnimeAPI application.
+// It includes middleware functions for error handling, authentication, logging, and more.
+//
+// Middleware functions in this package are designed to wrap HTTP handlers and provide additional
+// functionality such as panic recovery, request validation, and access control.
 package middleware
 
-// allowedDomains is a list of trusted domains to which HTTPS redirection is allowed.
-//var allowedDomains = []string{"localhost", "myanimeapi.onrender.com", "myanimeapi.com"}
+import (
+	"net/http"
+	"strings"
 
-// isAllowedDomain checks if the provided host is in the list of allowed domains.
-// It ensures that the host matches one of the trusted domains to prevent open redirect vulnerabilities.
-/*func isAllowedDomain(host string) bool {
-	for _, domain := range allowedDomains {
-		if strings.EqualFold(host, domain) {
-			return true
-		}
-	}
-	return false
-}*/
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
+)
 
-// HTTPSRedirectMiddleware is a middleware that redirects HTTP requests to HTTPS.
-// It checks if the request is already using HTTPS by inspecting the "X-Forwarded-Proto" header.
-// If the request is not using HTTPS, it redirects the client to the HTTPS version of the URL.
-// The middleware ensures that redirection only occurs for trusted domains listed in `allowedDomains`.
-//
-// Example:
-//
-//	Usage in a router:
-//	router := http.NewServeMux()
-//	router.HandleFunc("/", myHandler)
-//	http.ListenAndServe(":80", middleware.HTTPSRedirectMiddleware(router))
-//
-//	When a client accesses "http://example.com", they will be redirected to "https://example.com".
-/*func HTTPSRedirectMiddleware(next http.Handler) http.Handler {
+// HTTPSMiddleware ensures that all requests are handled securely over HTTPS.
+// It redirects HTTP requests to HTTPS and sets security headers.
+func HTTPSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if the request is not HTTPS
-		if r.Header.Get("X-Forwarded-Proto") != "https" {
+		log := logger.Get()
+		logFields := map[string]interface{}{
+			"method":      r.Method,
+			"path":        r.URL.Path,
+			"remote_addr": r.RemoteAddr,
+			"user_agent":  r.UserAgent(),
+		}
+
+		// Check if the request is already HTTPS
+		if r.TLS == nil {
+			// Get the host from the request
 			host := r.Host
-			if isAllowedDomain(host) {
-				// Hardcode the HTTPS URL for trusted domains
-				redirectURL := "https://" + host
-				http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
-				return
+			if host == "" {
+				host = r.URL.Host
 			}
-			// If the domain is not allowed, return a 403 Forbidden error
-			errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Forbidden: Domain not allowed for HTTPS redirection", "The requested domain is not allowed for HTTPS redirection.")
+
+			// Construct the HTTPS URL
+			httpsURL := "https://" + host + r.URL.Path
+			if r.URL.RawQuery != "" {
+				httpsURL += "?" + r.URL.RawQuery
+			}
+
+			// Log the redirect
+			log.WithFields(logFields).Info("Redirecting HTTP request to HTTPS")
+
+			// Redirect to HTTPS
+			http.Redirect(w, r, httpsURL, http.StatusPermanentRedirect)
 			return
 		}
-		// If the request is already HTTPS, proceed to the next handler
+
+		// Set security headers
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		// Check for secure cookies
+		if strings.HasPrefix(r.URL.Path, "/auth") {
+			// Ensure cookies are secure for auth endpoints
+			for _, cookie := range r.Cookies() {
+				if !cookie.Secure {
+					// Log insecure cookie
+					log.WithFields(logFields).WithField("cookie_name", cookie.Name).Warning("Insecure cookie detected on auth endpoint")
+
+					// Return error response
+					errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput,
+						"Security Error",
+						"Invalid cookie configuration",
+						logFields)
+					return
+				}
+			}
+		}
+
+		// Continue with the request
 		next.ServeHTTP(w, r)
 	})
-}*/
+}
+
+// IsSecureRequest checks if the request is coming over HTTPS
+func IsSecureRequest(r *http.Request) bool {
+	return r.TLS != nil
+}
+
+// GetProtocol returns the protocol used in the request
+func GetProtocol(r *http.Request) string {
+	if IsSecureRequest(r) {
+		return "https"
+	}
+	return "http"
+}

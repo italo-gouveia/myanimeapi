@@ -15,6 +15,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// StorageServiceInterface defines the interface for storage service operations
+type StorageServiceInterface interface {
+	// SaveFile saves a file and returns its URL
+	SaveFile(file *multipart.FileHeader, directory string) (string, error)
+	// DeleteFile deletes a file by its URL
+	DeleteFile(ctx context.Context, fileURL string) error
+	// GetBaseURL returns the base URL for accessing files
+	GetBaseURL() string
+}
+
 // StorageStrategy defines the interface for different storage implementations
 type StorageStrategy interface {
 	// SaveFile saves a file and returns its URL
@@ -174,12 +184,14 @@ func (s *S3StorageStrategy) GetBaseURL() string {
 }
 
 // StorageService manages file storage operations using the configured strategy
+// It implements the StorageServiceInterface.
 type StorageService struct {
 	strategy StorageStrategy
 }
 
 // NewStorageService creates a new storage service with the specified strategy
-func NewStorageService(strategy StorageStrategy) *StorageService {
+// It returns a StorageServiceInterface implementation.
+func NewStorageService(strategy StorageStrategy) StorageServiceInterface {
 	return &StorageService{
 		strategy: strategy,
 	}

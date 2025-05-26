@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: PR Description Update
 
 on:
   pull_request:
@@ -9,77 +9,110 @@ jobs:
   analyze-changes:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Allow updating PR descriptions
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full Git history
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub
+
       - name: Analyze changes and update PR description
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}  # Target branch SHA
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}  # Source branch SHA
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           python3 - <<EOF
           import os
           import subprocess
           import json
+          from github import Github
+          from collections import defaultdict
+
+          def get_file_type(file_path):
+              if file_path.endswith('.go'):
+                  return 'Go'
+              elif file_path.endswith('.js') or file_path.endswith('.ts'):
+                  return 'JavaScript/TypeScript'
+              elif file_path.endswith('.py'):
+                  return 'Python'
+              elif file_path.endswith('.yml') or file_path.endswith('.yaml'):
+                  return 'YAML'
+              elif file_path.endswith('.md'):
+                  return 'Documentation'
+              else:
+                  return 'Other'
 
           def analyze_changes():
-              # Get the base and head SHAs for the PR
               base_sha = os.getenv("BASE_SHA")
               head_sha = os.getenv("HEAD_SHA")
 
-              # Get the list of all changed files in the PR
+              # Get changed files
               changed_files = subprocess.check_output(
                   ["git", "diff", "--name-only", base_sha, head_sha]
               ).decode("utf-8").splitlines()
 
-              # Analyze changes (example logic)
-              analysis = "## Changes Detected\n"
-              for file in changed_files:
-                  analysis += f"- **{file}**: Modified\n"
+              # Get file stats
+              stats = subprocess.check_output(
+                  ["git", "diff", "--stat", base_sha, head_sha]
+              ).decode("utf-8")
 
-              # Add a summary
-              analysis += "\n### Summary\n"
-              analysis += "This PR includes changes to the following files. Please review them carefully."
+              # Group files by type
+              file_types = defaultdict(list)
+              for file in changed_files:
+                  file_type = get_file_type(file)
+                  file_types[file_type].append(file)
+
+              # Generate analysis
+              analysis = "## Changes Analysis\n\n"
+              
+              # Add file type summary
+              analysis += "### File Type Summary\n"
+              for file_type, files in file_types.items():
+                  analysis += f"- **{file_type}**: {len(files)} files\n"
+              analysis += "\n"
+
+              # Add detailed changes
+              analysis += "### Detailed Changes\n"
+              for file_type, files in file_types.items():
+                  analysis += f"\n#### {file_type} Files\n"
+                  for file in files:
+                      analysis += f"- {file}\n"
+
+              # Add git stats
+              analysis += "\n### Git Statistics\n"
+              analysis += "```\n"
+              analysis += stats
+              analysis += "```\n"
 
               return analysis
 
           def update_pr_description(description):
-              # Update the PR description using the GitHub API
-              pr_number = os.getenv("GITHUB_REF").split("/")[-2]
-              repo = os.getenv("GITHUB_REPOSITORY")
               github_token = os.getenv("GITHUB_TOKEN")
+              repo = os.getenv("GITHUB_REPOSITORY")
+              pr_number = int(os.getenv("GITHUB_REF").split("/")[-2])
 
-              update_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-              headers = {
-                  "Authorization": f"Bearer {github_token}",
-                  "Accept": "application/vnd.github.v3+json",
-              }
-              data = {"body": description}
+              g = Github(github_token)
+              repo = g.get_repo(repo)
+              pr = repo.get_pull(pr_number)
 
-              # Use `json.dumps` to properly format the JSON payload
-              json_data = json.dumps(data)
+              # Get existing description
+              existing_description = pr.body or ""
 
-              subprocess.run(
-                  [
-                      "curl",
-                      "-X", "PATCH",
-                      "-H", f"Authorization: Bearer {github_token}",
-                      "-H", "Content-Type: application/json",
-                      "-d", json_data,
-                      update_url,
-                  ],
-                  check=True,
-              )
+              # Add new analysis if not already present
+              if "## Changes Analysis" not in existing_description:
+                  new_description = existing_description + "\n\n" + description
+                  pr.edit(body=new_description)
 
           if __name__ == "__main__":
               description = analyze_changes()

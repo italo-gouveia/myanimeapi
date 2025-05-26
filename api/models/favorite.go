@@ -68,3 +68,15 @@ type FavoriteResponse struct {
 func (Favorite) TableName() string {
 	return "favorites"
 }
+
+// ToResponse converts a Favorite model to a FavoriteResponse.
+func (f Favorite) ToResponse() FavoriteResponse {
+	return FavoriteResponse{
+		ID:        f.ID,
+		UserID:    f.UserID,
+		AnimeID:   f.AnimeID,
+		CreatedAt: f.CreatedAt,
+		UpdatedAt: f.UpdatedAt,
+		Anime:     f.Anime,
+	}
+}
