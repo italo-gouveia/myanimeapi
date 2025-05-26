@@ -18,14 +18,38 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 	"net/http"
 	"time"
 )
+
+// UserServiceInterface defines the interface for user service operations
+type UserServiceInterface interface {
+	// GetAllUsers retrieves all users with pagination
+	GetAllUsers(ctx context.Context, page, limit int) ([]models.User, int64, error)
+	// CreateUser creates a new user
+	CreateUser(ctx context.Context, user *models.User) error
+	// DeleteUser deletes a user by ID
+	DeleteUser(ctx context.Context, id uint) error
+	// GetByID retrieves a user by ID
+	GetByID(ctx context.Context, id uint) (*models.User, error)
+	// GetByEmail retrieves a user by email
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	// GetByUsername retrieves a user by username
+	GetByUsername(ctx context.Context, username string) (*models.User, error)
+	// ValidateUser validates a user's credentials
+	ValidateUser(ctx context.Context, username, password string) (*models.User, error)
+	// UpdateUser updates an existing user
+	UpdateUser(ctx context.Context, user *models.User) error
+	// ChangePassword changes a user's password
+	ChangePassword(ctx context.Context, userID uint, currentPassword, newPassword string) error
+	// DeactivateAccount deactivates a user's account
+	DeactivateAccount(ctx context.Context, userID uint, password string) error
+}
 
 // UserService handles business logic for user operations.
 // It provides methods for user management including:
@@ -41,228 +65,415 @@ import (
 //   - Unique username and email constraints
 type UserService struct {
 	userRepo repositories.UserRepository
+	logger   *logger.Logger
 }
 
 // NewUserService creates a new UserService instance.
 // It takes a UserRepository implementation as a dependency,
 // following the dependency injection pattern.
-func NewUserService(userRepo repositories.UserRepository) *UserService {
+func NewUserService(userRepo repositories.UserRepository) UserServiceInterface {
 	return &UserService{
 		userRepo: userRepo,
+		logger:   logger.New(),
 	}
-}
-
-// GetUserByID retrieves a user by ID
-func (s *UserService) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
-	log.Printf("UserService.GetUserByID: Retrieving user with ID %d", id)
-
-	userInterface, err := s.userRepo.GetByID(ctx, id)
-	if err != nil {
-		log.Printf("UserService.GetUserByID: Failed to retrieve user: %v", err)
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve user", err.Error(), http.StatusInternalServerError)
-	}
-
-	user, ok := userInterface.(*models.User)
-	if !ok {
-		log.Printf("UserService.GetUserByID: Invalid user type returned from repository")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid user type returned from repository", "Type assertion failed for user model", http.StatusInternalServerError)
-	}
-
-	log.Printf("UserService.GetUserByID: Successfully retrieved user with ID %d", id)
-	return user, nil
 }
 
 // GetAllUsers retrieves all users with pagination
 func (s *UserService) GetAllUsers(ctx context.Context, page, limit int) ([]models.User, int64, error) {
-	log.Printf("UserService.GetAllUsers: Retrieving all users with page %d and limit %d", page, limit)
+	s.logger.WithFields(map[string]interface{}{
+		"page":  page,
+		"limit": limit,
+	}).Info("Retrieving all users")
 
 	usersInterface, total, err := s.userRepo.GetAll(ctx, page, limit)
 	if err != nil {
-		log.Printf("UserService.GetAllUsers: Failed to retrieve users: %v", err)
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve users", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"page":  page,
+			"limit": limit,
+			"error": err.Error(),
+		}).Error("Failed to retrieve users")
+		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve users", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"page":  page,
+			"limit": limit,
+		}, err)
 	}
 
-	// Convert interface slice to User slice
 	users := make([]models.User, len(usersInterface))
 	for i, userInterface := range usersInterface {
-		user, ok := userInterface.(models.User)
+		user, ok := userInterface.(*models.User)
 		if !ok {
-			log.Printf("UserService.GetAllUsers: Invalid user type in slice at index %d", i)
-			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid user type in repository response", fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError)
+			s.logger.WithFields(map[string]interface{}{
+				"index": i,
+			}).Error("Invalid user type in slice")
+			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid user type in repository response", fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError, map[string]interface{}{
+				"index": i,
+			}, nil)
 		}
-		users[i] = user
+		users[i] = *user
 	}
 
-	log.Printf("UserService.GetAllUsers: Successfully retrieved %d users", len(users))
+	s.logger.WithFields(map[string]interface{}{
+		"count": len(users),
+		"total": total,
+	}).Info("Successfully retrieved users")
 	return users, total, nil
 }
 
 // CreateUser creates a new user
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
-	log.Printf("UserService.CreateUser: Creating new user with username %s", user.Username)
+	s.logger.WithFields(map[string]interface{}{
+		"username": user.Username,
+		"email":    user.Email,
+	}).Info("Creating new user")
 
-	// Check if username already exists
 	existingUser, err := s.userRepo.GetByUsername(ctx, user.Username)
 	if err == nil && existingUser != nil {
-		log.Printf("UserService.CreateUser: Username %s already exists", user.Username)
-		return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict)
+		s.logger.WithField("username", user.Username).Warning("Username already exists")
+		return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
+			"username": user.Username,
+			"email":    user.Email,
+		}, nil)
 	}
 
-	// Check if email already exists
 	existingUser, err = s.userRepo.GetByEmail(ctx, user.Email)
 	if err == nil && existingUser != nil {
-		log.Printf("UserService.CreateUser: Email %s already exists", user.Email)
-		return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict)
+		s.logger.WithField("email", user.Email).Warning("Email already exists")
+		return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
+			"username": user.Username,
+			"email":    user.Email,
+		}, nil)
 	}
 
-	// Set timestamps
+	hashedPassword, err := auth.HashPassword(user.Password)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"username": user.Username,
+			"error":    err.Error(),
+		}).Error("Failed to hash password")
+		return errors.NewError(errors.ErrInternalServer, "Failed to hash password", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"username": user.Username,
+			"email":    user.Email,
+		}, err)
+	}
+	user.Password = hashedPassword
+
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	// Create user
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		log.Printf("UserService.CreateUser: Failed to create user: %v", err)
-		return errors.NewError(errors.ErrInternalServer, "Failed to create user", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"username": user.Username,
+			"error":    err.Error(),
+		}).Error("Failed to create user")
+		return errors.NewError(errors.ErrInternalServer, "Failed to create user", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"username": user.Username,
+			"email":    user.Email,
+		}, err)
 	}
 
-	log.Printf("UserService.CreateUser: Successfully created user with ID %d", user.ID)
-	return nil
-}
-
-// UpdateUser updates an existing user
-func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
-	log.Printf("UserService.UpdateUser: Updating user with ID %d", user.ID)
-
-	// Check if user exists
-	existingUser, err := s.userRepo.GetByID(ctx, user.ID)
-	if err != nil {
-		log.Printf("UserService.UpdateUser: Failed to retrieve user: %v", err)
-		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound)
-	}
-
-	// Check if username is being changed and if it already exists
-	if user.Username != existingUser.(*models.User).Username {
-		usernameUser, err := s.userRepo.GetByUsername(ctx, user.Username)
-		if err == nil && usernameUser != nil && usernameUser.ID != user.ID {
-			log.Printf("UserService.UpdateUser: Username %s already exists", user.Username)
-			return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken by another user", user.Username), http.StatusConflict)
-		}
-	}
-
-	// Check if email is being changed and if it already exists
-	if user.Email != existingUser.(*models.User).Email {
-		emailUser, err := s.userRepo.GetByEmail(ctx, user.Email)
-		if err == nil && emailUser != nil && emailUser.ID != user.ID {
-			log.Printf("UserService.UpdateUser: Email %s already exists", user.Email)
-			return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered by another user", user.Email), http.StatusConflict)
-		}
-	}
-
-	// Set updated timestamp
-	user.UpdatedAt = time.Now()
-
-	// Update user
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		log.Printf("UserService.UpdateUser: Failed to update user: %v", err)
-		return errors.NewError(errors.ErrInternalServer, "Failed to update user", err.Error(), http.StatusInternalServerError)
-	}
-
-	log.Printf("UserService.UpdateUser: Successfully updated user with ID %d", user.ID)
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+	}).Info("Successfully created user")
 	return nil
 }
 
 // DeleteUser deletes a user by ID
 func (s *UserService) DeleteUser(ctx context.Context, id uint) error {
-	log.Printf("UserService.DeleteUser: Deleting user with ID %d", id)
+	s.logger.WithField("user_id", id).Info("Deleting user")
 
-	// Check if user exists
 	_, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		log.Printf("UserService.DeleteUser: Failed to retrieve user: %v", err)
-		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": id,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": id,
+		}, err)
 	}
 
-	// Delete user
 	if err := s.userRepo.Delete(ctx, id); err != nil {
-		log.Printf("UserService.DeleteUser: Failed to delete user: %v", err)
-		return errors.NewError(errors.ErrInternalServer, "Failed to delete user", err.Error(), http.StatusInternalServerError)
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": id,
+			"error":   err.Error(),
+		}).Error("Failed to delete user")
+		return errors.NewError(errors.ErrInternalServer, "Failed to delete user", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": id,
+		}, err)
 	}
 
-	log.Printf("UserService.DeleteUser: Successfully deleted user with ID %d", id)
+	s.logger.WithField("user_id", id).Info("Successfully deleted user")
 	return nil
-}
-
-// GetUserByUsername retrieves a user by username
-func (s *UserService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	log.Printf("UserService.GetUserByUsername: Retrieving user with username %s", username)
-
-	user, err := s.userRepo.GetByUsername(ctx, username)
-	if err != nil {
-		log.Printf("UserService.GetUserByUsername: Failed to retrieve user: %v", err)
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with username '%s'", username), http.StatusNotFound)
-	}
-
-	log.Printf("UserService.GetUserByUsername: Successfully retrieved user with username %s", username)
-	return user, nil
-}
-
-// GetUserByEmail retrieves a user by email
-func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	log.Printf("UserService.GetUserByEmail: Retrieving user with email %s", email)
-
-	user, err := s.userRepo.GetByEmail(ctx, email)
-	if err != nil {
-		log.Printf("UserService.GetUserByEmail: Failed to retrieve user: %v", err)
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with email '%s'", email), http.StatusNotFound)
-	}
-
-	log.Printf("UserService.GetUserByEmail: Successfully retrieved user with email %s", email)
-	return user, nil
-}
-
-// Update updates a user in the database.
-func (s *UserService) Update(ctx context.Context, user *models.User) error {
-	return s.userRepo.Update(ctx, user)
 }
 
 // GetByID retrieves a user by ID.
 func (s *UserService) GetByID(ctx context.Context, id uint) (*models.User, error) {
+	s.logger.WithField("user_id", id).Info("Retrieving user by ID")
+
 	userInterface, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": id,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": id,
+		}, err)
 	}
+
 	user, ok := userInterface.(*models.User)
 	if !ok {
-		return nil, fmt.Errorf("invalid user type returned from repository")
+		s.logger.WithField("user_id", id).Error("Invalid user type returned from repository")
+		return nil, errors.NewError(errors.ErrInternalServer, "Invalid user type returned from repository", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+			"user_id": id,
+		}, nil)
 	}
+
+	s.logger.WithField("user_id", id).Info("Successfully retrieved user")
 	return user, nil
 }
 
-// GetByEmail retrieves a user by email.
 func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	return s.userRepo.GetByEmail(ctx, email)
+	s.logger.WithField("email", email).Info("Retrieving user by email")
+
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"email": email,
+			"error": err.Error(),
+		}).Error("Failed to retrieve user")
+		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with email '%s'", email), http.StatusNotFound, map[string]interface{}{
+			"email": email,
+		}, err)
+	}
+
+	s.logger.WithField("email", email).Info("Successfully retrieved user")
+	return user, nil
 }
 
-// GetByUsername retrieves a user by username.
 func (s *UserService) GetByUsername(ctx context.Context, username string) (*models.User, error) {
-	return s.userRepo.GetByUsername(ctx, username)
+	s.logger.WithField("username", username).Info("Retrieving user by username")
+
+	user, err := s.userRepo.GetByUsername(ctx, username)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		}).Error("Failed to retrieve user")
+		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with username '%s'", username), http.StatusNotFound, map[string]interface{}{
+			"username": username,
+		}, err)
+	}
+
+	s.logger.WithField("username", username).Info("Successfully retrieved user")
+	return user, nil
 }
 
 // ValidateUser validates a user's credentials.
-func (s *UserService) ValidateUser(ctx context.Context, email, password string) (*models.User, error) {
-	user, err := s.GetByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
+func (s *UserService) ValidateUser(ctx context.Context, username, password string) (*models.User, error) {
+	s.logger.WithField("username", username).Info("Validating user credentials")
 
-	if !user.IsActive {
-		return nil, errors.NewError(errors.ErrUnauthorized, "Account is deactivated", "This account has been deactivated", http.StatusUnauthorized)
+	user, err := s.userRepo.GetByUsername(ctx, username)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		}).Error("Failed to retrieve user")
+		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid credentials", "Invalid username or password", http.StatusUnauthorized, map[string]interface{}{
+			"username": username,
+		}, err)
 	}
 
 	valid, err := auth.CheckPasswordHash(password, user.Password)
 	if err != nil || !valid {
-		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized)
+		s.logger.WithFields(map[string]interface{}{
+			"username": username,
+			"error":    err.Error(),
+		}).Error("Invalid password")
+		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+			"username": username,
+		}, err)
 	}
 
+	s.logger.WithFields(map[string]interface{}{
+		"username": username,
+		"user_id":  user.ID,
+	}).Info("Successfully validated user credentials")
 	return user, nil
+}
+
+// UpdateUser updates a user's information
+func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+	}).Info("Updating user")
+
+	existingUser, err := s.userRepo.GetByID(ctx, user.ID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": user.ID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": user.ID,
+		}, err)
+	}
+
+	// Check if username is being changed and if it's already taken
+	if user.Username != existingUser.(*models.User).Username {
+		existingUser, err = s.userRepo.GetByUsername(ctx, user.Username)
+		if err == nil {
+			s.logger.WithField("username", user.Username).Warning("Username already exists")
+			return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
+				"username": user.Username,
+				"user_id":  user.ID,
+			}, nil)
+		}
+	}
+
+	// Check if email is being changed and if it's already taken
+	if user.Email != existingUser.(*models.User).Email {
+		existingUserByEmail, err := s.userRepo.GetByEmail(ctx, user.Email)
+		if err == nil && existingUserByEmail != nil {
+			s.logger.WithField("email", user.Email).Warning("Email already exists")
+			return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
+				"email":   user.Email,
+				"user_id": user.ID,
+			}, nil)
+		}
+	}
+
+	// Update timestamps
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": user.ID,
+			"error":   err.Error(),
+		}).Error("Failed to update user")
+		return errors.NewError(errors.ErrInternalServer, "Failed to update user", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": user.ID,
+		}, err)
+	}
+
+	s.logger.WithFields(map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+	}).Info("Successfully updated user")
+	return nil
+}
+
+// ChangePassword changes a user's password
+func (s *UserService) ChangePassword(ctx context.Context, userID uint, currentPassword, newPassword string) error {
+	s.logger.WithField("user_id", userID).Info("Changing user password")
+
+	userInterface, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user, ok := userInterface.(*models.User)
+	if !ok {
+		s.logger.WithField("user_id", userID).Error("Invalid user type returned from repository")
+		return errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, nil)
+	}
+
+	valid, err := auth.CheckPasswordHash(currentPassword, user.Password)
+	if err != nil || !valid {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Invalid current password")
+		return errors.NewError(errors.ErrUnauthorized, "Invalid current password", "The provided current password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to hash new password")
+		return errors.NewError(errors.ErrInternalServer, "Failed to hash new password", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+	user.Password = hashedPassword
+
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to update user password")
+		return errors.NewError(errors.ErrInternalServer, "Failed to update user password", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	s.logger.WithField("user_id", userID).Info("Successfully updated user password")
+	return nil
+}
+
+// DeactivateAccount deactivates a user's account
+func (s *UserService) DeactivateAccount(ctx context.Context, userID uint, password string) error {
+	s.logger.WithField("user_id", userID).Info("Deactivating user account")
+
+	userInterface, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to retrieve user")
+		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user, ok := userInterface.(*models.User)
+	if !ok {
+		s.logger.WithField("user_id", userID).Error("Invalid user type returned from repository")
+		return errors.NewError(errors.ErrInternalServer, "Invalid user type", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, nil)
+	}
+
+	valid, err := auth.CheckPasswordHash(password, user.Password)
+	if err != nil || !valid {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Invalid password")
+		return errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	user.IsActive = false
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err.Error(),
+		}).Error("Failed to deactivate user account")
+		return errors.NewError(errors.ErrInternalServer, "Failed to deactivate user account", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+			"user_id": userID,
+		}, err)
+	}
+
+	s.logger.WithField("user_id", userID).Info("Successfully deactivated user account")
+	return nil
 }

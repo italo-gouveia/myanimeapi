@@ -7,144 +7,125 @@ package middleware
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"reflect"
 
-	"myanimeapi/internal/errors" // Import the errors package
-
 	"github.com/go-playground/validator/v10"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/sirupsen/logrus"
+
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 )
 
-var validate = validator.New() // Global validator instance
-var p = bluemonday.UGCPolicy() // Sanitization policy for user-generated content
+var validate = validator.New()
+var p = bluemonday.UGCPolicy()
 
-// contextKeyValidation is a custom type for context keys to avoid key collisions.
-type contextKeyValidation string
-
-// ValidatedPayloadKey is the context key for storing the validated and sanitized payload.
-const ValidatedPayloadKey contextKeyValidation = "validatedPayload"
-
-// ValidateAndSanitizePayload is a middleware that validates and sanitizes the request payload.
-// It decodes the request body into the provided payload type, validates it using the `validator` package,
-// sanitizes string fields using `bluemonday`, and stores the validated payload in the request context.
-//
-// Example usage:
-//
-//	type MyPayload struct {
-//	    Name  string `json:"name" validate:"required,min=3,max=50"`
-//	    Email string `json:"email" validate:"required,email"`
-//	}
-//
-//	http.Handle("/path", ValidateAndSanitizePayload(myHandler, MyPayload{}))
-//
-// This will validate and sanitize the request payload for "/path".
-func ValidateAndSanitizePayload(next http.Handler, payloadType interface{}) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Log the start of the middleware
-		log.Println("Middleware: ValidateAndSanitizePayload started")
-
-		// Create a new instance of the payload type
-		payload := reflect.New(reflect.TypeOf(payloadType)).Interface()
-
-		// Decode the request body into the payload
-		if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
-			// Log the error
-			log.Printf("Middleware: Invalid input - %v", err)
-			errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "The request body could not be decoded.")
-			return
-		}
-
-		// Log the decoded payload
-		log.Printf("Middleware: Decoded payload - %+v", payload)
-
-		// Validate the payload
-		if err := validate.Struct(payload); err != nil {
-			validationErrors := err.(validator.ValidationErrors)
-			errorMessages := make(map[string]string)
-
-			for _, e := range validationErrors {
-				// Customize error messages based on the field and tag
-				switch e.Tag() {
-				case "required":
-					errorMessages[e.Field()] = e.Field() + " is a required field."
-				case "min":
-					errorMessages[e.Field()] = e.Field() + " must be at least " + e.Param() + " characters long."
-				case "max":
-					errorMessages[e.Field()] = e.Field() + " cannot exceed " + e.Param() + " characters."
-				case "gte":
-					errorMessages[e.Field()] = e.Field() + " must be greater than or equal to " + e.Param() + "."
-				case "lte":
-					errorMessages[e.Field()] = e.Field() + " must be less than or equal to " + e.Param() + "."
-				default:
-					errorMessages[e.Field()] = "Validation failed for " + e.Field() + "."
-				}
+// ValidateAndSanitizePayload is a middleware that validates and sanitizes request payloads
+func ValidateAndSanitizePayload(payloadType interface{}) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log := logger.Get()
+			logFields := logrus.Fields{
+				"path":       r.URL.Path,
+				"method":     r.Method,
+				"request_id": r.Context().Value(RequestIDContextKey),
 			}
+			log.WithFields(logFields).Debug("Starting payload validation and sanitization")
 
-			// Log the validation errors
-			log.Printf("Middleware: Validation errors - %+v", errorMessages)
+			// Create a new instance of the payload type
+			payload := reflect.New(reflect.TypeOf(payloadType)).Interface()
 
-			// Return the custom error messages as JSON
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			if err := json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages}); err != nil {
-				// Log the error
-				log.Printf("Middleware: Failed to encode error response - %v", err)
-				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode error response", "An internal server error occurred while encoding the response.")
+			// Decode the request body into the payload
+			if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
+				log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
+				errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "The request body could not be decoded.", nil)
 				return
 			}
-			return
-		}
 
-		// Sanitize string fields in the payload
-		sanitizePayload(payload)
+			// Log the decoded payload
+			log.WithFields(logFields).WithField("payload", payload).Debug("Request body decoded successfully")
 
-		// Log the sanitized payload
-		log.Printf("Middleware: Sanitized payload - %+v", payload)
+			// Validate the payload
+			if err := validate.Struct(payload); err != nil {
+				validationErrors := err.(validator.ValidationErrors)
+				errorMessages := make(map[string]string)
 
-		// Store the validated and sanitized payload in the context using the custom key
-		ctx := context.WithValue(r.Context(), ValidatedPayloadKey, payload)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+				for _, e := range validationErrors {
+					// Customize error messages based on the field and tag
+					switch e.Tag() {
+					case "required":
+						errorMessages[e.Field()] = e.Field() + " is a required field."
+					case "min":
+						errorMessages[e.Field()] = e.Field() + " must be at least " + e.Param() + " characters long."
+					case "max":
+						errorMessages[e.Field()] = e.Field() + " cannot exceed " + e.Param() + " characters."
+					case "gte":
+						errorMessages[e.Field()] = e.Field() + " must be greater than or equal to " + e.Param() + "."
+					case "lte":
+						errorMessages[e.Field()] = e.Field() + " must be less than or equal to " + e.Param() + "."
+					default:
+						errorMessages[e.Field()] = "Validation failed for " + e.Field() + "."
+					}
+				}
 
-// sanitizePayload sanitizes all string fields in the payload.
-// It uses the `bluemonday` policy to sanitize user-generated content.
-func sanitizePayload(payload interface{}) {
-	v := reflect.ValueOf(payload).Elem() // Get the underlying value of the pointer
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if field.Kind() == reflect.String {
-			sanitizedValue := p.Sanitize(field.String()) // Sanitize the string
-			field.SetString(sanitizedValue)              // Update the field with the sanitized value
-		}
+				// Log the validation errors
+				log.WithFields(logFields).WithField("errors", errorMessages).Error("Payload validation failed")
+
+				// Return the custom error messages as JSON
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				if err := json.NewEncoder(w).Encode(map[string]interface{}{"errors": errorMessages}); err != nil {
+					log.WithFields(logFields).WithField("error", err).Error("Failed to encode error response")
+					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode error response", "An internal server error occurred while encoding the response.", nil)
+					return
+				}
+				return
+			}
+
+			// Sanitize string fields in the payload
+			if err := sanitizePayload(payload); err != nil {
+				log.WithFields(logFields).WithField("error", err).Error("Failed to sanitize payload")
+				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to sanitize payload", "An internal server error occurred while sanitizing the payload.", nil)
+				return
+			}
+
+			// Store the validated payload in the context
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, ValidatedPayloadKey, payload)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 
-// sanitizePayload (commented out) is an alternative implementation that supports nested structs and pointers.
-// It recursively sanitizes all string fields in the payload, including those in nested structs and pointers.
-/*
-func sanitizePayload(payload interface{}) {
-	v := reflect.ValueOf(payload).Elem() // Get the underlying value of the pointer
-	sanitizeValue(v)
-}
+// sanitizePayload recursively sanitizes string fields in a struct
+func sanitizePayload(payload interface{}) error {
+	val := reflect.ValueOf(payload)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
 
-// sanitizeValue recursively sanitizes all string fields in the value.
-func sanitizeValue(v reflect.Value) {
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		switch field.Kind() {
-		case reflect.String:
-			sanitizedValue := p.Sanitize(field.String()) // Sanitize the string
-			field.SetString(sanitizedValue)              // Update the field with the sanitized value
-		case reflect.Struct:
-			sanitizeValue(field) // Recursively sanitize nested structs
-		case reflect.Ptr:
-			if !field.IsNil() {
-				sanitizeValue(field.Elem()) // Recursively sanitize nested pointers
+	if val.Kind() != reflect.Struct {
+		return nil
+	}
+
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if field.Kind() == reflect.String {
+			if field.CanSet() {
+				sanitized := p.Sanitize(field.String())
+				field.SetString(sanitized)
+			}
+		} else if field.Kind() == reflect.Struct {
+			if err := sanitizePayload(field.Addr().Interface()); err != nil {
+				return err
+			}
+		} else if field.Kind() == reflect.Ptr && field.Elem().Kind() == reflect.Struct {
+			if err := sanitizePayload(field.Interface()); err != nil {
+				return err
 			}
 		}
 	}
+
+	return nil
 }
-*/

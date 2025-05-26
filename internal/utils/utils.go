@@ -5,9 +5,9 @@ package utils
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
-	"log"
+	"myanimeapi/internal/logger"
 )
 
 // GenerateRandomString generates a cryptographically secure random string of the specified length.
@@ -28,13 +28,16 @@ import (
 //	}
 //	fmt.Println(randomString)
 func GenerateRandomString(length int) (string, error) {
+	log := logger.New()
+
 	if length <= 0 {
 		return "", fmt.Errorf("length must be greater than 0")
 	}
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
-		log.Printf("Error generating random bytes: %v", err)
+		log.WithField("error", err.Error()).Error("Error generating random bytes")
 		return "", err
 	}
-	return hex.EncodeToString(bytes), nil
+
+	return base64.URLEncoding.EncodeToString(bytes)[:length], nil
 }

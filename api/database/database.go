@@ -17,10 +17,11 @@
 package database
 
 import (
-	"log"
 	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"os"
+
+	"myanimeapi/internal/logger"
 
 	"gorm.io/gorm"
 	gormErrors "gorm.io/gorm/logger"
@@ -38,6 +39,8 @@ import (
 //	    log.Fatalf("Error setting up database schema: %v", err)
 //	}
 func SetupDatabase(db *gorm.DB) error {
+	log := logger.New()
+
 	// AutoMigrate to create/update schema
 	err := db.AutoMigrate(
 		&models.User{},
@@ -50,10 +53,10 @@ func SetupDatabase(db *gorm.DB) error {
 		&models.MediaAttachment{},
 	)
 	if err != nil {
-		log.Printf("Error setting up database schema during AutoMigrate: %v", err)
+		log.WithField("error", err.Error()).Error("Error setting up database schema during AutoMigrate")
 		return err
 	}
-	log.Println("Database schema auto-migration completed successfully")
+	log.Info("Database schema auto-migration completed successfully")
 
 	// Create admin user if needed
 	adminUsername := os.Getenv("ADMIN_USERNAME")
@@ -61,7 +64,7 @@ func SetupDatabase(db *gorm.DB) error {
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 
 	if adminUsername == "" || adminEmail == "" || adminPassword == "" {
-		log.Println("ADMIN_USERNAME, ADMIN_EMAIL, or ADMIN_PASSWORD not set. Skipping admin user creation.")
+		log.Info("ADMIN_USERNAME, ADMIN_EMAIL, or ADMIN_PASSWORD not set. Skipping admin user creation.")
 		return nil // Not an error, just skipping
 	}
 
@@ -69,12 +72,17 @@ func SetupDatabase(db *gorm.DB) error {
 	var existingUserByEmail models.User
 	err = db.Where("email = ?", adminEmail).First(&existingUserByEmail).Error
 	if err == nil {
-		log.Printf("Admin user with email '%s' already exists (ID: %d). Skipping creation.", adminEmail, existingUserByEmail.ID)
+		log.WithFields(map[string]interface{}{
+			"email":  adminEmail,
+			"userID": existingUserByEmail.ID,
+		}).Info("Admin user with this email already exists. Skipping creation.")
 		return nil
 	}
-	// Only proceed if error is RecordNotFound, otherwise it's an unexpected DB error
 	if err != gorm.ErrRecordNotFound && err != gormErrors.ErrRecordNotFound {
-		log.Printf("Error checking for admin user by email '%s': %v. Skipping admin creation.", adminEmail, err)
+		log.WithFields(map[string]interface{}{
+			"email": adminEmail,
+			"error": err.Error(),
+		}).Error("Error checking for admin user by email. Skipping admin creation.")
 		return err // Return actual DB error
 	}
 
@@ -82,19 +90,28 @@ func SetupDatabase(db *gorm.DB) error {
 	var existingUserByUsername models.User
 	err = db.Where("username = ?", adminUsername).First(&existingUserByUsername).Error
 	if err == nil {
-		log.Printf("Admin user with username '%s' already exists (ID: %d). Skipping creation.", adminUsername, existingUserByUsername.ID)
+		log.WithFields(map[string]interface{}{
+			"username": adminUsername,
+			"userID":   existingUserByUsername.ID,
+		}).Info("Admin user with this username already exists. Skipping creation.")
 		return nil
 	}
 	if err != gorm.ErrRecordNotFound && err != gormErrors.ErrRecordNotFound {
-		log.Printf("Error checking for admin user by username '%s': %v. Skipping admin creation.", adminUsername, err)
+		log.WithFields(map[string]interface{}{
+			"username": adminUsername,
+			"error":    err.Error(),
+		}).Error("Error checking for admin user by username. Skipping admin creation.")
 		return err // Return actual DB error
 	}
 
-	log.Printf("Creating admin user: Username='%s', Email='%s'", adminUsername, adminEmail)
+	log.WithFields(map[string]interface{}{
+		"username": adminUsername,
+		"email":    adminEmail,
+	}).Info("Creating admin user.")
 
 	hashedPassword, err := auth.HashPassword(adminPassword)
 	if err != nil {
-		log.Printf("Error hashing admin password: %v", err)
+		log.WithField("error", err.Error()).Error("Error hashing admin password")
 		return err
 	}
 
@@ -107,10 +124,16 @@ func SetupDatabase(db *gorm.DB) error {
 	}
 
 	if err := db.Create(&adminUser).Error; err != nil {
-		log.Printf("Error creating admin user '%s': %v", adminUsername, err)
+		log.WithFields(map[string]interface{}{
+			"username": adminUsername,
+			"error":    err.Error(),
+		}).Error("Error creating admin user")
 		return err
 	}
 
-	log.Printf("Admin user '%s' created successfully with ID %d.", adminUsername, adminUser.ID)
+	log.WithFields(map[string]interface{}{
+		"username": adminUsername,
+		"userID":   adminUser.ID,
+	}).Info("Admin user created successfully.")
 	return nil
 }

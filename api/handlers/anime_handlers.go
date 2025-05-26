@@ -102,40 +102,45 @@ func NewAnimeHandler(service services.AnimeServiceInterface) *AnimeHandler {
 //	  ]
 //	}
 func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request) {
-	var request models.AnimeCreateRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeCreateRequest)
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
 	// Create the anime
 	anime := &models.Anime{
-		Title:       request.Title,
-		Description: request.Description,
-		Rating:      request.Rating,
+		Title:       payload.Title,
+		Description: payload.Description,
+		Rating:      payload.Rating,
+		Episodes:    payload.Episodes,
+		Status:      payload.Status,
+		StartDate:   payload.StartDate,
+		EndDate:     payload.EndDate,
 	}
 
 	// Create the anime first
 	if err := h.service.CreateAnime(r.Context(), anime); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create anime", "An internal server error occurred while creating the anime.", nil)
 		return
 	}
 
 	// Add genres if provided
-	if len(request.GenreIDs) > 0 {
-		if err := h.service.AddGenresToAnime(r.Context(), anime.ID, request.GenreIDs); err != nil {
+	if len(payload.GenreIDs) > 0 {
+		if err := h.service.AddGenresToAnime(r.Context(), anime.ID, payload.GenreIDs); err != nil {
 			// Log the error but don't fail the request
 			log.Printf("Failed to add genres to anime: %v", err)
 		}
 	}
 
 	// Add tags if provided
-	if len(request.TagIDs) > 0 {
-		if err := h.service.AddTagsToAnime(r.Context(), anime.ID, request.TagIDs); err != nil {
+	if len(payload.TagIDs) > 0 {
+		if err := h.service.AddTagsToAnime(r.Context(), anime.ID, payload.TagIDs); err != nil {
 			// Log the error but don't fail the request
 			log.Printf("Failed to add tags to anime: %v", err)
 		}
@@ -145,14 +150,19 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	createdAnime, err := h.service.GetAnimeByID(r.Context(), anime.ID)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to retrieve created anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve created anime", "An internal server error occurred while retrieving the created anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusCreated, createdAnime)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(createdAnime.ToResponse()); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // GetAnimeHandler handles retrieving an anime by ID.
@@ -199,21 +209,27 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
 	anime, err := h.service.GetAnimeByID(r.Context(), id)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to retrieve anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve anime", "An internal server error occurred while retrieving the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, anime)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(anime.ToResponse()); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // GetAllAnimesHandler handles retrieving all animes with pagination.
@@ -264,25 +280,46 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 //	  "limit": 10
 //	}
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
-	page, limit := utils.GetPaginationParams(r)
-	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit)
+	// Get pagination parameters from query
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
-			return
-		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to retrieve animes")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
 		return
 	}
 
-	response := map[string]interface{}{
-		"animes": animes,
-		"total":  total,
-		"page":   page,
-		"limit":  limit,
+	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit)
+	if err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+			return
+		}
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve animes", "An internal server error occurred while retrieving the animes.", nil)
+		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, response)
+	responses := make([]models.AnimeResponse, len(animes))
+	for i, anime := range animes {
+		responses[i] = anime.ToResponse()
+	}
+
+	// Create paginated response
+	response := struct {
+		Data  []models.AnimeResponse `json:"data"`
+		Total int64                  `json:"total"`
+		Page  int                    `json:"page"`
+		Limit int                    `json:"limit"`
+	}{
+		Data:  responses,
+		Total: total,
+		Page:  page,
+		Limit: limit,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // UpdateAnimeHandler handles updating an existing anime.
@@ -295,7 +332,7 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 // @Accept json
 // @Produce json
 // @Param id path int true "Anime ID"
-// @Param anime body models.Anime true "Updated anime details"
+// @Param anime body models.AnimeUpdateRequest true "Updated anime details"
 // @Success 200 {object} models.AnimeResponse
 // @Failure 400 {object} errors.ErrorResponse "Invalid anime ID or request body"
 // @Failure 404 {object} errors.ErrorResponse "Anime not found"
@@ -344,27 +381,68 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
-	var anime models.Anime
-	if err := json.NewDecoder(r.Body).Decode(&anime); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeUpdateRequest)
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
-	anime.ID = id
-	if err := h.service.UpdateAnime(r.Context(), &anime); err != nil {
+	// Get the existing anime
+	anime, err := h.service.GetAnimeByID(r.Context(), id)
+	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to update anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve anime", "An internal server error occurred while retrieving the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, anime)
+	// Update the anime fields if provided in the request
+	if payload.Title != "" {
+		anime.Title = payload.Title
+	}
+	if payload.Description != "" {
+		anime.Description = payload.Description
+	}
+	if payload.Episodes != 0 {
+		anime.Episodes = payload.Episodes
+	}
+	if payload.Status != "" {
+		anime.Status = payload.Status
+	}
+	if !payload.StartDate.IsZero() {
+		anime.StartDate = payload.StartDate
+	}
+	if !payload.EndDate.IsZero() {
+		anime.EndDate = payload.EndDate
+	}
+	if payload.Rating != 0 {
+		anime.Rating = payload.Rating
+	}
+
+	// Update the anime
+	if err := h.service.UpdateAnime(r.Context(), anime); err != nil {
+		if appErr, ok := err.(*errors.AppError); ok {
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+			return
+		}
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update anime", "An internal server error occurred while updating the anime.", nil)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(anime.ToResponse()); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // DeleteAnimeHandler handles deleting an anime.
@@ -391,20 +469,22 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
 	if err := h.service.DeleteAnime(r.Context(), id); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to delete anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete anime", "An internal server error occurred while deleting the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Anime deleted successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // AddGenresToAnimeHandler handles adding genres to an anime.
@@ -439,28 +519,31 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
-	var request struct {
-		GenreIDs []uint `json:"genre_ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*struct {
+		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+	})
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
-	if err := h.service.AddGenresToAnime(r.Context(), animeID, request.GenreIDs); err != nil {
+	if err := h.service.AddGenresToAnime(r.Context(), animeID, payload.GenreIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to add genres to anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add genres to anime", "An internal server error occurred while adding genres to the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Genres added successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // RemoveGenresFromAnimeHandler handles removing genres from an anime.
@@ -495,28 +578,31 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
-	var request struct {
-		GenreIDs []uint `json:"genre_ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	// Retrieve the validated and sanitized payload from the context
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*struct {
+		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+	})
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
-	if err := h.service.RemoveGenresFromAnime(r.Context(), animeID, request.GenreIDs); err != nil {
+	if err := h.service.RemoveGenresFromAnime(r.Context(), animeID, payload.GenreIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to remove genres from anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove genres from anime", "An internal server error occurred while removing genres from the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Genres removed successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // AddTagsToAnimeHandler handles adding tags to an anime.
@@ -788,32 +874,32 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/animes", h.GetAllAnimesHandler).Methods("GET")
+	router.HandleFunc("/animes/{id}", h.GetAnimeHandler).Methods("GET")
 	router.HandleFunc("/animes/search", h.GetAnimesByTitleHandler).Methods("GET")
 	router.HandleFunc("/animes/genre/{genre}", h.GetAnimesByGenreHandler).Methods("GET")
-	router.HandleFunc("/animes/{id}", h.GetAnimeHandler).Methods("GET")
 
 	// Create a subrouter for protected routes
 	protectedRouter := router.PathPrefix("/animes").Subrouter()
-	protectedRouter.Use(middleware.Authenticate) // Apply authentication middleware
+	protectedRouter.Use(middleware.AuthMiddleware) // Apply authentication middleware
 
 	// Protected routes with payload validation
-	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.CreateAnimeHandler), models.AnimeCreateRequest{})).Methods("POST")
-	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.UpdateAnimeHandler), models.Anime{})).Methods("PUT")
+	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(models.AnimeCreateRequest{})(http.HandlerFunc(h.CreateAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(models.AnimeUpdateRequest{})(http.HandlerFunc(h.UpdateAnimeHandler))).Methods("PUT")
 	protectedRouter.HandleFunc("/{id}", h.DeleteAnimeHandler).Methods("DELETE")
 
-	// Protected routes for genres with payload validation
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AddGenresToAnimeHandler), struct {
+	// Genre management routes
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(struct {
 		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	}{})).Methods("POST")
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.RemoveGenresFromAnimeHandler), struct {
+	}{})(http.HandlerFunc(h.AddGenresToAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(struct {
 		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	}{})).Methods("DELETE")
+	}{})(http.HandlerFunc(h.RemoveGenresFromAnimeHandler))).Methods("DELETE")
 
-	// Protected routes for tags with payload validation
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.AddTagsToAnimeHandler), struct {
+	// Tag management routes
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(struct {
 		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
-	}{})).Methods("POST")
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(http.HandlerFunc(h.RemoveTagsFromAnimeHandler), struct {
+	}{})(http.HandlerFunc(h.AddTagsToAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(struct {
 		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
-	}{})).Methods("DELETE")
+	}{})(http.HandlerFunc(h.RemoveTagsFromAnimeHandler))).Methods("DELETE")
 }
