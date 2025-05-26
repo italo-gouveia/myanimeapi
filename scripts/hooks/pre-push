@@ -43,9 +43,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run tests
+# Run tests with CGO enabled for race detection
 echo -e "${YELLOW}Running tests...${NC}"
-go test -v -race -coverprofile=coverage.out ./...
+CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
 if [ $? -ne 0 ]; then
     echo -e "${RED}Tests failed${NC}"
     exit 1
