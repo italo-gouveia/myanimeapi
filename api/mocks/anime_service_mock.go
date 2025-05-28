@@ -1,0 +1,209 @@
+package mocks
+
+import (
+	"context"
+	"myanimeapi/api/models"
+	"reflect"
+
+	"github.com/golang/mock/gomock"
+)
+
+// MockAnimeServiceInterface is a mock of AnimeServiceInterface interface
+type MockAnimeServiceInterface struct {
+	ctrl     *gomock.Controller
+	recorder *MockAnimeServiceInterfaceMockRecorder
+}
+
+// MockAnimeServiceInterfaceMockRecorder is the mock recorder for MockAnimeServiceInterface
+type MockAnimeServiceInterfaceMockRecorder struct {
+	mock *MockAnimeServiceInterface
+}
+
+// NewMockAnimeServiceInterface creates a new mock instance
+func NewMockAnimeServiceInterface(ctrl *gomock.Controller) *MockAnimeServiceInterface {
+	mock := &MockAnimeServiceInterface{ctrl: ctrl}
+	mock.recorder = &MockAnimeServiceInterfaceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockAnimeServiceInterface) EXPECT() *MockAnimeServiceInterfaceMockRecorder {
+	return m.recorder
+}
+
+// GetAnimeByID mocks base method
+func (m *MockAnimeServiceInterface) GetAnimeByID(ctx context.Context, id uint) (*models.Anime, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnimeByID", ctx, id)
+	ret0, _ := ret[0].(*models.Anime)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAnimeByID indicates an expected call of GetAnimeByID
+func (mr *MockAnimeServiceInterfaceMockRecorder) GetAnimeByID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnimeByID", reflect.TypeOf((*MockAnimeServiceInterface)(nil).GetAnimeByID), ctx, id)
+}
+
+// GetAllAnimes mocks base method
+func (m *MockAnimeServiceInterface) GetAllAnimes(ctx context.Context, page, limit int) ([]*models.Anime, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllAnimes", ctx, page, limit)
+	ret0, _ := ret[0].([]*models.Anime)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAllAnimes indicates an expected call of GetAllAnimes
+func (mr *MockAnimeServiceInterfaceMockRecorder) GetAllAnimes(ctx, page, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAnimes", reflect.TypeOf((*MockAnimeServiceInterface)(nil).GetAllAnimes), ctx, page, limit)
+}
+
+// CreateAnime mocks base method
+func (m *MockAnimeServiceInterface) CreateAnime(ctx context.Context, anime *models.Anime) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAnime", ctx, anime)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAnime indicates an expected call of CreateAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) CreateAnime(ctx, anime interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).CreateAnime), ctx, anime)
+}
+
+// UpdateAnime mocks base method
+func (m *MockAnimeServiceInterface) UpdateAnime(ctx context.Context, anime *models.Anime) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateAnime", ctx, anime)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAnime indicates an expected call of UpdateAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) UpdateAnime(ctx, anime interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).UpdateAnime), ctx, anime)
+}
+
+// DeleteAnime mocks base method
+func (m *MockAnimeServiceInterface) DeleteAnime(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAnime", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAnime indicates an expected call of DeleteAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) DeleteAnime(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).DeleteAnime), ctx, id)
+}
+
+// GetAnimesByTitle mocks base method
+func (m *MockAnimeServiceInterface) GetAnimesByTitle(ctx context.Context, title string, page, limit int) ([]*models.Anime, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnimesByTitle", ctx, title, page, limit)
+	ret0, _ := ret[0].([]*models.Anime)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAnimesByTitle indicates an expected call of GetAnimesByTitle
+func (mr *MockAnimeServiceInterfaceMockRecorder) GetAnimesByTitle(ctx, title, page, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnimesByTitle", reflect.TypeOf((*MockAnimeServiceInterface)(nil).GetAnimesByTitle), ctx, title, page, limit)
+}
+
+// GetAnimesByGenre mocks base method
+func (m *MockAnimeServiceInterface) GetAnimesByGenre(ctx context.Context, genre string, page, limit int) ([]*models.Anime, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAnimesByGenre", ctx, genre, page, limit)
+	ret0, _ := ret[0].([]*models.Anime)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAnimesByGenre indicates an expected call of GetAnimesByGenre
+func (mr *MockAnimeServiceInterfaceMockRecorder) GetAnimesByGenre(ctx, genre, page, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAnimesByGenre", reflect.TypeOf((*MockAnimeServiceInterface)(nil).GetAnimesByGenre), ctx, genre, page, limit)
+}
+
+// GetReviewsForAnime mocks base method
+func (m *MockAnimeServiceInterface) GetReviewsForAnime(ctx context.Context, animeID uint, page, limit int) ([]*models.Review, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReviewsForAnime", ctx, animeID, page, limit)
+	ret0, _ := ret[0].([]*models.Review)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetReviewsForAnime indicates an expected call of GetReviewsForAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) GetReviewsForAnime(ctx, animeID, page, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReviewsForAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).GetReviewsForAnime), ctx, animeID, page, limit)
+}
+
+// AddGenresToAnime mocks base method
+func (m *MockAnimeServiceInterface) AddGenresToAnime(ctx context.Context, animeID uint, genreIDs []uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddGenresToAnime", ctx, animeID, genreIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddGenresToAnime indicates an expected call of AddGenresToAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) AddGenresToAnime(ctx, animeID, genreIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddGenresToAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).AddGenresToAnime), ctx, animeID, genreIDs)
+}
+
+// RemoveGenresFromAnime mocks base method
+func (m *MockAnimeServiceInterface) RemoveGenresFromAnime(ctx context.Context, animeID uint, genreIDs []uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveGenresFromAnime", ctx, animeID, genreIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveGenresFromAnime indicates an expected call of RemoveGenresFromAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) RemoveGenresFromAnime(ctx, animeID, genreIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveGenresFromAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).RemoveGenresFromAnime), ctx, animeID, genreIDs)
+}
+
+// AddTagsToAnime mocks base method
+func (m *MockAnimeServiceInterface) AddTagsToAnime(ctx context.Context, animeID uint, tagIDs []uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddTagsToAnime", ctx, animeID, tagIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddTagsToAnime indicates an expected call of AddTagsToAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) AddTagsToAnime(ctx, animeID, tagIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTagsToAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).AddTagsToAnime), ctx, animeID, tagIDs)
+}
+
+// RemoveTagsFromAnime mocks base method
+func (m *MockAnimeServiceInterface) RemoveTagsFromAnime(ctx context.Context, animeID uint, tagIDs []uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveTagsFromAnime", ctx, animeID, tagIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveTagsFromAnime indicates an expected call of RemoveTagsFromAnime
+func (mr *MockAnimeServiceInterfaceMockRecorder) RemoveTagsFromAnime(ctx, animeID, tagIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTagsFromAnime", reflect.TypeOf((*MockAnimeServiceInterface)(nil).RemoveTagsFromAnime), ctx, animeID, tagIDs)
+}
