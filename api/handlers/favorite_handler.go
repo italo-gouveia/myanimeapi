@@ -63,7 +63,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 			"anime_id": animeIDStr,
 			"error":    err.Error(),
 		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", map[string]interface{}{"anime_id": animeIDStr})
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
 		return
 	}
 	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
@@ -77,23 +77,23 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 			"error":    err.Error(),
 		}).Error("Failed to add favorite")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID, "anime_id": animeID})
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add favorite", "An internal server error occurred while adding the favorite", map[string]interface{}{"user_id": userID, "anime_id": animeID})
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to add favorite to database", nil)
 		return
 	}
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(favorite.ToResponse()); err != nil {
+	if err := json.NewEncoder(w).Encode(favorite); err != nil {
 		h.logger.WithFields(map[string]interface{}{
 			"user_id":  userID,
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", map[string]interface{}{"user_id": userID, "anime_id": animeID})
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -136,7 +136,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 			"anime_id": animeIDStr,
 			"error":    err.Error(),
 		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", map[string]interface{}{"anime_id": animeIDStr})
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
 		return
 	}
 	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
@@ -149,10 +149,10 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 			"error":    err.Error(),
 		}).Error("Failed to remove favorite")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID, "anime_id": animeID})
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove favorite", "An internal server error occurred while removing the favorite", map[string]interface{}{"user_id": userID, "anime_id": animeID})
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove favorite from database", nil)
 		return
 	}
 
@@ -195,28 +195,22 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 			"error":   err.Error(),
 		}).Error("Failed to retrieve favorites")
 		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, map[string]interface{}{"user_id": userID})
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve favorites", "An internal server error occurred while retrieving favorites", map[string]interface{}{"user_id": userID})
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", nil)
 		return
-	}
-
-	// Convert to response format
-	responses := make([]interface{}, 0, len(favorites))
-	for _, fav := range favorites {
-		responses = append(responses, fav.ToResponse())
 	}
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(responses); err != nil {
+	if err := json.NewEncoder(w).Encode(favorites); err != nil {
 		h.logger.WithFields(map[string]interface{}{
 			"user_id": userID,
 			"error":   err.Error(),
 		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", map[string]interface{}{"user_id": userID})
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
