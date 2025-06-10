@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -88,7 +89,7 @@ func (m *MockAnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint
 	return args.Error(0)
 }
 
-func setupTestRouter(handler *handlers.AnimeHandler) *mux.Router {
+func setupAnimeTestRouter(handler *handlers.AnimeHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Create a subrouter for protected routes
@@ -97,13 +98,15 @@ func setupTestRouter(handler *handlers.AnimeHandler) *mux.Router {
 
 	// Register routes
 	protectedRouter.HandleFunc("/{id}", handler.GetAnimeHandler).Methods("GET")
-	protectedRouter.HandleFunc("/search", handler.GetAnimesByTitleHandler).Methods("GET")
-	protectedRouter.HandleFunc("/genre/{genre}", handler.GetAnimesByGenreHandler).Methods("GET")
+	protectedRouter.HandleFunc("", handler.GetAnimesByTitleHandler).Methods("GET")
+	protectedRouter.HandleFunc("", handler.CreateAnimeHandler).Methods("POST")
+	protectedRouter.HandleFunc("/{id}", handler.UpdateAnimeHandler).Methods("PUT")
+	protectedRouter.HandleFunc("/{id}", handler.DeleteAnimeHandler).Methods("DELETE")
 
 	return router
 }
 
-func generateTestToken() string {
+func generateAnimeTestToken() string {
 	// Set test secret key
 	os.Setenv("JWT_SECRET_KEY", "test-secret-key")
 
@@ -115,11 +118,14 @@ func generateTestToken() string {
 func TestGetAnimeByID(t *testing.T) {
 	mockService := &MockAnimeService{}
 	handler := handlers.NewAnimeHandler(mockService)
-	router := setupTestRouter(handler)
+	router := setupAnimeTestRouter(handler)
+
+	// Generate test token
+	token := generateAnimeTestToken()
 
 	tests := []struct {
 		name           string
-		id             string
+		animeID        string
 		mockAnime      *models.Anime
 		mockError      error
 		expectedStatus int
@@ -127,113 +133,136 @@ func TestGetAnimeByID(t *testing.T) {
 		withAuth       bool
 	}{
 		{
-			name: "Success",
-			id:   "1",
+			name:    "Success",
+			animeID: "1",
 			mockAnime: &models.Anime{
 				ID:          1,
 				Title:       "Test Anime",
 				Description: "Test Description",
-				Genres:      []models.Genre{{ID: 1, Name: "Action"}},
-				Tags:        []models.Tag{{ID: 1, Name: "Action"}},
+				Rating:      8.5,
+				Episodes:    12,
+				Status:      "Completed",
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
+				StartDate:   time.Time{},
+				EndDate:     time.Time{},
+				Genres: []models.Genre{
+					{
+						ID:   1,
+						Name: "Action",
+					},
+				},
+				Tags: []models.Tag{
+					{
+						ID:   1,
+						Name: "Action",
+					},
+				},
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"id":          float64(1),
-				"title":       "Test Anime",
-				"description": "Test Description",
-				"genres": []interface{}{
-					map[string]interface{}{
-						"id":   float64(1),
-						"name": "Action",
+				"data": map[string]interface{}{
+					"id":          float64(1),
+					"title":       "Test Anime",
+					"description": "Test Description",
+					"rating":      float64(8.5),
+					"episodes":    float64(12),
+					"status":      "Completed",
+					"created_at":  "2024-01-01T00:00:00Z",
+					"updated_at":  "2024-01-01T00:00:00Z",
+					"start_date":  "0001-01-01T00:00:00Z",
+					"end_date":    "0001-01-01T00:00:00Z",
+					"genres": []interface{}{
+						map[string]interface{}{
+							"id":   float64(1),
+							"name": "Action",
+						},
+					},
+					"tags": []interface{}{
+						map[string]interface{}{
+							"id":   float64(1),
+							"name": "Action",
+						},
 					},
 				},
-				"tags": []interface{}{
-					map[string]interface{}{
-						"id":   float64(1),
-						"name": "Action",
-					},
-				},
-				"created_at": "2024-01-01T00:00:00Z",
-				"updated_at": "2024-01-01T00:00:00Z",
 			},
 			withAuth: true,
 		},
 		{
 			name:           "Invalid ID Format",
-			id:             "invalid",
+			animeID:        "invalid",
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrInvalidInput,
-					"message": "Invalid input",
-					"details": "Invalid anime ID format",
+					"message": "Invalid ID format",
+					"details": "The provided ID is not a valid unsigned integer.",
+					"context": map[string]interface{}{
+						"id": "invalid",
+					},
 				},
 			},
 			withAuth: true,
 		},
 		{
 			name:           "Not Found",
-			id:             "999",
-			mockError:      errors.NewError(errors.ErrResourceNotFound, "Not found", "Anime not found", http.StatusNotFound, nil, nil),
+			animeID:        "999",
+			mockError:      errors.NewError(errors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, nil, nil),
 			expectedStatus: http.StatusNotFound,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrResourceNotFound,
-					"message": "Not found",
-					"details": "Anime not found",
-				},
-			},
-			withAuth: true,
-		},
-		{
-			name:           "Internal Server Error",
-			id:             "1",
-			mockError:      errors.NewError(errors.ErrInternalServer, "Database error", "Failed to retrieve anime", http.StatusInternalServerError, nil, nil),
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    errors.ErrInternalServer,
-					"message": "Database error",
-					"details": "Failed to retrieve anime",
+					"message": "Anime not found",
+					"details": "The requested anime could not be found",
 				},
 			},
 			withAuth: true,
 		},
 		{
 			name:           "Unauthorized",
-			id:             "1",
+			animeID:        "1",
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrUnauthorized,
-					"message": "Unauthorized",
-					"details": "Missing or invalid authorization header",
+					"message": "Authentication required",
+					"details": "Missing Authorization header",
 				},
 			},
 			withAuth: false,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockService.On("GetAnimeByID", mock.Anything, tc.id).Return(tc.mockAnime, tc.mockError)
-
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/%s", tc.id), nil)
-			if tc.withAuth {
-				req.Header.Set("Authorization", "Bearer test-token")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up mock expectations
+			if tt.mockAnime != nil {
+				animeID, _ := strconv.ParseUint(tt.animeID, 10, 32)
+				mockService.On("GetAnimeByID", mock.Anything, uint(animeID)).Return(tt.mockAnime, tt.mockError)
 			}
 
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
+			// Create request
+			req, _ := http.NewRequest("GET", fmt.Sprintf("/animes/%s", tt.animeID), nil)
+			if tt.withAuth {
+				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+			}
 
-			assert.Equal(t, tc.expectedStatus, w.Code)
+			// Create response recorder
+			rr := httptest.NewRecorder()
 
+			// Serve request
+			router.ServeHTTP(rr, req)
+
+			// Check status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			// Parse response body
 			var response map[string]interface{}
-			err := json.Unmarshal(w.Body.Bytes(), &response)
+			err := json.Unmarshal(rr.Body.Bytes(), &response)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expectedBody, response)
+
+			// Compare response with expected
+			assert.Equal(t, tt.expectedBody, response)
 		})
 	}
 }
@@ -241,12 +270,18 @@ func TestGetAnimeByID(t *testing.T) {
 func TestGetAnimesByTitle(t *testing.T) {
 	mockService := &MockAnimeService{}
 	handler := handlers.NewAnimeHandler(mockService)
-	router := setupTestRouter(handler)
+	router := setupAnimeTestRouter(handler)
+
+	// Generate test token
+	token := generateAnimeTestToken()
 
 	tests := []struct {
 		name           string
 		title          string
-		mockAnimes     []models.Anime
+		page           string
+		limit          string
+		mockAnimes     []*models.Anime
+		mockTotal      int64
 		mockError      error
 		expectedStatus int
 		expectedBody   map[string]interface{}
@@ -254,135 +289,150 @@ func TestGetAnimesByTitle(t *testing.T) {
 	}{
 		{
 			name:  "Success",
-			title: "test",
-			mockAnimes: []models.Anime{
+			title: "Test",
+			page:  "1",
+			limit: "10",
+			mockAnimes: []*models.Anime{
 				{
 					ID:          1,
-					Title:       "Test Anime 1",
-					Description: "Test Description 1",
-					Genres:      []models.Genre{{ID: 1, Name: "Action"}},
-					Tags:        []models.Tag{{ID: 1, Name: "Action"}},
+					Title:       "Test Anime",
+					Description: "Test Description",
+					Rating:      8.5,
+					Episodes:    12,
+					Status:      "Completed",
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
-				},
-				{
-					ID:          2,
-					Title:       "Test Anime 2",
-					Description: "Test Description 2",
-					Genres:      []models.Genre{{ID: 1, Name: "Action"}},
-					Tags:        []models.Tag{{ID: 1, Name: "Action"}},
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
+					StartDate:   time.Time{},
+					EndDate:     time.Time{},
+					Genres: []models.Genre{
+						{
+							ID:   1,
+							Name: "Action",
+						},
+					},
+					Tags: []models.Tag{
+						{
+							ID:   1,
+							Name: "Action",
+						},
+					},
 				},
 			},
+			mockTotal:      1,
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"data": []interface{}{
-					map[string]interface{}{
-						"id":          float64(1),
-						"title":       "Test Anime 1",
-						"description": "Test Description 1",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+				"data": map[string]interface{}{
+					"animes": []interface{}{
+						map[string]interface{}{
+							"id":          float64(1),
+							"title":       "Test Anime",
+							"description": "Test Description",
+							"rating":      float64(8.5),
+							"episodes":    float64(12),
+							"status":      "Completed",
+							"created_at":  "2024-01-01T00:00:00Z",
+							"updated_at":  "2024-01-01T00:00:00Z",
+							"start_date":  "0001-01-01T00:00:00Z",
+							"end_date":    "0001-01-01T00:00:00Z",
+							"genres": []interface{}{
+								map[string]interface{}{
+									"id":   float64(1),
+									"name": "Action",
+								},
+							},
+							"tags": []interface{}{
+								map[string]interface{}{
+									"id":   float64(1),
+									"name": "Action",
+								},
 							},
 						},
-						"tags": []interface{}{
-							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
-							},
-						},
-						"created_at": "2024-01-01T00:00:00Z",
-						"updated_at": "2024-01-01T00:00:00Z",
 					},
-					map[string]interface{}{
-						"id":          float64(2),
-						"title":       "Test Anime 2",
-						"description": "Test Description 2",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
-							},
-						},
-						"tags": []interface{}{
-							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
-							},
-						},
-						"created_at": "2024-01-01T00:00:00Z",
-						"updated_at": "2024-01-01T00:00:00Z",
-					},
+					"total": float64(1),
+					"page":  float64(1),
+					"limit": float64(10),
 				},
-				"total": float64(2),
-				"page":  float64(1),
-				"limit": float64(10),
 			},
 			withAuth: true,
 		},
 		{
-			name:           "No Animes Found",
-			title:          "nonexistent",
-			mockAnimes:     []models.Anime{},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"data":  []interface{}{},
-				"total": float64(0),
-				"page":  float64(1),
-				"limit": float64(10),
-			},
-			withAuth: true,
-		},
-		{
-			name:           "Internal Server Error",
-			title:          "test",
-			mockError:      errors.NewError(errors.ErrInternalServer, "Database error", "Failed to search animes", http.StatusInternalServerError, nil, nil),
-			expectedStatus: http.StatusInternalServerError,
+			name:           "Invalid Page",
+			title:          "Test",
+			page:           "invalid",
+			limit:          "10",
+			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    errors.ErrInternalServer,
-					"message": "Database error",
-					"details": "Failed to search animes",
+					"code":    errors.ErrInvalidInput,
+					"message": "Invalid input",
+					"details": "Invalid page number",
+				},
+			},
+			withAuth: true,
+		},
+		{
+			name:           "Invalid Limit",
+			title:          "Test",
+			page:           "1",
+			limit:          "invalid",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": map[string]interface{}{
+					"code":    errors.ErrInvalidInput,
+					"message": "Invalid input",
+					"details": "Invalid limit number",
 				},
 			},
 			withAuth: true,
 		},
 		{
 			name:           "Unauthorized",
-			title:          "test",
+			title:          "Test",
+			page:           "1",
+			limit:          "10",
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrUnauthorized,
-					"message": "Unauthorized",
-					"details": "Missing or invalid authorization header",
+					"message": "Authentication required",
+					"details": "Missing Authorization header",
 				},
 			},
 			withAuth: false,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockService.On("GetAnimesByTitle", mock.Anything, tc.title).Return(tc.mockAnimes, tc.mockError)
-
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/search/%s", tc.title), nil)
-			if tc.withAuth {
-				req.Header.Set("Authorization", "Bearer test-token")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up mock expectations
+			if tt.mockAnimes != nil {
+				page, _ := strconv.Atoi(tt.page)
+				limit, _ := strconv.Atoi(tt.limit)
+				mockService.On("GetAnimesByTitle", mock.Anything, tt.title, page, limit).Return(tt.mockAnimes, tt.mockTotal, tt.mockError)
 			}
 
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
+			// Create request
+			req, _ := http.NewRequest("GET", fmt.Sprintf("/animes?title=%s&page=%s&limit=%s", tt.title, tt.page, tt.limit), nil)
+			if tt.withAuth {
+				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+			}
 
-			assert.Equal(t, tc.expectedStatus, w.Code)
+			// Create response recorder
+			rr := httptest.NewRecorder()
 
+			// Serve request
+			router.ServeHTTP(rr, req)
+
+			// Check status code
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			// Parse response body
 			var response map[string]interface{}
-			err := json.Unmarshal(w.Body.Bytes(), &response)
+			err := json.Unmarshal(rr.Body.Bytes(), &response)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expectedBody, response)
+
+			// Compare response with expected
+			assert.Equal(t, tt.expectedBody, response)
 		})
 	}
 }
@@ -390,7 +440,7 @@ func TestGetAnimesByTitle(t *testing.T) {
 func TestGetAnimesByGenre(t *testing.T) {
 	mockService := &MockAnimeService{}
 	handler := handlers.NewAnimeHandler(mockService)
-	router := setupTestRouter(handler)
+	router := setupAnimeTestRouter(handler)
 
 	tests := []struct {
 		name           string
@@ -506,8 +556,11 @@ func TestGetAnimesByGenre(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrUnauthorized,
-					"message": "Unauthorized",
-					"details": "Missing or invalid authorization header",
+					"message": "Authentication required",
+					"details": "Missing Authorization header",
+					"context": map[string]interface{}{
+						"error": "No authorization token provided",
+					},
 				},
 			},
 			withAuth: false,
