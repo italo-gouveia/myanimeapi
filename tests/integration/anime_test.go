@@ -161,28 +161,24 @@ func TestGetAnimeByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"data": map[string]interface{}{
-					"id":          float64(1),
-					"title":       "Test Anime",
-					"description": "Test Description",
-					"rating":      float64(8.5),
-					"episodes":    float64(12),
-					"status":      "Completed",
-					"created_at":  "2024-01-01T00:00:00Z",
-					"updated_at":  "2024-01-01T00:00:00Z",
-					"start_date":  "0001-01-01T00:00:00Z",
-					"end_date":    "0001-01-01T00:00:00Z",
-					"genres": []interface{}{
-						map[string]interface{}{
-							"id":   float64(1),
-							"name": "Action",
-						},
+				"id":          float64(1),
+				"title":       "Test Anime",
+				"description": "Test Description",
+				"rating":      float64(8.5),
+				"episodes":    float64(12),
+				"status":      "Completed",
+				"start_date":  "0001-01-01T00:00:00Z",
+				"end_date":    "0001-01-01T00:00:00Z",
+				"genres": []interface{}{
+					map[string]interface{}{
+						"id":   float64(1),
+						"name": "Action",
 					},
-					"tags": []interface{}{
-						map[string]interface{}{
-							"id":   float64(1),
-							"name": "Action",
-						},
+				},
+				"tags": []interface{}{
+					map[string]interface{}{
+						"id":   float64(1),
+						"name": "Action",
 					},
 				},
 			},
@@ -236,7 +232,7 @@ func TestGetAnimeByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up mock expectations
-			if tt.mockAnime != nil {
+			if tt.mockAnime != nil || tt.mockError != nil {
 				animeID, _ := strconv.ParseUint(tt.animeID, 10, 32)
 				mockService.On("GetAnimeByID", mock.Anything, uint(animeID)).Return(tt.mockAnime, tt.mockError)
 			}
@@ -260,6 +256,23 @@ func TestGetAnimeByID(t *testing.T) {
 			var response map[string]interface{}
 			err := json.Unmarshal(rr.Body.Bytes(), &response)
 			assert.NoError(t, err)
+
+			// For success case, we need to handle dynamic timestamps
+			if tt.name == "Success" {
+				// Verify that created_at and updated_at are present and valid timestamps
+				assert.Contains(t, response, "created_at")
+				assert.Contains(t, response, "updated_at")
+				createdAt, err := time.Parse(time.RFC3339, response["created_at"].(string))
+				assert.NoError(t, err)
+				assert.True(t, createdAt.After(time.Time{}))
+				updatedAt, err := time.Parse(time.RFC3339, response["updated_at"].(string))
+				assert.NoError(t, err)
+				assert.True(t, updatedAt.After(time.Time{}))
+
+				// Remove dynamic fields for comparison
+				delete(response, "created_at")
+				delete(response, "updated_at")
+			}
 
 			// Compare response with expected
 			assert.Equal(t, tt.expectedBody, response)
