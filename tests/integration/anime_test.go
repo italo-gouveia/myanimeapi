@@ -161,24 +161,32 @@ func TestGetAnimeByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"id":          float64(1),
-				"title":       "Test Anime",
-				"description": "Test Description",
-				"rating":      float64(8.5),
-				"episodes":    float64(12),
-				"status":      "Completed",
-				"start_date":  "0001-01-01T00:00:00Z",
-				"end_date":    "0001-01-01T00:00:00Z",
-				"genres": []interface{}{
-					map[string]interface{}{
-						"id":   float64(1),
-						"name": "Action",
+				"data": map[string]interface{}{
+					"id":          float64(1),
+					"title":       "Test Anime",
+					"description": "Test Description",
+					"rating":      float64(8.5),
+					"episodes":    float64(12),
+					"status":      "Completed",
+					"start_date":  "0001-01-01T00:00:00Z",
+					"end_date":    "0001-01-01T00:00:00Z",
+					"genres": []interface{}{
+						map[string]interface{}{
+							"id":         float64(1),
+							"name":       "Action",
+							"created_at": "0001-01-01T00:00:00Z",
+							"updated_at": "0001-01-01T00:00:00Z",
+							"deleted_at": "0001-01-01T00:00:00Z",
+						},
 					},
-				},
-				"tags": []interface{}{
-					map[string]interface{}{
-						"id":   float64(1),
-						"name": "Action",
+					"tags": []interface{}{
+						map[string]interface{}{
+							"id":         float64(1),
+							"name":       "Action",
+							"created_at": "0001-01-01T00:00:00Z",
+							"updated_at": "0001-01-01T00:00:00Z",
+							"deleted_at": "0001-01-01T00:00:00Z",
+						},
 					},
 				},
 			},
@@ -335,36 +343,36 @@ func TestGetAnimesByTitle(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"data": map[string]interface{}{
-					"animes": []interface{}{
+					"id":          float64(1),
+					"title":       "Test Anime",
+					"description": "Test Description",
+					"rating":      float64(8.5),
+					"episodes":    float64(12),
+					"status":      "Completed",
+					"start_date":  "0001-01-01T00:00:00Z",
+					"end_date":    "0001-01-01T00:00:00Z",
+					"genres": []interface{}{
 						map[string]interface{}{
-							"id":          float64(1),
-							"title":       "Test Anime",
-							"description": "Test Description",
-							"rating":      float64(8.5),
-							"episodes":    float64(12),
-							"status":      "Completed",
-							"created_at":  "2024-01-01T00:00:00Z",
-							"updated_at":  "2024-01-01T00:00:00Z",
-							"start_date":  "0001-01-01T00:00:00Z",
-							"end_date":    "0001-01-01T00:00:00Z",
-							"genres": []interface{}{
-								map[string]interface{}{
-									"id":   float64(1),
-									"name": "Action",
-								},
-							},
-							"tags": []interface{}{
-								map[string]interface{}{
-									"id":   float64(1),
-									"name": "Action",
-								},
-							},
+							"id":         float64(1),
+							"name":       "Action",
+							"created_at": "0001-01-01T00:00:00Z",
+							"updated_at": "0001-01-01T00:00:00Z",
+							"deleted_at": "0001-01-01T00:00:00Z",
 						},
 					},
-					"total": float64(1),
-					"page":  float64(1),
-					"limit": float64(10),
+					"tags": []interface{}{
+						map[string]interface{}{
+							"id":         float64(1),
+							"name":       "Action",
+							"created_at": "0001-01-01T00:00:00Z",
+							"updated_at": "0001-01-01T00:00:00Z",
+							"deleted_at": "0001-01-01T00:00:00Z",
+						},
+					},
 				},
+				"total": float64(1),
+				"page":  float64(1),
+				"limit": float64(10),
 			},
 			withAuth: true,
 		},
@@ -379,6 +387,9 @@ func TestGetAnimesByTitle(t *testing.T) {
 					"code":    errors.ErrInvalidInput,
 					"message": "Invalid input",
 					"details": "Invalid page number",
+					"context": map[string]interface{}{
+						"error": "Invalid page number",
+					},
 				},
 			},
 			withAuth: true,
@@ -394,6 +405,9 @@ func TestGetAnimesByTitle(t *testing.T) {
 					"code":    errors.ErrInvalidInput,
 					"message": "Invalid input",
 					"details": "Invalid limit number",
+					"context": map[string]interface{}{
+						"error": "Invalid limit number",
+					},
 				},
 			},
 			withAuth: true,
@@ -496,18 +510,22 @@ func TestGetAnimesByGenre(t *testing.T) {
 						"description": "Test Description 1",
 						"genres": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
 						"tags": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
-						"created_at": "2024-01-01T00:00:00Z",
-						"updated_at": "2024-01-01T00:00:00Z",
 					},
 					map[string]interface{}{
 						"id":          float64(2),
@@ -515,18 +533,22 @@ func TestGetAnimesByGenre(t *testing.T) {
 						"description": "Test Description 2",
 						"genres": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
 						"tags": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
-						"created_at": "2024-01-01T00:00:00Z",
-						"updated_at": "2024-01-01T00:00:00Z",
 					},
 				},
 				"total": float64(2),
@@ -558,6 +580,9 @@ func TestGetAnimesByGenre(t *testing.T) {
 					"code":    errors.ErrInternalServer,
 					"message": "Database error",
 					"details": "Failed to get animes by genre",
+					"context": map[string]interface{}{
+						"error": "Failed to get animes by genre",
+					},
 				},
 			},
 			withAuth: true,
