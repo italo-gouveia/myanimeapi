@@ -15,7 +15,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -773,7 +772,12 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	page, limit := utils.GetPaginationParams(r)
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		return
+	}
+
 	animes, total, err := h.service.GetAnimesByTitle(r.Context(), title, page, limit)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
@@ -847,22 +851,20 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 //	  "limit": 10
 //	}
 func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Request) {
-	genreID := r.URL.Query().Get("genre_id")
-	if genreID == "" {
+	vars := mux.Vars(r)
+	genre := vars["genre"]
+	if genre == "" {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "Genre parameter is required", nil)
 		return
 	}
 
-	id, err := utils.ValidateID(genreID)
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid genre ID format", "The provided genre ID is not a valid unsigned integer.", map[string]interface{}{
-			"genre_id": genreID,
-		})
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
 		return
 	}
 
-	page, limit := utils.GetPaginationParams(r)
-	animes, total, err := h.service.GetAnimesByGenre(r.Context(), fmt.Sprintf("%d", id), page, limit)
+	animes, total, err := h.service.GetAnimesByGenre(r.Context(), genre, page, limit)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)

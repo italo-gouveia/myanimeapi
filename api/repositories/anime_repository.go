@@ -201,8 +201,12 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 	var animes []models.Anime
 	var total int64
 
-	// Count total records
-	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("genre = ?", genre).Count(&total).Error; err != nil {
+	// Count total records using JOIN
+	if err := r.db.WithContext(ctx).Model(&models.Anime{}).
+		Joins("JOIN anime_genres ON animes.id = anime_genres.anime_id").
+		Joins("JOIN genres ON anime_genres.genre_id = genres.id").
+		Where("genres.name = ?", genre).
+		Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to count animes")
@@ -212,8 +216,18 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Retrieve animes with pagination
-	if err := r.db.WithContext(ctx).Preload("Reviews").Preload("Favorites").Where("genre = ?", genre).Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
+	// Retrieve animes with pagination using JOIN
+	if err := r.db.WithContext(ctx).
+		Preload("Reviews").
+		Preload("Favorites").
+		Preload("Genres").
+		Preload("Tags").
+		Joins("JOIN anime_genres ON animes.id = anime_genres.anime_id").
+		Joins("JOIN genres ON anime_genres.genre_id = genres.id").
+		Where("genres.name = ?", genre).
+		Offset(offset).
+		Limit(limit).
+		Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve animes")
