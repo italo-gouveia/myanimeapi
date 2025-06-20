@@ -92,13 +92,17 @@ func (m *MockAnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint
 func setupAnimeTestRouter(handler *handlers.AnimeHandler) *mux.Router {
 	router := mux.NewRouter()
 
+	// Public routes (no authentication required) - Order matters!
+	router.HandleFunc("/animes/search", handler.GetAnimesByTitleHandler).Methods("GET")
+	router.HandleFunc("/animes/genre/{genre}", handler.GetAnimesByGenreHandler).Methods("GET")
+	router.HandleFunc("/animes", handler.GetAllAnimesHandler).Methods("GET")
+	router.HandleFunc("/animes/{id}", handler.GetAnimeHandler).Methods("GET")
+
 	// Create a subrouter for protected routes
 	protectedRouter := router.PathPrefix("/animes").Subrouter()
 	protectedRouter.Use(middleware.AuthMiddleware)
 
-	// Register routes
-	protectedRouter.HandleFunc("/{id}", handler.GetAnimeHandler).Methods("GET")
-	protectedRouter.HandleFunc("", handler.GetAnimesByTitleHandler).Methods("GET")
+	// Protected routes
 	protectedRouter.HandleFunc("", handler.CreateAnimeHandler).Methods("POST")
 	protectedRouter.HandleFunc("/{id}", handler.UpdateAnimeHandler).Methods("PUT")
 	protectedRouter.HandleFunc("/{id}", handler.DeleteAnimeHandler).Methods("DELETE")
@@ -161,32 +165,30 @@ func TestGetAnimeByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"data": map[string]interface{}{
-					"id":          float64(1),
-					"title":       "Test Anime",
-					"description": "Test Description",
-					"rating":      float64(8.5),
-					"episodes":    float64(12),
-					"status":      "Completed",
-					"start_date":  "0001-01-01T00:00:00Z",
-					"end_date":    "0001-01-01T00:00:00Z",
-					"genres": []interface{}{
-						map[string]interface{}{
-							"id":         float64(1),
-							"name":       "Action",
-							"created_at": "0001-01-01T00:00:00Z",
-							"updated_at": "0001-01-01T00:00:00Z",
-							"deleted_at": "0001-01-01T00:00:00Z",
-						},
+				"id":          float64(1),
+				"title":       "Test Anime",
+				"description": "Test Description",
+				"rating":      float64(8.5),
+				"episodes":    float64(12),
+				"status":      "Completed",
+				"start_date":  "0001-01-01T00:00:00Z",
+				"end_date":    "0001-01-01T00:00:00Z",
+				"genres": []interface{}{
+					map[string]interface{}{
+						"id":         float64(1),
+						"name":       "Action",
+						"created_at": "0001-01-01T00:00:00Z",
+						"updated_at": "0001-01-01T00:00:00Z",
+						"deleted_at": "0001-01-01T00:00:00Z",
 					},
-					"tags": []interface{}{
-						map[string]interface{}{
-							"id":         float64(1),
-							"name":       "Action",
-							"created_at": "0001-01-01T00:00:00Z",
-							"updated_at": "0001-01-01T00:00:00Z",
-							"deleted_at": "0001-01-01T00:00:00Z",
-						},
+				},
+				"tags": []interface{}{
+					map[string]interface{}{
+						"id":         float64(1),
+						"name":       "Action",
+						"created_at": "0001-01-01T00:00:00Z",
+						"updated_at": "0001-01-01T00:00:00Z",
+						"deleted_at": "0001-01-01T00:00:00Z",
 					},
 				},
 			},
@@ -223,14 +225,61 @@ func TestGetAnimeByID(t *testing.T) {
 			withAuth: true,
 		},
 		{
-			name:           "Unauthorized",
-			animeID:        "1",
-			expectedStatus: http.StatusUnauthorized,
+			name:    "Unauthorized",
+			animeID: "1",
+			mockAnime: &models.Anime{
+				ID:          1,
+				Title:       "Test Anime",
+				Description: "Test Description",
+				Rating:      8.5,
+				Episodes:    12,
+				Status:      "Completed",
+				CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				UpdatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				StartDate:   time.Time{},
+				EndDate:     time.Time{},
+				Genres: []models.Genre{
+					{
+						ID:   1,
+						Name: "Action",
+					},
+				},
+				Tags: []models.Tag{
+					{
+						ID:   1,
+						Name: "Action",
+					},
+				},
+			},
+			expectedStatus: http.StatusOK, // Route is now public
 			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    errors.ErrUnauthorized,
-					"message": "Authentication required",
-					"details": "Missing Authorization header",
+				"id":          float64(1),
+				"title":       "Test Anime",
+				"description": "Test Description",
+				"rating":      float64(8.5),
+				"episodes":    float64(12),
+				"status":      "Completed",
+				"start_date":  "0001-01-01T00:00:00Z",
+				"end_date":    "0001-01-01T00:00:00Z",
+				"created_at":  "2023-01-01T00:00:00Z",
+				"updated_at":  "2023-01-01T00:00:00Z",
+				"genres": []interface{}{
+					map[string]interface{}{
+						"id":         float64(1),
+						"name":       "Action",
+						"created_at": "0001-01-01T00:00:00Z",
+						"updated_at": "0001-01-01T00:00:00Z",
+						"deleted_at": "0001-01-01T00:00:00Z",
+					},
+				},
+				"tags": []interface{}{
+					map[string]interface{}{
+						"id":         float64(1),
+						"name":       "Action",
+						"created_at": "0001-01-01T00:00:00Z",
+						"updated_at": "0001-01-01T00:00:00Z",
+						"deleted_at": "0001-01-01T00:00:00Z",
+					},
 				},
 			},
 			withAuth: false,
@@ -265,23 +314,6 @@ func TestGetAnimeByID(t *testing.T) {
 			err := json.Unmarshal(rr.Body.Bytes(), &response)
 			assert.NoError(t, err)
 
-			// For success case, we need to handle dynamic timestamps
-			if tt.name == "Success" {
-				// Verify that created_at and updated_at are present and valid timestamps
-				assert.Contains(t, response, "created_at")
-				assert.Contains(t, response, "updated_at")
-				createdAt, err := time.Parse(time.RFC3339, response["created_at"].(string))
-				assert.NoError(t, err)
-				assert.True(t, createdAt.After(time.Time{}))
-				updatedAt, err := time.Parse(time.RFC3339, response["updated_at"].(string))
-				assert.NoError(t, err)
-				assert.True(t, updatedAt.After(time.Time{}))
-
-				// Remove dynamic fields for comparison
-				delete(response, "created_at")
-				delete(response, "updated_at")
-			}
-
 			// Compare response with expected
 			assert.Equal(t, tt.expectedBody, response)
 		})
@@ -293,9 +325,6 @@ func TestGetAnimesByTitle(t *testing.T) {
 	handler := handlers.NewAnimeHandler(mockService)
 	router := setupAnimeTestRouter(handler)
 
-	// Generate test token
-	token := generateAnimeTestToken()
-
 	tests := []struct {
 		name           string
 		title          string
@@ -306,7 +335,6 @@ func TestGetAnimesByTitle(t *testing.T) {
 		mockError      error
 		expectedStatus int
 		expectedBody   map[string]interface{}
-		withAuth       bool
 	}{
 		{
 			name:  "Success",
@@ -321,8 +349,8 @@ func TestGetAnimesByTitle(t *testing.T) {
 					Rating:      8.5,
 					Episodes:    12,
 					Status:      "Completed",
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 					StartDate:   time.Time{},
 					EndDate:     time.Time{},
 					Genres: []models.Genre{
@@ -342,31 +370,35 @@ func TestGetAnimesByTitle(t *testing.T) {
 			mockTotal:      1,
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
-				"data": map[string]interface{}{
-					"id":          float64(1),
-					"title":       "Test Anime",
-					"description": "Test Description",
-					"rating":      float64(8.5),
-					"episodes":    float64(12),
-					"status":      "Completed",
-					"start_date":  "0001-01-01T00:00:00Z",
-					"end_date":    "0001-01-01T00:00:00Z",
-					"genres": []interface{}{
-						map[string]interface{}{
-							"id":         float64(1),
-							"name":       "Action",
-							"created_at": "0001-01-01T00:00:00Z",
-							"updated_at": "0001-01-01T00:00:00Z",
-							"deleted_at": "0001-01-01T00:00:00Z",
+				"data": []interface{}{
+					map[string]interface{}{
+						"id":          float64(1),
+						"title":       "Test Anime",
+						"description": "Test Description",
+						"rating":      float64(8.5),
+						"episodes":    float64(12),
+						"status":      "Completed",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "2023-01-01T00:00:00Z",
+						"updated_at":  "2023-01-01T00:00:00Z",
+						"genres": []interface{}{
+							map[string]interface{}{
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
+							},
 						},
-					},
-					"tags": []interface{}{
-						map[string]interface{}{
-							"id":         float64(1),
-							"name":       "Action",
-							"created_at": "0001-01-01T00:00:00Z",
-							"updated_at": "0001-01-01T00:00:00Z",
-							"deleted_at": "0001-01-01T00:00:00Z",
+						"tags": []interface{}{
+							map[string]interface{}{
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
+							},
 						},
 					},
 				},
@@ -374,75 +406,77 @@ func TestGetAnimesByTitle(t *testing.T) {
 				"page":  float64(1),
 				"limit": float64(10),
 			},
-			withAuth: true,
 		},
 		{
-			name:           "Invalid Page",
-			title:          "Test",
-			page:           "invalid",
+			name:           "Missing Title",
+			title:          "",
+			page:           "1",
 			limit:          "10",
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrInvalidInput,
 					"message": "Invalid input",
-					"details": "Invalid page number",
-					"context": map[string]interface{}{
-						"error": "Invalid page number",
-					},
+					"details": "Title parameter is required",
 				},
 			},
-			withAuth: true,
+		},
+		{
+			name:           "Invalid Page",
+			title:          "Test",
+			page:           "0",
+			limit:          "10",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": map[string]interface{}{
+					"code":    errors.ErrInvalidInput,
+					"message": "Invalid pagination parameters",
+					"details": "invalid page number. Must be a positive integer",
+				},
+			},
 		},
 		{
 			name:           "Invalid Limit",
 			title:          "Test",
 			page:           "1",
-			limit:          "invalid",
+			limit:          "101",
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    errors.ErrInvalidInput,
-					"message": "Invalid input",
-					"details": "Invalid limit number",
-					"context": map[string]interface{}{
-						"error": "Invalid limit number",
-					},
+					"message": "Invalid pagination parameters",
+					"details": "invalid limit number. Must be a positive integer between 1 and 100",
 				},
 			},
-			withAuth: true,
 		},
 		{
-			name:           "Unauthorized",
+			name:           "Internal Server Error",
 			title:          "Test",
 			page:           "1",
 			limit:          "10",
-			expectedStatus: http.StatusUnauthorized,
+			mockError:      errors.NewError(errors.ErrInternalServer, "Database error", "Failed to search animes", http.StatusInternalServerError, nil, nil),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    errors.ErrUnauthorized,
-					"message": "Authentication required",
-					"details": "Missing Authorization header",
+					"code":    errors.ErrInternalServer,
+					"message": "Database error",
+					"details": "Failed to search animes",
 				},
 			},
-			withAuth: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set up mock expectations
-			if tt.mockAnimes != nil {
+			if tt.mockAnimes != nil || tt.mockError != nil {
 				page, _ := strconv.Atoi(tt.page)
 				limit, _ := strconv.Atoi(tt.limit)
 				mockService.On("GetAnimesByTitle", mock.Anything, tt.title, page, limit).Return(tt.mockAnimes, tt.mockTotal, tt.mockError)
 			}
 
 			// Create request
-			req, _ := http.NewRequest("GET", fmt.Sprintf("/animes?title=%s&page=%s&limit=%s", tt.title, tt.page, tt.limit), nil)
-			if tt.withAuth {
-				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			}
+			req, _ := http.NewRequest("GET", fmt.Sprintf("/animes/search?title=%s&page=%s&limit=%s", tt.title, tt.page, tt.limit), nil)
 
 			// Create response recorder
 			rr := httptest.NewRecorder()
@@ -472,35 +506,46 @@ func TestGetAnimesByGenre(t *testing.T) {
 	tests := []struct {
 		name           string
 		genre          string
-		mockAnimes     []models.Anime
+		page           string
+		limit          string
+		mockAnimes     []*models.Anime
+		mockTotal      int64
 		mockError      error
 		expectedStatus int
 		expectedBody   map[string]interface{}
-		withAuth       bool
 	}{
 		{
 			name:  "Success",
 			genre: "action",
-			mockAnimes: []models.Anime{
+			page:  "1",
+			limit: "10",
+			mockAnimes: []*models.Anime{
 				{
 					ID:          1,
 					Title:       "Test Anime 1",
 					Description: "Test Description 1",
+					Rating:      8.5,
+					Episodes:    12,
+					Status:      "Completed",
 					Genres:      []models.Genre{{ID: 1, Name: "Action"}},
 					Tags:        []models.Tag{{ID: 1, Name: "Action"}},
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 				{
 					ID:          2,
 					Title:       "Test Anime 2",
 					Description: "Test Description 2",
+					Rating:      9.0,
+					Episodes:    24,
+					Status:      "Ongoing",
 					Genres:      []models.Genre{{ID: 1, Name: "Action"}},
 					Tags:        []models.Tag{{ID: 1, Name: "Action"}},
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
+					CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+					UpdatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 			},
+			mockTotal:      2,
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"data": []interface{}{
@@ -508,6 +553,13 @@ func TestGetAnimesByGenre(t *testing.T) {
 						"id":          float64(1),
 						"title":       "Test Anime 1",
 						"description": "Test Description 1",
+						"rating":      float64(8.5),
+						"episodes":    float64(12),
+						"status":      "Completed",
+						"start_date":  "2023-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "2023-01-01T00:00:00Z",
+						"updated_at":  "2023-01-01T00:00:00Z",
 						"genres": []interface{}{
 							map[string]interface{}{
 								"id":         float64(1),
@@ -531,6 +583,13 @@ func TestGetAnimesByGenre(t *testing.T) {
 						"id":          float64(2),
 						"title":       "Test Anime 2",
 						"description": "Test Description 2",
+						"rating":      float64(9.0),
+						"episodes":    float64(24),
+						"status":      "Ongoing",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "2023-01-01T00:00:00Z",
+						"updated_at":  "2023-01-01T00:00:00Z",
 						"genres": []interface{}{
 							map[string]interface{}{
 								"id":         float64(1),
@@ -555,12 +614,14 @@ func TestGetAnimesByGenre(t *testing.T) {
 				"page":  float64(1),
 				"limit": float64(10),
 			},
-			withAuth: true,
 		},
 		{
 			name:           "No Animes Found",
 			genre:          "nonexistent",
-			mockAnimes:     []models.Anime{},
+			page:           "1",
+			limit:          "10",
+			mockAnimes:     []*models.Anime{},
+			mockTotal:      0,
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"data":  []interface{}{},
@@ -568,11 +629,28 @@ func TestGetAnimesByGenre(t *testing.T) {
 				"page":  float64(1),
 				"limit": float64(10),
 			},
-			withAuth: true,
+		},
+		{
+			name:           "Invalid Pagination",
+			genre:          "action",
+			page:           "0",
+			limit:          "10",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": map[string]interface{}{
+					"code":    errors.ErrInvalidInput,
+					"message": "Invalid pagination parameters",
+					"details": "invalid page number. Must be a positive integer",
+				},
+			},
 		},
 		{
 			name:           "Internal Server Error",
 			genre:          "action",
+			page:           "1",
+			limit:          "10",
+			mockAnimes:     nil,
+			mockTotal:      0,
 			mockError:      errors.NewError(errors.ErrInternalServer, "Database error", "Failed to get animes by genre", http.StatusInternalServerError, nil, nil),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
@@ -580,39 +658,22 @@ func TestGetAnimesByGenre(t *testing.T) {
 					"code":    errors.ErrInternalServer,
 					"message": "Database error",
 					"details": "Failed to get animes by genre",
-					"context": map[string]interface{}{
-						"error": "Failed to get animes by genre",
-					},
 				},
 			},
-			withAuth: true,
-		},
-		{
-			name:           "Unauthorized",
-			genre:          "action",
-			expectedStatus: http.StatusUnauthorized,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    errors.ErrUnauthorized,
-					"message": "Authentication required",
-					"details": "Missing Authorization header",
-					"context": map[string]interface{}{
-						"error": "No authorization token provided",
-					},
-				},
-			},
-			withAuth: false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockService.On("GetAnimesByGenre", mock.Anything, tc.genre).Return(tc.mockAnimes, tc.mockError)
-
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/genre/%s", tc.genre), nil)
-			if tc.withAuth {
-				req.Header.Set("Authorization", "Bearer test-token")
+			// Set up mock expectations
+			if tc.mockAnimes != nil || tc.mockError != nil {
+				page, _ := strconv.Atoi(tc.page)
+				limit, _ := strconv.Atoi(tc.limit)
+				mockService.On("GetAnimesByGenre", mock.Anything, tc.genre, page, limit).Return(tc.mockAnimes, tc.mockTotal, tc.mockError)
 			}
+
+			// Create request
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/genre/%s?page=%s&limit=%s", tc.genre, tc.page, tc.limit), nil)
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
