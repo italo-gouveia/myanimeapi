@@ -209,15 +209,10 @@ func TestGetAnimeByID(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
 			var response map[string]interface{}
-			json.Unmarshal(rr.Body.Bytes(), &response)
-
-			// Remove dynamic fields for comparison
-			if _, ok := response["created_at"]; ok {
-				delete(response, "created_at")
-			}
-			if _, ok := response["updated_at"]; ok {
-				delete(response, "updated_at")
-			}
+			jsonErr := json.Unmarshal(rr.Body.Bytes(), &response)
+			assert.NoError(t, jsonErr)
+			delete(response, "created_at")
+			delete(response, "updated_at")
 
 			assert.Equal(t, tt.expectedBody, response)
 			mockService.AssertExpectations(t)
@@ -319,8 +314,8 @@ func TestGetAnimesByTitle(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
 			var response map[string]interface{}
-			json.Unmarshal(rr.Body.Bytes(), &response)
-
+			jsonErr := json.Unmarshal(rr.Body.Bytes(), &response)
+			assert.NoError(t, jsonErr)
 			if data, ok := response["data"].([]interface{}); ok {
 				for _, item := range data {
 					if anime, ok := item.(map[string]interface{}); ok {
@@ -425,8 +420,8 @@ func TestGetAnimesByGenre(t *testing.T) {
 			assert.Equal(t, tc.expectedStatus, w.Code)
 
 			var response map[string]interface{}
-			json.Unmarshal(w.Body.Bytes(), &response)
-
+			jsonErr := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(t, jsonErr)
 			if data, ok := response["data"].([]interface{}); ok {
 				for _, item := range data {
 					if anime, ok := item.(map[string]interface{}); ok {
