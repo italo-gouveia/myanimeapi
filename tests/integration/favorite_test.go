@@ -376,7 +376,8 @@ func TestGetFavorites(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
 			var response interface{}
-			json.Unmarshal(rr.Body.Bytes(), &response)
+			jsonErr := json.Unmarshal(rr.Body.Bytes(), &response)
+			assert.NoError(t, jsonErr)
 
 			// Remove dynamic fields for comparison
 			if responseArray, ok := response.([]interface{}); ok {
