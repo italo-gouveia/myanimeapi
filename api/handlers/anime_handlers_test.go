@@ -709,6 +709,16 @@ func TestAnimeHandler_GetAnimesByTitleHandler(t *testing.T) {
 						Rating:      8.5,
 						Episodes:    220,
 						Status:      "Completed",
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
+						Genres: []models.Genre{
+							{
+								ID:   1,
+								Name: "Action",
+							},
+						},
 					},
 					{
 						ID:          2,
@@ -717,6 +727,16 @@ func TestAnimeHandler_GetAnimesByTitleHandler(t *testing.T) {
 						Rating:      9.0,
 						Episodes:    500,
 						Status:      "Completed",
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
+						Genres: []models.Genre{
+							{
+								ID:   2,
+								Name: "Drama",
+							},
+						},
 					},
 				}
 				mockAnimeService.EXPECT().
@@ -733,6 +753,19 @@ func TestAnimeHandler_GetAnimesByTitleHandler(t *testing.T) {
 						"rating":      8.5,
 						"episodes":    float64(220),
 						"status":      "Completed",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "0001-01-01T00:00:00Z",
+						"updated_at":  "0001-01-01T00:00:00Z",
+						"genres": []interface{}{
+							map[string]interface{}{
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
+							},
+						},
 					},
 					map[string]interface{}{
 						"id":          float64(2),
@@ -741,6 +774,19 @@ func TestAnimeHandler_GetAnimesByTitleHandler(t *testing.T) {
 						"rating":      9.0,
 						"episodes":    float64(500),
 						"status":      "Completed",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "0001-01-01T00:00:00Z",
+						"updated_at":  "0001-01-01T00:00:00Z",
+						"genres": []interface{}{
+							map[string]interface{}{
+								"id":         float64(2),
+								"name":       "Drama",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
+							},
+						},
 					},
 				},
 				"total": float64(2),
@@ -836,6 +882,10 @@ func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
 						Rating:      8.5,
 						Episodes:    220,
 						Status:      "Completed",
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
 						Genres: []models.Genre{
 							{
 								ID:   1,
@@ -858,10 +908,17 @@ func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
 						"rating":      8.5,
 						"episodes":    float64(220),
 						"status":      "Completed",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
+						"created_at":  "0001-01-01T00:00:00Z",
+						"updated_at":  "0001-01-01T00:00:00Z",
 						"genres": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
 					},
@@ -873,7 +930,7 @@ func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
 		},
 		{
 			name:    "Invalid Genre ID",
-			genreID: "invalid",
+			genreID: "",
 			page:    1,
 			limit:   10,
 			setupMock: func() {
@@ -883,11 +940,8 @@ func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    "ERR-001",
-					"message": "Invalid genre ID format",
-					"details": "The provided genre ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"genre_id": "invalid",
-					},
+					"message": "Invalid input",
+					"details": "Genre parameter is required",
 				},
 			},
 		},
@@ -918,7 +972,7 @@ func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/genre/%s?page=%d&limit=%d", tt.genreID, tt.page, tt.limit), nil)
 			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"genre_id": tt.genreID})
+			req = mux.SetURLVars(req, map[string]string{"genre": tt.genreID})
 			rr := httptest.NewRecorder()
 
 			handler.GetAnimesByGenreHandler(rr, req)
