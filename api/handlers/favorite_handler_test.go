@@ -27,7 +27,6 @@ func TestGetFavoritesHandler(t *testing.T) {
 			name:   "Success",
 			userID: 1,
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				favorites := []models.Favorite{
 					{
 						ID:        1,
@@ -50,19 +49,18 @@ func TestGetFavoritesHandler(t *testing.T) {
 					},
 				}
 				mockService.EXPECT().
-					GetFavorites(ctx, uint(1)).
+					GetFavorites(gomock.Any(), uint(1)).
 					Return(favorites, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   `[{"id":1,"user_id":1,"anime_id":1,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","anime":{"id":1,"title":"Test Anime","description":"Test Description","rating":8.5,"episodes":12,"status":"Completed","created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","start_date":"0001-01-01T00:00:00Z","end_date":"0001-01-01T00:00:00Z"}}]`,
+			expectedBody:   `[{"id":1,"user_id":1,"anime_id":1,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","anime":{"id":1,"title":"Test Anime","description":"Test Description","rating":8.5,"episodes":12,"status":"Completed","created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","start_date":"0001-01-01T00:00:00Z","end_date":"0001-01-01T00:00:00Z"},"user":{"bio":"","created_at":"0001-01-01T00:00:00Z","deleted_at":"0001-01-01T00:00:00Z","email":"","id":0,"is_active":false,"is_admin":false,"profile_pic":"","social_links":null,"updated_at":"0001-01-01T00:00:00Z","username":""}}]`,
 		},
 		{
 			name:   "No Favorites",
 			userID: 1,
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					GetFavorites(ctx, uint(1)).
+					GetFavorites(gomock.Any(), uint(1)).
 					Return([]models.Favorite{}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -72,13 +70,12 @@ func TestGetFavoritesHandler(t *testing.T) {
 			name:   "Database Error",
 			userID: 1,
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					GetFavorites(ctx, uint(1)).
+					GetFavorites(gomock.Any(), uint(1)).
 					Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", http.StatusInternalServerError, map[string]interface{}{"user_id": 1}, nil))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to retrieve favorites from database"}}`,
+			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to retrieve favorites from database","context":{"user_id":1}}}`,
 		},
 	}
 
@@ -128,7 +125,6 @@ func TestAddFavoriteHandler(t *testing.T) {
 			userID:  1,
 			animeID: "1",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				favorite := &models.Favorite{
 					ID:        1,
 					UserID:    1,
@@ -149,11 +145,11 @@ func TestAddFavoriteHandler(t *testing.T) {
 					},
 				}
 				mockService.EXPECT().
-					AddFavorite(ctx, uint(1), uint(1)).
+					AddFavorite(gomock.Any(), uint(1), uint(1)).
 					Return(favorite, nil)
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"id":1,"user_id":1,"anime_id":1,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","anime":{"id":1,"title":"Test Anime","description":"Test Description","rating":8.5,"episodes":12,"status":"Completed","created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","start_date":"0001-01-01T00:00:00Z","end_date":"0001-01-01T00:00:00Z"}}`,
+			expectedBody:   `{"id":1,"user_id":1,"anime_id":1,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","anime":{"id":1,"title":"Test Anime","description":"Test Description","rating":8.5,"episodes":12,"status":"Completed","created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","start_date":"0001-01-01T00:00:00Z","end_date":"0001-01-01T00:00:00Z"},"user":{"bio":"","created_at":"0001-01-01T00:00:00Z","deleted_at":"0001-01-01T00:00:00Z","email":"","id":0,"is_active":false,"is_admin":false,"profile_pic":"","social_links":null,"updated_at":"0001-01-01T00:00:00Z","username":""}}`,
 		},
 		{
 			name:    "Invalid Anime ID",
@@ -170,39 +166,36 @@ func TestAddFavoriteHandler(t *testing.T) {
 			userID:  1,
 			animeID: "999",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					AddFavorite(ctx, uint(1), uint(999)).
+					AddFavorite(gomock.Any(), uint(1), uint(999)).
 					Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, map[string]interface{}{"user_id": 1, "anime_id": 999}, nil))
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":{"code":"ERR-002","message":"Anime not found","details":"The requested anime could not be found"}}`,
+			expectedBody:   `{"error":{"code":"ERR-002","message":"Anime not found","details":"The requested anime could not be found","context":{"user_id":1,"anime_id":999}}}`,
 		},
 		{
 			name:    "Favorite Already Exists",
 			userID:  1,
 			animeID: "1",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					AddFavorite(ctx, uint(1), uint(1)).
+					AddFavorite(gomock.Any(), uint(1), uint(1)).
 					Return(nil, apperrors.NewError(apperrors.ErrConflict, "Favorite already exists", "This anime is already in your favorites list", http.StatusConflict, map[string]interface{}{"user_id": 1, "anime_id": 1}, nil))
 			},
 			expectedStatus: http.StatusConflict,
-			expectedBody:   `{"error":{"code":"ERR-008","message":"Favorite already exists","details":"This anime is already in your favorites list"}}`,
+			expectedBody:   `{"error":{"code":"ERR-008","message":"Favorite already exists","details":"This anime is already in your favorites list","context":{"user_id":1,"anime_id":1}}}`,
 		},
 		{
 			name:    "Database Error",
 			userID:  1,
 			animeID: "1",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					AddFavorite(ctx, uint(1), uint(1)).
+					AddFavorite(gomock.Any(), uint(1), uint(1)).
 					Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to add favorite to database", http.StatusInternalServerError, map[string]interface{}{"user_id": 1, "anime_id": 1}, nil))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to add favorite to database"}}`,
+			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to add favorite to database","context":{"user_id":1,"anime_id":1}}}`,
 		},
 	}
 
@@ -258,9 +251,8 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 			userID:  1,
 			animeID: "1",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					RemoveFavorite(ctx, uint(1), uint(1)).
+					RemoveFavorite(gomock.Any(), uint(1), uint(1)).
 					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -281,26 +273,24 @@ func TestRemoveFavoriteHandler(t *testing.T) {
 			userID:  1,
 			animeID: "999",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					RemoveFavorite(ctx, uint(1), uint(999)).
+					RemoveFavorite(gomock.Any(), uint(1), uint(999)).
 					Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Favorite not found", "The requested favorite could not be found", http.StatusNotFound, map[string]interface{}{"user_id": 1, "anime_id": 999}, nil))
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":{"code":"ERR-002","message":"Favorite not found","details":"The requested favorite could not be found"}}`,
+			expectedBody:   `{"error":{"code":"ERR-002","message":"Favorite not found","details":"The requested favorite could not be found","context":{"user_id":1,"anime_id":999}}}`,
 		},
 		{
 			name:    "Database Error",
 			userID:  1,
 			animeID: "1",
 			setupMock: func(mockService *mocks.MockFavoriteServiceInterface) {
-				ctx := CreateTestContext()
 				mockService.EXPECT().
-					RemoveFavorite(ctx, uint(1), uint(1)).
+					RemoveFavorite(gomock.Any(), uint(1), uint(1)).
 					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to remove favorite from database", http.StatusInternalServerError, map[string]interface{}{"user_id": 1, "anime_id": 1}, nil))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to remove favorite from database"}}`,
+			expectedBody:   `{"error":{"code":"ERR-004","message":"Database error","details":"Failed to remove favorite from database","context":{"user_id":1,"anime_id":1}}}`,
 		},
 	}
 

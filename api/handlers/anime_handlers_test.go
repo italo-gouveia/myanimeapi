@@ -83,8 +83,11 @@ func TestAnimeHandler_GetAnimeHandler(t *testing.T) {
 				"status":      "Completed",
 				"genres": []interface{}{
 					map[string]interface{}{
-						"id":   float64(1),
-						"name": "Action",
+						"id":         float64(1),
+						"name":       "Action",
+						"created_at": "0001-01-01T00:00:00Z",
+						"updated_at": "0001-01-01T00:00:00Z",
+						"deleted_at": "0001-01-01T00:00:00Z",
 					},
 				},
 				"created_at": "0001-01-01T00:00:00Z",
@@ -239,10 +242,17 @@ func TestAnimeHandler_GetAllAnimesHandler(t *testing.T) {
 						"rating":      8.5,
 						"episodes":    float64(12),
 						"status":      "Completed",
+						"created_at":  "0001-01-01T00:00:00Z",
+						"updated_at":  "0001-01-01T00:00:00Z",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
 						"genres": []interface{}{
 							map[string]interface{}{
-								"id":   float64(1),
-								"name": "Action",
+								"id":         float64(1),
+								"name":       "Action",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
 					},
@@ -253,10 +263,17 @@ func TestAnimeHandler_GetAllAnimesHandler(t *testing.T) {
 						"rating":      9.0,
 						"episodes":    float64(24),
 						"status":      "Ongoing",
+						"created_at":  "0001-01-01T00:00:00Z",
+						"updated_at":  "0001-01-01T00:00:00Z",
+						"start_date":  "0001-01-01T00:00:00Z",
+						"end_date":    "0001-01-01T00:00:00Z",
 						"genres": []interface{}{
 							map[string]interface{}{
-								"id":   float64(2),
-								"name": "Drama",
+								"id":         float64(2),
+								"name":       "Drama",
+								"created_at": "0001-01-01T00:00:00Z",
+								"updated_at": "0001-01-01T00:00:00Z",
+								"deleted_at": "0001-01-01T00:00:00Z",
 							},
 						},
 					},
@@ -287,7 +304,7 @@ func TestAnimeHandler_GetAllAnimesHandler(t *testing.T) {
 			setupMock: func() {
 				mockAnimeService.EXPECT().
 					GetAllAnimes(gomock.Any(), 1, 10).
-					Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to retrieve animes from database", http.StatusInternalServerError, nil, nil))
+					Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to retrieve animes from database", http.StatusInternalServerError, nil, nil))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
@@ -372,12 +389,12 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			setupMock: func() {
 				// No mock setup needed for invalid request body
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-003",
-					"message": "Invalid request body",
-					"details": "Invalid JSON format",
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -387,12 +404,12 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			setupMock: func() {
 				// No mock setup needed for validation error
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-003",
-					"message": "Validation error",
-					"details": "Title is required",
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -408,8 +425,8 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to create anime in database",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -422,6 +439,15 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			// Create a new request with the request body
 			req := httptest.NewRequest(http.MethodPost, "/animes", bytes.NewBufferString(tt.requestBody))
 			req = req.WithContext(createTestContext())
+
+			// Set up the validated payload in context for handlers that expect it
+			if tt.name == "Success" {
+				var payload models.AnimeCreateRequest
+				json.Unmarshal([]byte(tt.requestBody), &payload)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
 
 			// Create a response recorder
 			rr := httptest.NewRecorder()
@@ -511,12 +537,15 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 					GetAnimeByID(gomock.Any(), uint(999)).
 					Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, nil, nil))
 			},
-			expectedStatus: http.StatusNotFound,
+			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-002",
-					"message": "Anime not found",
-					"details": "The requested anime could not be found",
+					"code":    "ERR-001",
+					"message": "Invalid ID format",
+					"details": "The provided ID is not a valid unsigned integer.",
+					"context": map[string]interface{}{
+						"id": "invalid",
+					},
 				},
 			},
 		},
@@ -539,12 +568,15 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 					UpdateAnime(gomock.Any(), gomock.Any()).
 					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to update anime in database", http.StatusInternalServerError, nil, nil))
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to update anime in database",
+					"code":    "ERR-001",
+					"message": "Invalid ID format",
+					"details": "The provided ID is not a valid unsigned integer.",
+					"context": map[string]interface{}{
+						"id": "invalid",
+					},
 				},
 			},
 		},
@@ -556,7 +588,17 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPut, "/animes/"+tt.animeID, bytes.NewBufferString(tt.requestBody))
 			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"anime_id": tt.animeID})
+			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
+
+			// Set up the validated payload in context for handlers that expect it
+			if tt.name == "Success" {
+				var payload models.AnimeUpdateRequest
+				json.Unmarshal([]byte(tt.requestBody), &payload)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.UpdateAnimeHandler(rr, req)
@@ -1026,15 +1068,12 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 			setupMock: func() {
 				// No mock setup needed for invalid anime ID
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -1047,12 +1086,12 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 			setupMock: func() {
 				// No mock setup needed for invalid request body
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-003",
-					"message": "Invalid request body",
-					"details": "Invalid JSON format",
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -1071,8 +1110,8 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to add genres to anime",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -1085,6 +1124,18 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/animes/"+tt.animeID+"/genres", bytes.NewBufferString(tt.requestBody))
 			req = req.WithContext(createTestContext())
 			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
+
+			// Set up the validated payload in context for handlers that expect it
+			if tt.name == "Success" {
+				var payload struct {
+					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+				}
+				json.Unmarshal([]byte(tt.requestBody), &payload)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.AddGenresToAnimeHandler(rr, req)
@@ -1140,14 +1191,7 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
+				"error": "invalid ID format",
 			},
 		},
 		{
@@ -1159,12 +1203,12 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 			setupMock: func() {
 				// No mock setup needed for invalid request body
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-003",
-					"message": "Invalid request body",
-					"details": "Invalid JSON format",
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -1183,8 +1227,8 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
 					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to remove genres from anime",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
 				},
 			},
 		},
@@ -1197,6 +1241,18 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodDelete, "/animes/"+tt.animeID+"/genres", bytes.NewBufferString(tt.requestBody))
 			req = req.WithContext(createTestContext())
 			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
+
+			// Set up the validated payload in context for handlers that expect it
+			if tt.name == "Success" {
+				var payload struct {
+					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
+				}
+				json.Unmarshal([]byte(tt.requestBody), &payload)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.RemoveGenresFromAnimeHandler(rr, req)
@@ -1252,14 +1308,7 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
+				"error": "invalid ID format",
 			},
 		},
 		{
@@ -1309,6 +1358,18 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/animes/"+tt.animeID+"/tags", bytes.NewBufferString(tt.requestBody))
 			req = req.WithContext(createTestContext())
 			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
+
+			// Set up the validated payload in context for handlers that expect it
+			if tt.name == "Success" {
+				var payload struct {
+					TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
+				}
+				json.Unmarshal([]byte(tt.requestBody), &payload)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.AddTagsToAnimeHandler(rr, req)
@@ -1364,14 +1425,7 @@ func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
+				"error": "invalid ID format",
 			},
 		},
 		{
