@@ -443,7 +443,8 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			// Set up the validated payload in context for handlers that expect it
 			if tt.name == "Success" {
 				var payload models.AnimeCreateRequest
-				json.Unmarshal([]byte(tt.requestBody), &payload)
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
 				req = req.WithContext(ctx)
@@ -593,7 +594,8 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 			// Set up the validated payload in context for handlers that expect it
 			if tt.name == "Success" {
 				var payload models.AnimeUpdateRequest
-				json.Unmarshal([]byte(tt.requestBody), &payload)
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
 				req = req.WithContext(ctx)
@@ -1130,7 +1132,8 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 				var payload struct {
 					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
 				}
-				json.Unmarshal([]byte(tt.requestBody), &payload)
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
 				req = req.WithContext(ctx)
@@ -1247,7 +1250,8 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 				var payload struct {
 					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
 				}
-				json.Unmarshal([]byte(tt.requestBody), &payload)
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
 				req = req.WithContext(ctx)
@@ -1364,7 +1368,8 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 				var payload struct {
 					TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
 				}
-				json.Unmarshal([]byte(tt.requestBody), &payload)
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
 				ctx := req.Context()
 				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
 				req = req.WithContext(ctx)
