@@ -359,8 +359,18 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 			name:        "Success",
 			requestBody: `{"title":"New Anime","description":"New Description","rating":8.5,"episodes":12,"status":"Completed","genre_ids":[1,2],"tag_ids":[1,2]}`,
 			setupMock: func() {
+				// CreateAnime should set the anime ID to 1
 				mockAnimeService.EXPECT().
 					CreateAnime(gomock.Any(), gomock.Any()).
+					Do(func(ctx interface{}, anime *models.Anime) {
+						anime.ID = 1 // Simulate database setting the ID
+					}).
+					Return(nil)
+				mockAnimeService.EXPECT().
+					AddGenresToAnime(gomock.Any(), uint(1), []uint{1, 2}).
+					Return(nil)
+				mockAnimeService.EXPECT().
+					AddTagsToAnime(gomock.Any(), uint(1), []uint{1, 2}).
 					Return(nil)
 				mockAnimeService.EXPECT().
 					GetAnimeByID(gomock.Any(), uint(1)).
@@ -371,6 +381,10 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 						Rating:      8.5,
 						Episodes:    12,
 						Status:      "Completed",
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
 					}, nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -381,6 +395,12 @@ func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
 				"rating":      8.5,
 				"episodes":    float64(12),
 				"status":      "Completed",
+				"created_at":  "0001-01-01T00:00:00Z",
+				"updated_at":  "0001-01-01T00:00:00Z",
+				"start_date":  "0001-01-01T00:00:00Z",
+				"end_date":    "0001-01-01T00:00:00Z",
+				"genres":      []interface{}{},
+				"tags":        []interface{}{},
 			},
 		},
 		{
@@ -495,6 +515,12 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 						Rating:      8.5,
 						Episodes:    12,
 						Status:      "Completed",
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
+						Genres:      []models.Genre{},
+						Tags:        []models.Tag{},
 					}, nil)
 				mockAnimeService.EXPECT().
 					UpdateAnime(gomock.Any(), gomock.Any()).
@@ -508,6 +534,10 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 				"rating":      9.0,
 				"episodes":    float64(24),
 				"status":      "Ongoing",
+				"created_at":  "0001-01-01T00:00:00Z",
+				"updated_at":  "0001-01-01T00:00:00Z",
+				"start_date":  "0001-01-01T00:00:00Z",
+				"end_date":    "0001-01-01T00:00:00Z",
 			},
 		},
 		{
@@ -538,15 +568,12 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 					GetAnimeByID(gomock.Any(), uint(999)).
 					Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, nil, nil))
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNotFound,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
+					"code":    "ERR-002",
+					"message": "Anime not found",
+					"details": "The requested anime could not be found",
 				},
 			},
 		},
@@ -564,20 +591,23 @@ func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
 						Rating:      8.5,
 						Episodes:    12,
 						Status:      "Completed",
+						CreatedAt:   time.Time{},
+						UpdatedAt:   time.Time{},
+						StartDate:   time.Time{},
+						EndDate:     time.Time{},
+						Genres:      []models.Genre{},
+						Tags:        []models.Tag{},
 					}, nil)
 				mockAnimeService.EXPECT().
 					UpdateAnime(gomock.Any(), gomock.Any()).
 					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to update anime in database", http.StatusInternalServerError, nil, nil))
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
+					"code":    "ERR-004",
+					"message": "Database error",
+					"details": "Failed to update anime in database",
 				},
 			},
 		},
@@ -715,10 +745,15 @@ func TestAnimeHandler_DeleteAnimeHandler(t *testing.T) {
 
 			// Verify the response
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
+			if tt.expectedBody == nil {
+				// For 204 No Content, expect empty body
+				assert.Empty(t, rr.Body.String())
+			} else {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBody, response)
+			}
 		})
 	}
 }
@@ -1056,10 +1091,8 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 					AddGenresToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
 					Return(nil)
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Genres added successfully",
-			},
+			expectedStatus: http.StatusNoContent,
+			expectedBody:   nil,
 		},
 		{
 			name:    "Invalid Anime ID",
@@ -1144,10 +1177,15 @@ func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
 			handler.AddGenresToAnimeHandler(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
+			if tt.expectedBody == nil {
+				// For 204 No Content, expect empty body
+				assert.Empty(t, rr.Body.String())
+			} else {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBody, response)
+			}
 		})
 	}
 }
@@ -1178,10 +1216,8 @@ func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
 					RemoveGenresFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
 					Return(nil)
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Genres removed successfully",
-			},
+			expectedStatus: http.StatusNoContent,
+			expectedBody:   nil,
 		},
 		{
 			name:    "Invalid Anime ID",
