@@ -41,54 +41,13 @@ jobs:
 
       - name: Security Review with AI
         uses: Codium-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          mode: review
-          review_comment_lgtm: false
-          review_suggestions: true
-          review_estimate: false
-          review_extra_instructions: |
-            Você é um especialista em segurança de aplicações Go. Analise o código focando APENAS em questões de segurança:
-
-            1. **Vulnerabilidades de Segurança:**
-               - SQL Injection
-               - XSS (Cross-Site Scripting)
-               - CSRF (Cross-Site Request Forgery)
-               - Injeção de comandos
-               - Path traversal
-               - Deserialização insegura
-
-            2. **Validação e Sanitização:**
-               - Validação de entrada de usuário
-               - Sanitização de dados
-               - Escape de caracteres especiais
-               - Validação de tipos de arquivo
-
-            3. **Autenticação e Autorização:**
-               - Controle de acesso adequado
-               - Verificação de permissões
-               - Tokens JWT seguros
-               - Senhas e hashes
-
-            4. **Configuração Segura:**
-               - Variáveis de ambiente
-               - Configurações de banco de dados
-               - Logs sensíveis
-               - Headers de segurança
-
-            5. **Dependências:**
-               - Vulnerabilidades conhecidas
-               - Versões desatualizadas
-               - Dependências suspeitas
-
-            6. **Criptografia:**
-               - Uso adequado de algoritmos
-               - Geração segura de chaves
-               - Armazenamento de secrets
-
-            Use apenas estes emojis para categorizar:
-            🔒 (vulnerabilidade crítica), ⚠️ (risco de segurança), 💡 (sugestão de segurança), 🛡️ (boa prática de segurança)
-
-            Seja MUITO específico sobre riscos de segurança e forneça exemplos de como corrigir.
-            Se não encontrar problemas de segurança, confirme que o código está seguro.
+          args: |
+            --mode review
+            --review.comment_lgtm false
+            --review.suggestions true
+            --review.estimate false
+            --review.extra_instructions "Você é um especialista em segurança de aplicações Go. Analise o código focando APENAS em questões de segurança: 1. Vulnerabilidades: SQL Injection, XSS, CSRF, injeção de comandos, path traversal. 2. Validação: Validação de entrada, sanitização, escape de caracteres. 3. Autenticação: Controle de acesso, verificação de permissões, tokens JWT. 4. Configuração: Variáveis de ambiente, logs sensíveis, headers de segurança. 5. Dependências: Vulnerabilidades conhecidas, versões desatualizadas. 6. Criptografia: Algoritmos adequados, geração segura de chaves. Use emojis: 🔒 (vulnerabilidade crítica), ⚠️ (risco), 💡 (sugestão), 🛡️ (boa prática). Seja MUITO específico sobre riscos e forneça exemplos de correção."
