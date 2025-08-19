@@ -1,0 +1,31 @@
+version: "1"
+
+run:
+  timeout: 5m
+  go: "1.22"
+
+linters:
+  enable:
+    - gosec
+    - gosimple
+    - ineffassign
+    - staticcheck
+    - govet
+    - errcheck
+    - unused
+    - deadcode
+    - gocyclo
+    - gofmt
+    - goimports
+    - misspell
+    - unparam
+    - goconst
+    - dupl
+    - gocritic
+    - prealloc
+    - gocognit
+    - gomnd
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
