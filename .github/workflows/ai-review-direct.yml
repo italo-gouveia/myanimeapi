@@ -1,0 +1,124 @@
+name: Direct AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+  checks: write
+
+jobs:
+  direct-review:
+    name: Direct AI Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install OpenAI
+        run: |
+          pip install openai requests
+
+      - name: Get PR Changes
+        id: get-changes
+        run: |
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Get diff
+          DIFF_CONTENT=$(git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          echo "diff_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run AI Review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python -c "
+          import os
+          import openai
+          import json
+          
+          openai.api_key = os.getenv('OPENAI_API_KEY')
+          
+          changed_files = '''${{ steps.get-changes.outputs.changed_files }}'''
+          diff_content = '''${{ steps.get-changes.outputs.diff_content }}'''
+          
+          if not changed_files.strip():
+              print('No changes detected')
+              exit(0)
+          
+          prompt = f'''Você é um revisor de código experiente especializado em Go. Analise as mudanças no código e forneça comentários construtivos.
+
+          Arquivos alterados:
+          {changed_files}
+          
+          Diff das mudanças:
+          {diff_content}
+          
+          Analise o código com foco em:
+          1. Qualidade do Código: Boas práticas de Go, estrutura, nomenclatura, tratamento de erros
+          2. Segurança: Vulnerabilidades, validação de entrada, exposição de dados sensíveis
+          3. Performance: Otimizações, uso eficiente de recursos, padrões de concorrência
+          4. Manutenibilidade: Legibilidade, documentação, testes
+          5. Arquitetura: Separação de responsabilidades, design patterns
+          
+          Use emojis: 🔧 (melhoria), 🐛 (bug), ⚠️ (aviso), 💡 (sugestão), 🔒 (segurança), ⚡ (performance)
+          
+          Seja específico e forneça exemplos de código quando apropriado.'''
+          
+          try:
+              response = openai.ChatCompletion.create(
+                  model='gpt-4',
+                  messages=[{'role': 'user', 'content': prompt}],
+                  max_tokens=2000,
+                  temperature=0.1
+              )
+              
+              review = response.choices[0].message.content
+              print('AI Review generated successfully')
+              
+              # Save review to file for next step
+              with open('ai_review.txt', 'w') as f:
+                  f.write(review)
+                  
+          except Exception as e:
+              print(f'Error generating AI review: {e}')
+              exit(1)
+          "
+
+      - name: Post AI Review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let review = '';
+            
+            try {
+              review = fs.readFileSync('ai_review.txt', 'utf8');
+            } catch (e) {
+              review = '🤖 **AI Review**\n\nErro ao gerar revisão. Verifique os logs para mais detalhes.';
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: review
+            });
