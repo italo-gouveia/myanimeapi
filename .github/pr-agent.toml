@@ -52,7 +52,7 @@ Seja específico e forneça exemplos de código quando apropriado.
 """
 
 # Configurações de revisão
-review_comment_lgtm = false
+review_comment_lgtm = true
 review_suggestions = true
 review_estimate = true
 review_extra_instructions = true
