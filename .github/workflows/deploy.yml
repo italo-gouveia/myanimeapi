@@ -29,10 +29,13 @@ jobs:
 
       - name: Deploy to Render
         run: |
-          curl -X POST \
+          set -euo pipefail
+          if [ -z "${{ secrets.RENDER_API_KEY }}" ] || [ -z "${{ secrets.RENDER_SERVICE_ID }}" ]; then
+            echo "Missing RENDER_API_KEY or RENDER_SERVICE_ID secrets" >&2
+            exit 1
+          fi
+          RESPONSE=$(curl -fsS -X POST \
+            -H "Accept: application/json" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "serviceId": "${{ secrets.RENDER_SERVICE_ID }}"
-            }' \
-            https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys")
+          echo "$RESPONSE"
