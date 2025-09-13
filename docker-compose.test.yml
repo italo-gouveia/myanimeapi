@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgresSQL for testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: myanimeapi-postgres-test
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"  # Different port for testing
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./internal/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - test-network
+
+  # Redis for testing (if necessary)
+  redis-test:
+    image: redis:7-alpine
+    container_name: myanimeapi-redis-test
+    ports:
+      - "6380:6379"  # Different port for testing
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # MinIO for testing of storage (if necessary)
+  minio-test:
+    image: minio/minio:latest
+    container_name: myanimeapi-minio-test
+    environment:
+      MINIO_ROOT_USER: test
+      MINIO_ROOT_PASSWORD: test123
+      MINIO_DEFAULT_BUCKETS: "anime-uploads,user-avatars"
+    ports:
+      - "9001:9000"  # Different port for testing
+      - "9002:9001"  # Console
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - test-network
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge
+    name: myanimeapi-test-network
