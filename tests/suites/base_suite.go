@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 
+	appdb "myanimeapi/internal/db"
+	"myanimeapi/api/routes"
 	"myanimeapi/internal/config"
 	"myanimeapi/tests/mocks"
 	"myanimeapi/tests/utils"
@@ -62,9 +64,9 @@ func (s *BaseSuite) setupApplication() {
 	// Setup router
 	s.Router = mux.NewRouter()
 
-	// Setup routes - for now only a basic router
-	// The real routes will be configured when necessary
-	// routes.RegisterRoutes(s.Router, "/swagger/doc.json", nil, nil, "1.0.0")
+	// Register application routes for E2E tests
+	dbWrapper := appdb.NewGormDB(s.DB)
+	routes.RegisterRoutes(s.Router, "", dbWrapper, nil, "test")
 }
 
 // addCleanup adds a cleanup function to be executed after the test
