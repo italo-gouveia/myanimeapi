@@ -3,18 +3,29 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"myanimeapi/api/middleware"
 	"myanimeapi/tests/suites"
 )
 
 func TestAnimeAPI_E2E(t *testing.T) {
 	suite := suites.NewBaseSuite(t)
+
+	// Ensure JWT secret and obtain a token for protected routes
+	if os.Getenv("JWT_SECRET_KEY") == "" {
+		os.Setenv("JWT_SECRET_KEY", "test-secret")
+	}
+	token, err := middleware.GenerateToken("1", true)
+	require.NoError(t, err)
+	authHeader := "Bearer " + token
 
 	t.Run("CreateAnime", func(t *testing.T) {
 		// Arrange
@@ -29,8 +40,9 @@ func TestAnimeAPI_E2E(t *testing.T) {
 
 		reqJSON, _ := json.Marshal(reqBody)
 
-		req := httptest.NewRequest("POST", "/api/animes", bytes.NewBuffer(reqJSON))
+		req := httptest.NewRequest("POST", "/v1/animes", bytes.NewBuffer(reqJSON))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
 
 		// Act
 		rec := httptest.NewRecorder()
@@ -63,8 +75,9 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
-		createReq := httptest.NewRequest("POST", "/api/animes", bytes.NewBuffer(createReqJSON))
+		createReq := httptest.NewRequest("POST", "/v1/animes", bytes.NewBuffer(createReqJSON))
 		createReq.Header.Set("Content-Type", "application/json")
+		createReq.Header.Set("Authorization", authHeader)
 
 		createRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(createRec, createReq)
@@ -75,10 +88,10 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		err := json.Unmarshal(createRec.Body.Bytes(), &createResponse)
 		require.NoError(t, err)
 
-		animeID := createResponse["id"]
+		animeID := createResponse["id"].(float64)
 
 		// Act - Get the created anime
-		getReq := httptest.NewRequest("GET", "/api/animes/"+string(animeID.(string)), nil)
+		getReq := httptest.NewRequest("GET", "/v1/animes/"+fmt.Sprintf("%.0f", animeID), nil)
 		getRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(getRec, getReq)
 
@@ -108,8 +121,9 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
-		createReq := httptest.NewRequest("POST", "/api/animes", bytes.NewBuffer(createReqJSON))
+		createReq := httptest.NewRequest("POST", "/v1/animes", bytes.NewBuffer(createReqJSON))
 		createReq.Header.Set("Content-Type", "application/json")
+		createReq.Header.Set("Authorization", authHeader)
 
 		createRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(createRec, createReq)
@@ -120,7 +134,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		err := json.Unmarshal(createRec.Body.Bytes(), &createResponse)
 		require.NoError(t, err)
 
-		animeID := createResponse["id"]
+		animeID := createResponse["id"].(float64)
 
 		// Act - Update the anime
 		updateReqBody := map[string]interface{}{
@@ -130,8 +144,9 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		}
 
 		updateReqJSON, _ := json.Marshal(updateReqBody)
-		updateReq := httptest.NewRequest("PUT", "/api/animes/"+string(animeID.(string)), bytes.NewBuffer(updateReqJSON))
+		updateReq := httptest.NewRequest("PUT", "/v1/animes/"+fmt.Sprintf("%.0f", animeID), bytes.NewBuffer(updateReqJSON))
 		updateReq.Header.Set("Content-Type", "application/json")
+		updateReq.Header.Set("Authorization", authHeader)
 
 		updateRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(updateRec, updateReq)
@@ -160,8 +175,9 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
-		createReq := httptest.NewRequest("POST", "/api/animes", bytes.NewBuffer(createReqJSON))
+		createReq := httptest.NewRequest("POST", "/v1/animes", bytes.NewBuffer(createReqJSON))
 		createReq.Header.Set("Content-Type", "application/json")
+		createReq.Header.Set("Authorization", authHeader)
 
 		createRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(createRec, createReq)
@@ -172,10 +188,11 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		err := json.Unmarshal(createRec.Body.Bytes(), &createResponse)
 		require.NoError(t, err)
 
-		animeID := createResponse["id"]
+		animeID := createResponse["id"].(float64)
 
 		// Act - Delete the anime
-		deleteReq := httptest.NewRequest("DELETE", "/api/animes/"+string(animeID.(string)), nil)
+		deleteReq := httptest.NewRequest("DELETE", "/v1/animes/"+fmt.Sprintf("%.0f", animeID), nil)
+		deleteReq.Header.Set("Authorization", authHeader)
 		deleteRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(deleteRec, deleteReq)
 
@@ -183,7 +200,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, deleteRec.Code)
 
 		// Verify deletion
-		getReq := httptest.NewRequest("GET", "/api/animes/"+string(animeID.(string)), nil)
+		getReq := httptest.NewRequest("GET", "/v1/animes/"+fmt.Sprintf("%.0f", animeID), nil)
 		getRec := httptest.NewRecorder()
 		suite.Router.ServeHTTP(getRec, getReq)
 

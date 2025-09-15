@@ -64,7 +64,7 @@ func (s *BaseSuite) setupApplication() {
 	// Setup router
 	s.Router = mux.NewRouter()
 
-	// Register application routes for E2E tests
+	// Register application routes so E2E tests hit real handlers
 	dbWrapper := appdb.NewGormDB(s.DB)
 	routes.RegisterRoutes(s.Router, "", dbWrapper, nil, "test")
 }
