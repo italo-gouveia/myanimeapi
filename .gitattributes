@@ -1,2 +1,8 @@
+# Ensure consistent LF endings for key text files
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+Makefile text eol=lf
+*.md text eol=lf
 # Auto detect text files and perform LF normalization
 * text=auto
