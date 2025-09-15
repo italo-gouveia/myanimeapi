@@ -6,9 +6,9 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 
-	appdb "myanimeapi/internal/db"
 	"myanimeapi/api/routes"
 	"myanimeapi/internal/config"
+	appdb "myanimeapi/internal/db"
 	"myanimeapi/tests/mocks"
 	"myanimeapi/tests/utils"
 )
