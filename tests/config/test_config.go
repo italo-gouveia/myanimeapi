@@ -39,7 +39,7 @@ func LoadTestConfig() *TestConfig {
 	return &TestConfig{
 		Database: DatabaseTestConfig{
 			Host:     getEnv("TEST_DB_HOST", "localhost"),
-			Port:     getEnvAsInt("TEST_DB_PORT", 5432),
+			Port:     getEnvAsInt("TEST_DB_PORT", 5433),
 			User:     getEnv("TEST_DB_USER", "test"),
 			Password: getEnv("TEST_DB_PASSWORD", "test"),
 			Name:     getEnv("TEST_DB_NAME", "test_db"),

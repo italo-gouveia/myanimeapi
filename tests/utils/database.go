@@ -22,7 +22,7 @@ func SetupTestDatabase(t *testing.T) *gorm.DB {
 
 	// Use test environment variables
 	dbHost := getEnv("TEST_DB_HOST", "localhost")
-	dbPort := getEnv("TEST_DB_PORT", "5432")
+	dbPort := getEnv("TEST_DB_PORT", "5433")
 	dbUser := getEnv("TEST_DB_USER", "test")
 	dbPass := getEnv("TEST_DB_PASSWORD", "test")
 	dbName := getEnv("TEST_DB_NAME", "test_db")
