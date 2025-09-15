@@ -31,7 +31,7 @@ func (r *AnimeRepositoryImpl) GetByID(ctx context.Context, id uint) (interface{}
 	}).Info("Retrieving anime by ID")
 
 	var anime models.Anime
-	if err := r.db.WithContext(ctx).Preload("Reviews").Preload("Favorites").First(&anime, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Reviews").First(&anime, id).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),
@@ -67,7 +67,7 @@ func (r *AnimeRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]in
 	offset := (page - 1) * limit
 
 	// Retrieve animes with pagination
-	if err := r.db.WithContext(ctx).Preload("Reviews").Preload("Favorites").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Reviews").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve animes")
@@ -176,7 +176,7 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	offset := (page - 1) * limit
 
 	// Retrieve animes with pagination
-	if err := r.db.WithContext(ctx).Preload("Reviews").Preload("Favorites").Where("title LIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title LIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve animes")
@@ -219,7 +219,6 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 	// Retrieve animes with pagination using JOIN
 	if err := r.db.WithContext(ctx).
 		Preload("Reviews").
-		Preload("Favorites").
 		Preload("Genres").
 		Preload("Tags").
 		Joins("JOIN anime_genres ON animes.id = anime_genres.anime_id").
