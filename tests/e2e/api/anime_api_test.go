@@ -72,6 +72,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 			"status":      "Ongoing",
 			"episodes":    24,
 			"rating":      9.0,
+			"start_date":  "2024-01-01T00:00:00Z",
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
@@ -118,6 +119,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 			"status":      "Ongoing",
 			"episodes":    12,
 			"rating":      7.5,
+			"start_date":  "2024-01-01T00:00:00Z",
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
@@ -172,6 +174,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 			"status":      "Ongoing",
 			"episodes":    12,
 			"rating":      7.0,
+			"start_date":  "2024-01-01T00:00:00Z",
 		}
 
 		createReqJSON, _ := json.Marshal(createReqBody)
