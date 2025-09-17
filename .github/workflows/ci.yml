@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - SONAR_IMPROVMENTS
   pull_request:
     branches:
       - main
+      - SONAR_IMPROVMENTS
 
 jobs:
   pre-build-validation:

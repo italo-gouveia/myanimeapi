@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, SONAR_IMPROVMENTS ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, SONAR_IMPROVMENTS ]
 
 jobs:
   test:
