@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,8 +107,20 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Add user information to the context
-		ctx := context.WithValue(r.Context(), UserContextKey, claims.UserID)
+		// Add user info to context
+		userID, err := strconv.ParseUint(claims.UserID, 10, 32)
+		if err != nil {
+			log.WithField("error", err).Error("Failed to parse user ID")
+			apperrors.WriteErrorResponse(w, http.StatusUnauthorized, apperrors.ErrUnauthorized,
+				"Invalid token",
+				"The authentication token contains an invalid user ID",
+				map[string]interface{}{
+					"error": "Invalid user ID in token",
+				})
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), UserContextKey, uint(userID))
 		ctx = context.WithValue(ctx, IsAdminContextKey, claims.IsAdmin)
 
 		// Log successful authentication
@@ -115,7 +128,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			"method":      r.Method,
 			"path":        r.URL.Path,
 			"remote_addr": r.RemoteAddr,
-			"user_id":     claims.UserID,
+			"user_id":     userID,
 			"is_admin":    claims.IsAdmin,
 		}).Info("User authenticated successfully")
 

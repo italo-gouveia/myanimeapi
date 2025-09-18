@@ -43,13 +43,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Determine test packages
+# By default, skip integration and E2E tests during pre-push to avoid external dependencies
+# Set RUN_ALL_TESTS=1 to include everything (CI should do this)
+if [ "${RUN_ALL_TESTS}" = "1" ]; then
+    TEST_PKGS=$(go list ./...)
+else
+    TEST_PKGS=$(go list ./... | grep -v 'tests/integration' | grep -v 'tests/e2e')
+fi
+
 # Check if gcc is installed for race detection
 if command_exists gcc; then
-    echo -e "${YELLOW}Running tests with race detection...${NC}"
-    CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ./...
+    echo -e "${YELLOW}Running unit tests with race detection...${NC}"
+    CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ${TEST_PKGS}
 else
-    echo -e "${YELLOW}GCC not found. Running tests without race detection...${NC}"
-    go test -v -coverprofile=coverage.out ./...
+    echo -e "${YELLOW}GCC not found. Running unit tests without race detection...${NC}"
+    go test -v -coverprofile=coverage.out ${TEST_PKGS}
 fi
 
 if [ $? -ne 0 ]; then

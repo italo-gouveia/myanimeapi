@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, SONAR_IMPROVMENTS ]
+  pull_request:
+    branches: [ main, develop, SONAR_IMPROVMENTS ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Generate mocks
+      run: make test-mocks
+    
+    - name: Run unit tests
+      run: make test-unit
+    
+    - name: Run integration tests
+      run: make test-integration
+      env:
+        TEST_DB_HOST: localhost
+        TEST_DB_PORT: 5432
+        TEST_DB_USER: postgres
+        TEST_DB_PASSWORD: test
+        TEST_DB_NAME: test_db
+    
+    - name: Run E2E tests
+      run: make test-e2e
+      env:
+        TEST_DB_HOST: localhost
+        TEST_DB_PORT: 5432
+        TEST_DB_USER: postgres
+        TEST_DB_PASSWORD: test
+        TEST_DB_NAME: test_db
+    
+    - name: Generate coverage report
+      run: make test-coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella

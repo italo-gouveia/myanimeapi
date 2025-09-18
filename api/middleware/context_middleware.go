@@ -5,7 +5,6 @@ package middleware
 
 import (
 	"context"
-	"strconv"
 )
 
 // contextKey is a custom type for context keys to avoid key collisions.
@@ -27,13 +26,9 @@ const (
 
 // GetUserFromContext retrieves the user ID from the context.
 // It returns the user ID as a uint if it exists in the context; otherwise, it returns 0.
-// The user ID is stored as a string in the context and converted to uint.
 func GetUserFromContext(ctx context.Context) uint {
-	if userIDStr, ok := ctx.Value(UserContextKey).(string); ok {
-		userID, err := strconv.ParseUint(userIDStr, 10, 32)
-		if err == nil {
-			return uint(userID)
-		}
+	if userID, ok := ctx.Value(UserContextKey).(uint); ok {
+		return userID
 	}
 	return 0
 }

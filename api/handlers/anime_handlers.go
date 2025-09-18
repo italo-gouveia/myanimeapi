@@ -768,29 +768,38 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Query().Get("title")
 	if title == "" {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Title parameter is required")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "Title parameter is required", nil)
 		return
 	}
 
-	page, limit := utils.GetPaginationParams(r)
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		return
+	}
+
 	animes, total, err := h.service.GetAnimesByTitle(r.Context(), title, page, limit)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to search animes by title")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes", nil)
 		return
 	}
 
 	response := map[string]interface{}{
-		"animes": animes,
-		"total":  total,
-		"page":   page,
-		"limit":  limit,
+		"data":  animes,
+		"total": total,
+		"page":  page,
+		"limit": limit,
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, response)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // GetAnimesByGenreHandler handles searching animes by genre.
@@ -845,29 +854,38 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 	vars := mux.Vars(r)
 	genre := vars["genre"]
 	if genre == "" {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Genre parameter is required")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "Genre parameter is required", nil)
 		return
 	}
 
-	page, limit := utils.GetPaginationParams(r)
+	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
+	if err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		return
+	}
+
 	animes, total, err := h.service.GetAnimesByGenre(r.Context(), genre, page, limit)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to search animes by genre")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes by genre", nil)
 		return
 	}
 
 	response := map[string]interface{}{
-		"animes": animes,
-		"total":  total,
-		"page":   page,
-		"limit":  limit,
+		"data":  animes,
+		"total": total,
+		"page":  page,
+		"limit": limit,
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, response)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
+		return
+	}
 }
 
 // RegisterAnimeRoutes registers all anime-related routes
