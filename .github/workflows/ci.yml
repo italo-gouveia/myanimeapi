@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - SONAR_IMPROVMENTS
+  workflow_dispatch:
 
 jobs:
   pre-build-validation:
