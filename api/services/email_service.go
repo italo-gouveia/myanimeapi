@@ -24,7 +24,6 @@ func NewEmailService() *EmailService {
 	}
 }
 
-// TODO: Need to configure for api an email to use here and not use personal email ones
 // SendPasswordResetEmail sends a password reset email
 func (s *EmailService) SendPasswordResetEmail(to, resetToken string) error {
 	subject := "Password Reset Request"

@@ -31,9 +31,10 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"math"
 	"strings"
+
+	"myanimeapi/internal/logger"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
@@ -61,7 +62,7 @@ func HashPassword(password string) (string, error) {
 	// Generate a random salt
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
-		log.Printf("Error generating salt: %v", err)
+		logger.WithField("error", err.Error()).Error("Error generating salt")
 		return "", err
 	}
 

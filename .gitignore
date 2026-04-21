@@ -20,3 +20,14 @@
 # Go workspace file
 go.work
 .vercel
+
+# Local documentation (not synced to remote)
+_docs/
+
+# Learning roadmaps (for other projects)
+_learning_roadmaps/
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.*.local

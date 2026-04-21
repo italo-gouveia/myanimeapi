@@ -139,8 +139,7 @@ func main() {
 	// Determine environment and configure accordingly
 	if os.Getenv("ENV") == "production" {
 		log.Info("Running in production mode")
-		// TODO: Implement HTTPS redirection middleware
-		// router.Use(middleware.HTTPSRedirectMiddleware)
+		router.Use(middleware.HTTPSMiddleware)
 	}
 
 	// Register all routes
