@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"net/smtp"
 	"os"
@@ -14,14 +15,19 @@ type EmailService struct {
 	smtpPort string
 }
 
-// NewEmailService creates a new email service
-func NewEmailService() *EmailService {
-	return &EmailService{
+// NewEmailService creates a new email service.
+// Returns an error if required SMTP environment variables are missing.
+func NewEmailService() (*EmailService, error) {
+	svc := &EmailService{
 		from:     os.Getenv("EMAIL_FROM"),
 		password: os.Getenv("EMAIL_PASSWORD"),
 		smtpHost: os.Getenv("SMTP_HOST"),
 		smtpPort: os.Getenv("SMTP_PORT"),
 	}
+	if svc.from == "" || svc.smtpHost == "" || svc.smtpPort == "" {
+		return nil, errors.New("missing required SMTP configuration: EMAIL_FROM, SMTP_HOST, SMTP_PORT must be set")
+	}
+	return svc, nil
 }
 
 // SendPasswordResetEmail sends a password reset email

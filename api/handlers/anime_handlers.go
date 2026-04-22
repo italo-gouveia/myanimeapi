@@ -22,6 +22,7 @@ import (
 	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
 	"github.com/gorilla/mux"
 )
@@ -132,7 +133,9 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Add genres if provided
 	if len(payload.GenreIDs) > 0 {
 		if err := h.service.AddGenresToAnime(r.Context(), anime.ID, payload.GenreIDs); err != nil {
-			_ = h.service.DeleteAnime(r.Context(), anime.ID)
+			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
+				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after genre association error")
+			}
 			if appErr, ok := err.(*errors.AppError); ok {
 				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 				return
@@ -145,7 +148,9 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Add tags if provided
 	if len(payload.TagIDs) > 0 {
 		if err := h.service.AddTagsToAnime(r.Context(), anime.ID, payload.TagIDs); err != nil {
-			_ = h.service.DeleteAnime(r.Context(), anime.ID)
+			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
+				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after tag association error")
+			}
 			if appErr, ok := err.(*errors.AppError); ok {
 				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 				return

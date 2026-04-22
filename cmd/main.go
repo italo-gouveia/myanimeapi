@@ -70,6 +70,12 @@ func main() {
 	logger.SetDefaultLogger(log)
 	log.WithField("level", logLevel).Info("Logger initialized")
 
+	// Validate required secrets before anything else
+	if secret := os.Getenv("JWT_SECRET_KEY"); len(secret) < 32 {
+		log.Error("JWT_SECRET_KEY must be set and at least 32 characters long")
+		os.Exit(1)
+	}
+
 	// Load configuration
 	cfg := config.LoadConfig()
 	if cfg == nil {
@@ -151,11 +157,11 @@ func main() {
 	router.PathPrefix("/api/media/").Handler(http.StripPrefix("/api/media/", fs))
 	log.Info("Static file serving configured")
 
-	// Configure CORS
+	// Configure CORS — require explicit origins; never default to wildcard
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOrigins == "" {
-		allowedOrigins = "*" // Default to allow all origins in development
-		log.Warning("ALLOWED_ORIGINS not set, defaulting to '*'")
+		log.Error("ALLOWED_ORIGINS must be set (e.g. http://localhost:3000). Refusing to start with wildcard CORS.")
+		os.Exit(1)
 	}
 
 	// Split allowed origins by comma and trim spaces
@@ -206,6 +212,13 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.WithField("error", err.Error()).Error("Error shutting down server")
 		os.Exit(1)
+	}
+
+	// Close database connections
+	if sqlDB, err := gormDB.DB(); err == nil {
+		if err := sqlDB.Close(); err != nil {
+			log.WithField("error", err.Error()).Error("Error closing database connection")
+		}
 	}
 	log.Info("Server shut down gracefully")
 }

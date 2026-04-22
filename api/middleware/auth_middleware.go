@@ -167,10 +167,10 @@ func RequireAdmin(next http.Handler) http.Handler {
 
 // GetUserID extracts the user ID from the request context.
 // It should be used in handlers after the AuthMiddleware.
-func GetUserID(r *http.Request) (string, error) {
-	userID, ok := r.Context().Value(UserContextKey).(string)
+func GetUserID(r *http.Request) (uint, error) {
+	userID, ok := r.Context().Value(UserContextKey).(uint)
 	if !ok {
-		return "", apperrors.NewError(apperrors.ErrUnauthorized, "User not authenticated",
+		return 0, apperrors.NewError(apperrors.ErrUnauthorized, "User not authenticated",
 			"User ID not found in context", http.StatusUnauthorized, nil, nil)
 	}
 	return userID, nil
@@ -187,13 +187,23 @@ func IsUserAdmin(r *http.Request) (bool, error) {
 	return isAdmin, nil
 }
 
+// jwtExpiry returns the JWT expiry duration from JWT_EXPIRY_HOURS env var, defaulting to 24h.
+func jwtExpiry() time.Duration {
+	if h := os.Getenv("JWT_EXPIRY_HOURS"); h != "" {
+		if hours, err := strconv.Atoi(h); err == nil && hours > 0 {
+			return time.Duration(hours) * time.Hour
+		}
+	}
+	return 24 * time.Hour
+}
+
 // GenerateToken generates a JWT token with custom claims
 func GenerateToken(userID string, isAdmin bool) (string, error) {
 	claims := &CustomClaims{
 		UserID:  userID,
 		IsAdmin: isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtExpiry())),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},

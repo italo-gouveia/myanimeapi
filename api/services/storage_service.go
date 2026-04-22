@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -55,8 +56,19 @@ func NewLocalStorageStrategy(baseDir, baseURL string) (*LocalStorageStrategy, er
 	}, nil
 }
 
+const maxUploadSize = 10 << 20 // 10 MB
+
+// sanitizeFilename strips path components to prevent directory traversal.
+func sanitizeFilename(name string) string {
+	return filepath.Base(filepath.Clean(name))
+}
+
 // SaveFile implements StorageStrategy for local storage
 func (s *LocalStorageStrategy) SaveFile(file *multipart.FileHeader, directory string) (string, error) {
+	if file.Size > maxUploadSize {
+		return "", errors.New("file size exceeds the 10 MB limit")
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
@@ -69,8 +81,9 @@ func (s *LocalStorageStrategy) SaveFile(file *multipart.FileHeader, directory st
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// Create destination file
-	dstPath := filepath.Join(dirPath, file.Filename)
+	// Sanitize filename to prevent path traversal
+	safeName := sanitizeFilename(file.Filename)
+	dstPath := filepath.Join(dirPath, safeName)
 	dst, err := os.Create(dstPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
@@ -83,7 +96,7 @@ func (s *LocalStorageStrategy) SaveFile(file *multipart.FileHeader, directory st
 	}
 
 	// Return the URL for the saved file
-	return fmt.Sprintf("%s/%s/%s", s.baseURL, directory, file.Filename), nil
+	return fmt.Sprintf("%s/%s/%s", s.baseURL, directory, safeName), nil
 }
 
 // DeleteFile implements StorageStrategy for local storage
@@ -130,14 +143,18 @@ func NewS3StorageStrategy(region, bucket, baseURL, uploadDir string) (*S3Storage
 
 // SaveFile implements StorageStrategy for S3 storage
 func (s *S3StorageStrategy) SaveFile(file *multipart.FileHeader, directory string) (string, error) {
+	if file.Size > maxUploadSize {
+		return "", errors.New("file size exceeds the 10 MB limit")
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
 	defer func() { _ = src.Close() }()
 
-	// Create the S3 key
-	key := fmt.Sprintf("%s/%s/%s", s.uploadDir, directory, file.Filename)
+	safeName := sanitizeFilename(file.Filename)
+	key := fmt.Sprintf("%s/%s/%s", s.uploadDir, directory, safeName)
 
 	// Upload file to S3
 	_, err = s.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
