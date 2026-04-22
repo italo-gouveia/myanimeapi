@@ -9,10 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // StorageServiceInterface defines the interface for storage service operations
@@ -108,7 +107,7 @@ func (s *LocalStorageStrategy) GetBaseURL() string {
 
 // S3StorageStrategy implements StorageStrategy for AWS S3
 type S3StorageStrategy struct {
-	s3Client  *s3.S3
+	s3Client  *s3.Client
 	bucket    string
 	baseURL   string
 	uploadDir string
@@ -116,20 +115,13 @@ type S3StorageStrategy struct {
 
 // NewS3StorageStrategy creates a new S3 storage strategy
 func NewS3StorageStrategy(region, bucket, baseURL, uploadDir string) (*S3StorageStrategy, error) {
-	// Create AWS session
-	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewEnvCredentials(),
-	})
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	// Create S3 client
-	s3Client := s3.New(sess)
-
 	return &S3StorageStrategy{
-		s3Client:  s3Client,
+		s3Client:  s3.NewFromConfig(cfg),
 		bucket:    bucket,
 		baseURL:   baseURL,
 		uploadDir: uploadDir,
@@ -148,7 +140,7 @@ func (s *S3StorageStrategy) SaveFile(file *multipart.FileHeader, directory strin
 	key := fmt.Sprintf("%s/%s/%s", s.uploadDir, directory, file.Filename)
 
 	// Upload file to S3
-	_, err = s.s3Client.PutObject(&s3.PutObjectInput{
+	_, err = s.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 		Body:   src,
@@ -167,7 +159,7 @@ func (s *S3StorageStrategy) DeleteFile(ctx context.Context, fileURL string) erro
 	key := strings.TrimPrefix(fileURL, s.baseURL)
 
 	// Delete the file from S3
-	_, err := s.s3Client.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
+	_, err := s.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
