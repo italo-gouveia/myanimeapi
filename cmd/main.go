@@ -94,6 +94,16 @@ func main() {
 		log.WithField("error", err.Error()).Error("Error opening database connection")
 		os.Exit(1)
 	}
+
+	// Configure connection pool
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Failed to get underlying sql.DB")
+		os.Exit(1)
+	}
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	log.Info("Database connection established successfully")
 
 	// Wrap the *gorm.DB instance in the GormDB struct
@@ -215,10 +225,8 @@ func main() {
 	}
 
 	// Close database connections
-	if sqlDB, err := gormDB.DB(); err == nil {
-		if err := sqlDB.Close(); err != nil {
-			log.WithField("error", err.Error()).Error("Error closing database connection")
-		}
+	if err := sqlDB.Close(); err != nil {
+		log.WithField("error", err.Error()).Error("Error closing database connection")
 	}
 	log.Info("Server shut down gracefully")
 }

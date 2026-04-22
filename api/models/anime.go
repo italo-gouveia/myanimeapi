@@ -41,11 +41,11 @@ import "time"
 //	}
 type Anime struct {
 	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`               // Unique identifier for the anime
-	Title       string    `json:"title" gorm:"not null" example:"Naruto"`         // Title of the anime
-	Description string    `json:"description" example:"A story about ninjas."`    // Description of the anime
-	Rating      float64   `json:"rating" example:"8.5"`                           // Average rating of the anime
-	Episodes    int       `json:"episodes" example:"220"`                         // Number of episodes
-	Status      string    `json:"status" example:"Completed"`                     // Current status of the anime
+	Title       string    `json:"title" gorm:"not null;index:idx_animes_title" example:"Naruto"` // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."`                   // Description of the anime
+	Rating      float64   `json:"rating" example:"8.5"`                                          // Average rating of the anime
+	Episodes    int       `json:"episodes" example:"220"`                                        // Number of episodes
+	Status      string    `json:"status" gorm:"index:idx_animes_status" example:"Completed"`     // Current status of the anime
 	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`      // Date when the anime started airing
 	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`        // Date when the anime finished airing
 	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`      // Timestamp when the anime was added
