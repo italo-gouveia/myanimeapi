@@ -37,7 +37,7 @@ fi
 
 # Run linter
 echo -e "${YELLOW}Running golangci-lint...${NC}"
-golangci-lint run ./...
+golangci-lint run --timeout 10m ./...
 if [ $? -ne 0 ]; then
     echo -e "${RED}Linting failed${NC}"
     exit 1
