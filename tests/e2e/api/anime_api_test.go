@@ -21,7 +21,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 
 	// Ensure JWT secret and obtain a token for protected routes
 	if os.Getenv("JWT_SECRET_KEY") == "" {
-		os.Setenv("JWT_SECRET_KEY", "test-secret")
+		_ = os.Setenv("JWT_SECRET_KEY", "test-secret")
 	}
 	token, err := middleware.GenerateToken("1", true)
 	require.NoError(t, err)
