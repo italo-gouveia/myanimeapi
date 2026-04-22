@@ -62,7 +62,7 @@ func (s *LocalStorageStrategy) SaveFile(file *multipart.FileHeader, directory st
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	// Create directory if it doesn't exist
 	dirPath := filepath.Join(s.uploadDir, directory)
@@ -76,7 +76,7 @@ func (s *LocalStorageStrategy) SaveFile(file *multipart.FileHeader, directory st
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	// Copy file contents
 	if _, err = io.Copy(dst, src); err != nil {
@@ -142,7 +142,7 @@ func (s *S3StorageStrategy) SaveFile(file *multipart.FileHeader, directory strin
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	// Create the S3 key
 	key := fmt.Sprintf("%s/%s/%s", s.uploadDir, directory, file.Filename)

@@ -61,7 +61,7 @@ func setupFavoriteTestRouter(handler *handlers.FavoriteHandler) *mux.Router {
 
 func generateFavoriteTestToken() string {
 	// Set test secret key
-	os.Setenv("JWT_SECRET_KEY", "test-secret-key")
+	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
 
 	// Generate token
 	token, _ := middleware.GenerateToken("1", true)
