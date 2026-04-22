@@ -1323,10 +1323,8 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 					AddTagsToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
 					Return(nil)
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Tags added successfully",
-			},
+			expectedStatus: http.StatusNoContent,
+			expectedBody:   nil,
 		},
 		{
 			name:        "Invalid Anime ID",
@@ -1337,19 +1335,30 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "invalid ID format",
+				"error": map[string]interface{}{
+					"code": "ERR-001",
+					"context": map[string]interface{}{
+						"id": "invalid",
+					},
+					"details": "The provided ID is not a valid unsigned integer.",
+					"message": "Invalid ID format",
+				},
 			},
 		},
 		{
 			name:        "Invalid Request Body",
 			animeID:     "1",
-			requestBody: `{"invalid": "json"`,
+			requestBody: `{"invalid": "json"}`,
 			setupMock: func() {
-				// No mock setup needed for invalid request body
+				// No mock setup needed — missing payload in context triggers 500
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
+				"error": map[string]interface{}{
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
+				},
 			},
 		},
 		{
@@ -1363,7 +1372,11 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
-				"error": "Database error",
+				"error": map[string]interface{}{
+					"code":    "ERR-004",
+					"message": "Database error",
+					"details": "Failed to add tags to anime",
+				},
 			},
 		},
 	}
@@ -1376,15 +1389,31 @@ func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
 			req = req.WithContext(createTestContext())
 			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
 
+			// Inject validated payload into context for cases that reach the service
+			if tt.name == "Success" || tt.name == "Internal Server Error" {
+				var payload struct {
+					TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
+				}
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.AddTagsToAnimeHandler(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
+			if tt.expectedBody == nil {
+				assert.Empty(t, rr.Body.String())
+			} else {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBody, response)
+			}
 		})
 	}
 }
@@ -1413,10 +1442,8 @@ func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
 					RemoveTagsFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
 					Return(nil)
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Tags removed successfully",
-			},
+			expectedStatus: http.StatusNoContent,
+			expectedBody:   nil,
 		},
 		{
 			name:        "Invalid Anime ID",
@@ -1427,19 +1454,30 @@ func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "invalid ID format",
+				"error": map[string]interface{}{
+					"code": "ERR-001",
+					"context": map[string]interface{}{
+						"id": "invalid",
+					},
+					"details": "The provided ID is not a valid unsigned integer.",
+					"message": "Invalid ID format",
+				},
 			},
 		},
 		{
 			name:        "Invalid Request Body",
 			animeID:     "1",
-			requestBody: `{"invalid": "json"`,
+			requestBody: `{"invalid": "json"}`,
 			setupMock: func() {
-				// No mock setup needed for invalid request body
+				// No mock setup needed — missing payload in context triggers 500
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
+				"error": map[string]interface{}{
+					"code":    "ERR-004",
+					"message": "Invalid payload",
+					"details": "The request payload could not be retrieved.",
+				},
 			},
 		},
 		{
@@ -1453,7 +1491,11 @@ func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
-				"error": "Database error",
+				"error": map[string]interface{}{
+					"code":    "ERR-004",
+					"message": "Database error",
+					"details": "Failed to remove tags from anime",
+				},
 			},
 		},
 	}
@@ -1466,15 +1508,31 @@ func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
 			req = req.WithContext(createTestContext())
 			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
 
+			// Inject validated payload into context for cases that reach the service
+			if tt.name == "Success" || tt.name == "Internal Server Error" {
+				var payload struct {
+					TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
+				}
+				err := json.Unmarshal([]byte(tt.requestBody), &payload)
+				assert.NoError(t, err)
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
+				req = req.WithContext(ctx)
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler.RemoveTagsFromAnimeHandler(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
+			if tt.expectedBody == nil {
+				assert.Empty(t, rr.Body.String())
+			} else {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBody, response)
+			}
 		})
 	}
 }
