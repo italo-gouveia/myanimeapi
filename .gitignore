@@ -31,3 +31,7 @@ _learning_roadmaps/
 .env
 .env.local
 .env.*.local
+
+# Local learning notes and crash dumps
+_learning/
+*.stackdump
