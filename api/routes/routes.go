@@ -140,8 +140,8 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	animeHandler.RegisterAnimeRoutes(v1Router)
 	log.Info("Anime routes registered")
 
-	// Register user routes
-	userHandler.RegisterUserRoutes(v1Router)
+	// Register user routes (rate limiter passed for forgot-password endpoint)
+	userHandler.RegisterUserRoutes(v1Router, rateLimiter)
 	log.Info("User routes registered")
 
 	// Register review routes

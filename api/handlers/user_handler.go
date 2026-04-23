@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -712,12 +715,40 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(logFields).Info("Password reset successfully")
 }
 
-// RegisterUserRoutes registers the user-related routes with the router
-func (h *UserHandler) RegisterUserRoutes(router *mux.Router) {
+// PasswordResetRateLimiter is the interface for the rate limiter used on the password reset endpoint.
+type PasswordResetRateLimiter interface {
+	StrictRateLimitMiddleware(maxRequests int, window time.Duration) func(http.Handler) http.Handler
+}
+
+// passwordResetRateLimit reads FORGOT_PASSWORD_RATE_LIMIT (max requests) and
+// FORGOT_PASSWORD_RATE_WINDOW_HOURS (window in hours) from env, defaulting to 5/1h.
+func passwordResetRateLimit() (int, time.Duration) {
+	maxReqs := 5
+	if v := os.Getenv("FORGOT_PASSWORD_RATE_LIMIT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxReqs = n
+		}
+	}
+	window := time.Hour
+	if v := os.Getenv("FORGOT_PASSWORD_RATE_WINDOW_HOURS"); v != "" {
+		if h, err := strconv.Atoi(v); err == nil && h > 0 {
+			window = time.Duration(h) * time.Hour
+		}
+	}
+	return maxReqs, window
+}
+
+// RegisterUserRoutes registers the user-related routes with the router.
+// rateLimiter is applied with a configurable strict limit on the password-reset endpoint.
+// Env vars: FORGOT_PASSWORD_RATE_LIMIT (default 5), FORGOT_PASSWORD_RATE_WINDOW_HOURS (default 1).
+func (h *UserHandler) RegisterUserRoutes(router *mux.Router, rateLimiter PasswordResetRateLimiter) {
+	maxReqs, window := passwordResetRateLimit()
+	resetLimiter := rateLimiter.StrictRateLimitMiddleware(maxReqs, window)
+
 	// Public routes
 	router.HandleFunc("/users/register", h.Register).Methods(http.MethodPost)
 	router.HandleFunc("/users/login", h.Login).Methods(http.MethodPost)
-	router.HandleFunc("/users/reset-password/request", h.RequestPasswordReset).Methods(http.MethodPost)
+	router.Handle("/users/reset-password/request", resetLimiter(http.HandlerFunc(h.RequestPasswordReset))).Methods(http.MethodPost)
 	router.HandleFunc("/users/reset-password", h.ResetPassword).Methods(http.MethodPost)
 
 	// Protected routes
