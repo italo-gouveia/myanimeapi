@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.0...v1.13.1) (2026-04-26)
+
+
+### Bug Fixes
+
+* **ci:** fix test workflow, swagger docs, and coverage ([7fca237](https://github.com/italo-gouveia/myanimeapi/commit/7fca237ca3a8546af07f6b58cacc6c2d59c1634c))
+
 # [1.13.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.12.0...v1.13.0) (2026-04-26)
 
 
