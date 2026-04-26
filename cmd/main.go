@@ -70,6 +70,12 @@ func main() {
 	logger.SetDefaultLogger(log)
 	log.WithField("level", logLevel).Info("Logger initialized")
 
+	// Validate required secrets before anything else
+	if secret := os.Getenv("JWT_SECRET_KEY"); len(secret) < 32 {
+		log.Error("JWT_SECRET_KEY must be set and at least 32 characters long")
+		os.Exit(1)
+	}
+
 	// Load configuration
 	cfg := config.LoadConfig()
 	if cfg == nil {
@@ -88,6 +94,16 @@ func main() {
 		log.WithField("error", err.Error()).Error("Error opening database connection")
 		os.Exit(1)
 	}
+
+	// Configure connection pool
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Failed to get underlying sql.DB")
+		os.Exit(1)
+	}
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	log.Info("Database connection established successfully")
 
 	// Wrap the *gorm.DB instance in the GormDB struct
@@ -139,8 +155,7 @@ func main() {
 	// Determine environment and configure accordingly
 	if os.Getenv("ENV") == "production" {
 		log.Info("Running in production mode")
-		// TODO: Implement HTTPS redirection middleware
-		// router.Use(middleware.HTTPSRedirectMiddleware)
+		router.Use(middleware.HTTPSMiddleware)
 	}
 
 	// Register all routes
@@ -152,11 +167,11 @@ func main() {
 	router.PathPrefix("/api/media/").Handler(http.StripPrefix("/api/media/", fs))
 	log.Info("Static file serving configured")
 
-	// Configure CORS
+	// Configure CORS — require explicit origins; never default to wildcard
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOrigins == "" {
-		allowedOrigins = "*" // Default to allow all origins in development
-		log.Warning("ALLOWED_ORIGINS not set, defaulting to '*'")
+		log.Error("ALLOWED_ORIGINS must be set (e.g. http://localhost:3000). Refusing to start with wildcard CORS.")
+		os.Exit(1)
 	}
 
 	// Split allowed origins by comma and trim spaces
@@ -207,6 +222,11 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.WithField("error", err.Error()).Error("Error shutting down server")
 		os.Exit(1)
+	}
+
+	// Close database connections
+	if err := sqlDB.Close(); err != nil {
+		log.WithField("error", err.Error()).Error("Error closing database connection")
 	}
 	log.Info("Server shut down gracefully")
 }

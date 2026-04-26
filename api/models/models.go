@@ -110,8 +110,8 @@ type Review struct {
 	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                                                     // Review ID
 	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                            // Creation timestamp
 	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                            // Update timestamp
-	UserID    uint      `json:"userId" gorm:"not null" example:"1"`                                                   // User ID
-	AnimeID   uint      `json:"animeId" gorm:"not null;constraint:OnDelete:CASCADE;" example:"1"`                     // Anime ID with cascade delete constraint
+	UserID    uint      `json:"userId" gorm:"not null;index:idx_reviews_anime,composite:anime_user;index:idx_reviews_user" example:"1"` // User ID
+	AnimeID   uint      `json:"animeId" gorm:"not null;constraint:OnDelete:CASCADE;index:idx_reviews_anime,composite:anime_user" example:"1"` // Anime ID with cascade delete constraint
 	Content   string    `json:"content" gorm:"not null" validate:"required,max=500" example:"This anime is amazing!"` // Review content
 	Rating    int       `json:"rating" gorm:"not null" validate:"required,gte=0,lte=10" example:"9"`                  // Rating (0-10)
 

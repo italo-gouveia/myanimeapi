@@ -37,48 +37,54 @@ fi
 
 # Run linter
 echo -e "${YELLOW}Running golangci-lint...${NC}"
-golangci-lint run ./...
+golangci-lint run --timeout 10m ./...
 if [ $? -ne 0 ]; then
     echo -e "${RED}Linting failed${NC}"
     exit 1
 fi
 
-# Determine test packages
-# By default, skip integration and E2E tests during pre-push to avoid external dependencies
-# Set RUN_ALL_TESTS=1 to include everything (CI should do this)
+# Determine test packages (only packages with actual test files to avoid covdata issues)
 if [ "${RUN_ALL_TESTS}" = "1" ]; then
-    TEST_PKGS=$(go list ./...)
+    ALL_PKGS=$(go list ./...)
 else
-    TEST_PKGS=$(go list ./... | grep -v 'tests/integration' | grep -v 'tests/e2e')
+    ALL_PKGS=$(go list ./... | grep -v 'tests/integration' | grep -v 'tests/e2e')
 fi
 
-# Check if gcc is installed for race detection
-if command_exists gcc; then
-    echo -e "${YELLOW}Running unit tests with race detection...${NC}"
-    CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ${TEST_PKGS}
+# Filter to packages that have test files (avoids "no such tool covdata" on Go 1.20+)
+TEST_PKGS=$(go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ${ALL_PKGS} 2>/dev/null)
+
+if [ -z "${TEST_PKGS}" ]; then
+    echo -e "${YELLOW}No test files found, skipping tests${NC}"
 else
-    echo -e "${YELLOW}GCC not found. Running unit tests without race detection...${NC}"
-    go test -v -coverprofile=coverage.out ${TEST_PKGS}
-fi
+    # Check if gcc is installed for race detection
+    if command_exists gcc; then
+        echo -e "${YELLOW}Running unit tests with race detection...${NC}"
+        CGO_ENABLED=1 go test -v -race -coverprofile=coverage.out ${TEST_PKGS}
+    else
+        echo -e "${YELLOW}GCC not found. Running unit tests without race detection...${NC}"
+        go test -v -coverprofile=coverage.out ${TEST_PKGS}
+    fi
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Tests failed${NC}"
-    exit 1
-fi
-
-# Check test coverage
-COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-if command_exists bc; then
-    if (( $(echo "$COVERAGE < 5" | bc -l) )); then
-        echo -e "${RED}Test coverage is below 5% (current: ${COVERAGE}%)${NC}"
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Tests failed${NC}"
         exit 1
     fi
-else
-    # Simple integer comparison if bc is not available
-    COVERAGE_INT=${COVERAGE%.*}
-    if [ "$COVERAGE_INT" -lt 5 ]; then
-        echo -e "${RED}Test coverage is below 5% (current: ${COVERAGE}%)${NC}"
-        exit 1
+
+    # Check test coverage
+    if [ -f coverage.out ]; then
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        if command_exists bc; then
+            if (( $(echo "$COVERAGE < 5" | bc -l) )); then
+                echo -e "${RED}Test coverage is below 5% (current: ${COVERAGE}%)${NC}"
+                exit 1
+            fi
+        else
+            COVERAGE_INT=${COVERAGE%.*}
+            if [ "$COVERAGE_INT" -lt 5 ]; then
+                echo -e "${RED}Test coverage is below 5% (current: ${COVERAGE}%)${NC}"
+                exit 1
+            fi
+        fi
     fi
 fi
 

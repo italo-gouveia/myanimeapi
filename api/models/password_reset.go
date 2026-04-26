@@ -21,8 +21,8 @@ type ResetPasswordRequest struct {
 // PasswordResetToken represents a password reset token in the database
 type PasswordResetToken struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
-	Token     string    `gorm:"not null,unique"`
+	UserID    uint      `gorm:"not null;index"`
+	Token     string    `gorm:"not null;uniqueIndex"`
 	ExpiresAt time.Time `gorm:"not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -5,6 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"os"
+	"strconv"
+
+	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/db"
@@ -12,7 +16,6 @@ import (
 	"myanimeapi/internal/logger"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // PasswordResetServiceInterface defines the interface for password reset operations
@@ -32,13 +35,23 @@ type PasswordResetService struct {
 	logger      *logger.Logger
 }
 
+// resetTokenExpiry returns token expiry from RESET_TOKEN_EXPIRY_MINUTES env var, defaulting to 60m.
+func resetTokenExpiry() time.Duration {
+	if m := os.Getenv("RESET_TOKEN_EXPIRY_MINUTES"); m != "" {
+		if mins, err := strconv.Atoi(m); err == nil && mins > 0 {
+			return time.Duration(mins) * time.Minute
+		}
+	}
+	return time.Hour
+}
+
 // NewPasswordResetService creates a new instance of PasswordResetService
 func NewPasswordResetService(userRepo repositories.UserRepository, emailSvc *EmailService, db db.DBInterface) *PasswordResetService {
 	return &PasswordResetService{
 		userRepo:    userRepo,
 		emailSvc:    emailSvc,
 		db:          db,
-		tokenExpiry: time.Hour, // Token expires in 1 hour
+		tokenExpiry: resetTokenExpiry(),
 		logger:      logger.New(),
 	}
 }
@@ -109,8 +122,8 @@ func (s *PasswordResetService) ResetPassword(ctx context.Context, token, newPass
 		}, result.Error)
 	}
 
-	// Hash the new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	// Hash the new password using Argon2 (consistent with user registration)
+	hashedPassword, err := auth.HashPassword(newPassword)
 	if err != nil {
 		s.logger.WithFields(map[string]interface{}{
 			"token": token,
@@ -148,7 +161,7 @@ func (s *PasswordResetService) ResetPassword(ctx context.Context, token, newPass
 	}
 
 	// Update the user's password
-	userModel.Password = string(hashedPassword)
+	userModel.Password = hashedPassword
 	if err := s.userRepo.Update(ctx, userModel); err != nil {
 		s.logger.WithFields(map[string]interface{}{
 			"token":   token,

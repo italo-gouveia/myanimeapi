@@ -1,1480 +1,389 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"myanimeapi/api/middleware"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
 
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
-// createTestContext creates a context with middleware values for testing
-func createTestContext() context.Context {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, middleware.UserContextKey, uint(1))
-	return ctx
+// ---------------------------------------------------------------------------
+// Suite definition
+// ---------------------------------------------------------------------------
+
+type AnimeHandlerSuite struct {
+	suite.Suite
+	svc     *mocks.MockAnimeServiceInterface
+	handler *AnimeHandler
 }
 
-func TestAnimeHandler_GetAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		animeID        string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:    "Success",
-			animeID: "1",
-			setupMock: func() {
-				anime := &models.Anime{
-					ID:          1,
-					Title:       "Test Anime",
-					Description: "Test Description",
-					Rating:      8.5,
-					Episodes:    12,
-					Status:      "Completed",
-					Genres: []models.Genre{
-						{
-							ID:   1,
-							Name: "Action",
-						},
-					},
-					CreatedAt: time.Time{},
-					UpdatedAt: time.Time{},
-					StartDate: time.Time{},
-					EndDate:   time.Time{},
-				}
-				mockAnimeService.EXPECT().
-					GetAnimeByID(gomock.Any(), uint(1)).
-					DoAndReturn(func(ctx context.Context, id uint) (*models.Anime, error) {
-						// Verify that the context has the user ID
-						userID, ok := ctx.Value(middleware.UserContextKey).(uint)
-						assert.True(t, ok)
-						assert.Equal(t, uint(1), userID)
-						return anime, nil
-					})
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"id":          float64(1),
-				"title":       "Test Anime",
-				"description": "Test Description",
-				"rating":      8.5,
-				"episodes":    float64(12),
-				"status":      "Completed",
-				"genres": []interface{}{
-					map[string]interface{}{
-						"id":         float64(1),
-						"name":       "Action",
-						"created_at": "0001-01-01T00:00:00Z",
-						"updated_at": "0001-01-01T00:00:00Z",
-						"deleted_at": "0001-01-01T00:00:00Z",
-					},
-				},
-				"created_at": "0001-01-01T00:00:00Z",
-				"updated_at": "0001-01-01T00:00:00Z",
-				"start_date": "0001-01-01T00:00:00Z",
-				"end_date":   "0001-01-01T00:00:00Z",
-			},
-		},
-		{
-			name:    "Invalid ID",
-			animeID: "invalid",
-			setupMock: func() {
-				// No mock setup needed for invalid ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
-			},
-		},
-		{
-			name:    "Not Found",
-			animeID: "999",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimeByID(gomock.Any(), uint(999)).
-					Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, nil, nil))
-			},
-			expectedStatus: http.StatusNotFound,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-002",
-					"message": "Anime not found",
-					"details": "The requested anime could not be found",
-				},
-			},
-		},
-		{
-			name:    "Internal Server Error",
-			animeID: "1",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimeByID(gomock.Any(), uint(1)).
-					Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to retrieve anime from database", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to retrieve anime from database",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			// Create a new request with the test context
-			req := httptest.NewRequest(http.MethodGet, "/animes/"+tt.animeID, nil)
-			req = req.WithContext(createTestContext())
-
-			// Set up the URL variables for the request
-			vars := map[string]string{
-				"id": tt.animeID,
-			}
-			req = mux.SetURLVars(req, vars)
-
-			// Create a response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler.GetAnimeHandler(rr, req)
-
-			// Verify the response
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+func (s *AnimeHandlerSuite) SetupTest() {
+	s.svc = new(mocks.MockAnimeServiceInterface)
+	s.handler = NewAnimeHandler(s.svc)
 }
 
-func TestAnimeHandler_GetAllAnimesHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		query          string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:  "Success",
-			query: "?page=1&limit=10",
-			setupMock: func() {
-				animes := []*models.Anime{
-					{
-						ID:          1,
-						Title:       "Anime 1",
-						Description: "Description 1",
-						Rating:      8.5,
-						Episodes:    12,
-						Status:      "Completed",
-						Genres: []models.Genre{
-							{
-								ID:   1,
-								Name: "Action",
-							},
-						},
-					},
-					{
-						ID:          2,
-						Title:       "Anime 2",
-						Description: "Description 2",
-						Rating:      9.0,
-						Episodes:    24,
-						Status:      "Ongoing",
-						Genres: []models.Genre{
-							{
-								ID:   2,
-								Name: "Drama",
-							},
-						},
-					},
-				}
-				mockAnimeService.EXPECT().
-					GetAllAnimes(gomock.Any(), 1, 10).
-					Return(animes, int64(2), nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"data": []interface{}{
-					map[string]interface{}{
-						"id":          float64(1),
-						"title":       "Anime 1",
-						"description": "Description 1",
-						"rating":      8.5,
-						"episodes":    float64(12),
-						"status":      "Completed",
-						"created_at":  "0001-01-01T00:00:00Z",
-						"updated_at":  "0001-01-01T00:00:00Z",
-						"start_date":  "0001-01-01T00:00:00Z",
-						"end_date":    "0001-01-01T00:00:00Z",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":         float64(1),
-								"name":       "Action",
-								"created_at": "0001-01-01T00:00:00Z",
-								"updated_at": "0001-01-01T00:00:00Z",
-								"deleted_at": "0001-01-01T00:00:00Z",
-							},
-						},
-					},
-					map[string]interface{}{
-						"id":          float64(2),
-						"title":       "Anime 2",
-						"description": "Description 2",
-						"rating":      9.0,
-						"episodes":    float64(24),
-						"status":      "Ongoing",
-						"created_at":  "0001-01-01T00:00:00Z",
-						"updated_at":  "0001-01-01T00:00:00Z",
-						"start_date":  "0001-01-01T00:00:00Z",
-						"end_date":    "0001-01-01T00:00:00Z",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":         float64(2),
-								"name":       "Drama",
-								"created_at": "0001-01-01T00:00:00Z",
-								"updated_at": "0001-01-01T00:00:00Z",
-								"deleted_at": "0001-01-01T00:00:00Z",
-							},
-						},
-					},
-				},
-				"total": float64(2),
-				"page":  float64(1),
-				"limit": float64(10),
-			},
-		},
-		{
-			name:  "Invalid Pagination",
-			query: "?page=0&limit=10",
-			setupMock: func() {
-				// No mock setup needed for invalid pagination
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid pagination parameters",
-					"details": "invalid page number. Must be a positive integer",
-				},
-			},
-		},
-		{
-			name:  "Internal Server Error",
-			query: "?page=1&limit=10",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAllAnimes(gomock.Any(), 1, 10).
-					Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to retrieve animes from database", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to retrieve animes from database",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			// Create a new request
-			req := httptest.NewRequest(http.MethodGet, "/animes"+tt.query, nil)
-			req = req.WithContext(createTestContext())
-
-			// Create a response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler.GetAllAnimesHandler(rr, req)
-
-			// Verify the response
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+func (s *AnimeHandlerSuite) TearDownTest() {
+	s.svc.AssertExpectations(s.T())
 }
 
-func TestAnimeHandler_CreateAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:        "Success",
-			requestBody: `{"title":"New Anime","description":"New Description","rating":8.5,"episodes":12,"status":"Completed","genre_ids":[1,2],"tag_ids":[1,2]}`,
-			setupMock: func() {
-				// CreateAnime should set the anime ID to 1
-				mockAnimeService.EXPECT().
-					CreateAnime(gomock.Any(), gomock.Any()).
-					Do(func(ctx interface{}, anime *models.Anime) {
-						anime.ID = 1 // Simulate database setting the ID
-					}).
-					Return(nil)
-				mockAnimeService.EXPECT().
-					AddGenresToAnime(gomock.Any(), uint(1), []uint{1, 2}).
-					Return(nil)
-				mockAnimeService.EXPECT().
-					AddTagsToAnime(gomock.Any(), uint(1), []uint{1, 2}).
-					Return(nil)
-				mockAnimeService.EXPECT().
-					GetAnimeByID(gomock.Any(), uint(1)).
-					Return(&models.Anime{
-						ID:          1,
-						Title:       "New Anime",
-						Description: "New Description",
-						Rating:      8.5,
-						Episodes:    12,
-						Status:      "Completed",
-						CreatedAt:   time.Time{},
-						UpdatedAt:   time.Time{},
-						StartDate:   time.Time{},
-						EndDate:     time.Time{},
-					}, nil)
-			},
-			expectedStatus: http.StatusCreated,
-			expectedBody: map[string]interface{}{
-				"id":          float64(1),
-				"title":       "New Anime",
-				"description": "New Description",
-				"rating":      8.5,
-				"episodes":    float64(12),
-				"status":      "Completed",
-				"created_at":  "0001-01-01T00:00:00Z",
-				"updated_at":  "0001-01-01T00:00:00Z",
-				"start_date":  "0001-01-01T00:00:00Z",
-				"end_date":    "0001-01-01T00:00:00Z",
-			},
-		},
-		{
-			name:        "Invalid Request Body",
-			requestBody: `{"invalid":"json"`,
-			setupMock: func() {
-				// No mock setup needed for invalid request body
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-		{
-			name:        "Validation Error",
-			requestBody: `{"title":""}`,
-			setupMock: func() {
-				// No mock setup needed for validation error
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-		{
-			name:        "Internal Server Error",
-			requestBody: `{"title":"New Anime","description":"New Description","rating":8.5,"episodes":12,"status":"Completed"}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					CreateAnime(gomock.Any(), gomock.Any()).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to create anime in database", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to create anime in database",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			// Create a new request with the request body
-			req := httptest.NewRequest(http.MethodPost, "/animes", bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-
-			// Set up the validated payload in context for handlers that expect it
-			if tt.name == "Success" || tt.name == "Internal Server Error" {
-				var payload models.AnimeCreateRequest
-				err := json.Unmarshal([]byte(tt.requestBody), &payload)
-				assert.NoError(t, err)
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
-				req = req.WithContext(ctx)
-			}
-
-			// Create a response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler.CreateAnimeHandler(rr, req)
-
-			// Verify the response
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+func TestAnimeHandlerSuite(t *testing.T) {
+	suite.Run(t, new(AnimeHandlerSuite))
 }
 
-func TestAnimeHandler_UpdateAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// ---------------------------------------------------------------------------
+// Get
+// ---------------------------------------------------------------------------
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
+func (s *AnimeHandlerSuite) TestGet_Success() {
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(&models.Anime{ID: 1, Title: "Naruto", Status: "Completed"}, nil).Once()
 
-	tests := []struct {
-		name           string
-		animeID        string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:        "Success",
-			animeID:     "1",
-			requestBody: `{"title":"Updated Anime","description":"Updated Description","rating":9.0,"episodes":24,"status":"Ongoing"}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimeByID(gomock.Any(), uint(1)).
-					Return(&models.Anime{
-						ID:          1,
-						Title:       "Test Anime",
-						Description: "Test Description",
-						Rating:      8.5,
-						Episodes:    12,
-						Status:      "Completed",
-						CreatedAt:   time.Time{},
-						UpdatedAt:   time.Time{},
-						StartDate:   time.Time{},
-						EndDate:     time.Time{},
-						Genres:      []models.Genre{},
-						Tags:        []models.Tag{},
-					}, nil)
-				mockAnimeService.EXPECT().
-					UpdateAnime(gomock.Any(), gomock.Any()).
-					Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"id":          float64(1),
-				"title":       "Updated Anime",
-				"description": "Updated Description",
-				"rating":      9.0,
-				"episodes":    float64(24),
-				"status":      "Ongoing",
-				"created_at":  "0001-01-01T00:00:00Z",
-				"updated_at":  "0001-01-01T00:00:00Z",
-				"start_date":  "0001-01-01T00:00:00Z",
-				"end_date":    "0001-01-01T00:00:00Z",
-			},
-		},
-		{
-			name:        "Invalid ID",
-			animeID:     "invalid",
-			requestBody: `{"title":"Updated Anime"}`,
-			setupMock: func() {
-				// No mock setup needed for invalid ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
-			},
-		},
-		{
-			name:        "Not Found",
-			animeID:     "999",
-			requestBody: `{"title":"Updated Anime"}`,
-			setupMock: func() {
-				// No mock setup needed - handler will fail before reaching service
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-		{
-			name:        "Internal Server Error",
-			animeID:     "1",
-			requestBody: `{"title":"Updated Anime"}`,
-			setupMock: func() {
-				// No mock setup needed - handler will fail before reaching service
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-	}
+	req := httptest.NewRequest(http.MethodGet, "/animes/1", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimeHandler(rr, req)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodPut, "/animes/"+tt.animeID, bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
-
-			// Set up the validated payload in context for handlers that expect it
-			if tt.name == "Success" {
-				var payload models.AnimeUpdateRequest
-				err := json.Unmarshal([]byte(tt.requestBody), &payload)
-				assert.NoError(t, err)
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
-				req = req.WithContext(ctx)
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler.UpdateAnimeHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.Equal(float64(1), body["id"])
+	s.Equal("Naruto", body["title"])
 }
 
-func TestAnimeHandler_DeleteAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func (s *AnimeHandlerSuite) TestGet_InvalidID() {
+	req := httptest.NewRequest(http.MethodGet, "/animes/abc", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimeHandler(rr, req)
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		animeID        string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:    "Success",
-			animeID: "1",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					DeleteAnime(gomock.Any(), uint(1)).
-					Return(nil)
-			},
-			expectedStatus: http.StatusNoContent,
-			expectedBody:   nil,
-		},
-		{
-			name:    "Invalid ID",
-			animeID: "invalid",
-			setupMock: func() {
-				// No mock setup needed for invalid ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid ID format",
-					"details": "The provided ID is not a valid unsigned integer.",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-				},
-			},
-		},
-		{
-			name:    "Not Found",
-			animeID: "999",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					DeleteAnime(gomock.Any(), uint(999)).
-					Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "The requested anime could not be found", http.StatusNotFound, nil, nil))
-			},
-			expectedStatus: http.StatusNotFound,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-002",
-					"message": "Anime not found",
-					"details": "The requested anime could not be found",
-				},
-			},
-		},
-		{
-			name:    "Internal Server Error",
-			animeID: "1",
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					DeleteAnime(gomock.Any(), uint(1)).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to delete anime from database", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to delete anime from database",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			// Create a new request
-			req := httptest.NewRequest(http.MethodDelete, "/animes/"+tt.animeID, nil)
-			req = req.WithContext(createTestContext())
-
-			// Set up the URL variables for the request
-			vars := map[string]string{
-				"id": tt.animeID,
-			}
-			req = mux.SetURLVars(req, vars)
-
-			// Create a response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler.DeleteAnimeHandler(rr, req)
-
-			// Verify the response
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			if tt.expectedBody == nil {
-				// For 204 No Content, expect empty body
-				assert.Empty(t, rr.Body.String())
-			} else {
-				var response map[string]interface{}
-				err := json.Unmarshal(rr.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedBody, response)
-			}
-		})
-	}
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
 }
 
-func TestAnimeHandler_GetAnimesByTitleHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func (s *AnimeHandlerSuite) TestGet_NotFound() {
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(999)).
+		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
+	req := httptest.NewRequest(http.MethodGet, "/animes/999", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "999"})
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimeHandler(rr, req)
 
-	tests := []struct {
-		name           string
-		title          string
-		page           int
-		limit          int
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:  "Success",
-			title: "Naruto",
-			page:  1,
-			limit: 10,
-			setupMock: func() {
-				animes := []*models.Anime{
-					{
-						ID:          1,
-						Title:       "Naruto",
-						Description: "A story about ninjas",
-						Rating:      8.5,
-						Episodes:    220,
-						Status:      "Completed",
-						StartDate:   time.Time{},
-						EndDate:     time.Time{},
-						CreatedAt:   time.Time{},
-						UpdatedAt:   time.Time{},
-						Genres: []models.Genre{
-							{
-								ID:   1,
-								Name: "Action",
-							},
-						},
-					},
-					{
-						ID:          2,
-						Title:       "Naruto Shippuden",
-						Description: "The continuation of Naruto",
-						Rating:      9.0,
-						Episodes:    500,
-						Status:      "Completed",
-						StartDate:   time.Time{},
-						EndDate:     time.Time{},
-						CreatedAt:   time.Time{},
-						UpdatedAt:   time.Time{},
-						Genres: []models.Genre{
-							{
-								ID:   2,
-								Name: "Drama",
-							},
-						},
-					},
-				}
-				mockAnimeService.EXPECT().
-					GetAnimesByTitle(gomock.Any(), "Naruto", 1, 10).
-					Return(animes, int64(2), nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"data": []interface{}{
-					map[string]interface{}{
-						"id":          float64(1),
-						"title":       "Naruto",
-						"description": "A story about ninjas",
-						"rating":      8.5,
-						"episodes":    float64(220),
-						"status":      "Completed",
-						"start_date":  "0001-01-01T00:00:00Z",
-						"end_date":    "0001-01-01T00:00:00Z",
-						"created_at":  "0001-01-01T00:00:00Z",
-						"updated_at":  "0001-01-01T00:00:00Z",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":         float64(1),
-								"name":       "Action",
-								"created_at": "0001-01-01T00:00:00Z",
-								"updated_at": "0001-01-01T00:00:00Z",
-								"deleted_at": "0001-01-01T00:00:00Z",
-							},
-						},
-					},
-					map[string]interface{}{
-						"id":          float64(2),
-						"title":       "Naruto Shippuden",
-						"description": "The continuation of Naruto",
-						"rating":      9.0,
-						"episodes":    float64(500),
-						"status":      "Completed",
-						"start_date":  "0001-01-01T00:00:00Z",
-						"end_date":    "0001-01-01T00:00:00Z",
-						"created_at":  "0001-01-01T00:00:00Z",
-						"updated_at":  "0001-01-01T00:00:00Z",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":         float64(2),
-								"name":       "Drama",
-								"created_at": "0001-01-01T00:00:00Z",
-								"updated_at": "0001-01-01T00:00:00Z",
-								"deleted_at": "0001-01-01T00:00:00Z",
-							},
-						},
-					},
-				},
-				"total": float64(2),
-				"page":  float64(1),
-				"limit": float64(10),
-			},
-		},
-		{
-			name:  "No Results",
-			title: "NonExistentAnime",
-			page:  1,
-			limit: 10,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimesByTitle(gomock.Any(), "NonExistentAnime", 1, 10).
-					Return([]*models.Anime{}, int64(0), nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"data":  []interface{}{},
-				"total": float64(0),
-				"page":  float64(1),
-				"limit": float64(10),
-			},
-		},
-		{
-			name:  "Internal Server Error",
-			title: "Naruto",
-			page:  1,
-			limit: 10,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimesByTitle(gomock.Any(), "Naruto", 1, 10).
-					Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to search animes", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to search animes",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/search?title=%s&page=%d&limit=%d", tt.title, tt.page, tt.limit), nil)
-			req = req.WithContext(createTestContext())
-			rr := httptest.NewRecorder()
-
-			handler.GetAnimesByTitleHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
 }
 
-func TestAnimeHandler_GetAnimesByGenreHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func (s *AnimeHandlerSuite) TestGet_InternalError() {
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
+	req := httptest.NewRequest(http.MethodGet, "/animes/1", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimeHandler(rr, req)
 
-	tests := []struct {
-		name           string
-		genreID        string
-		page           int
-		limit          int
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:    "Success",
-			genreID: "1",
-			page:    1,
-			limit:   10,
-			setupMock: func() {
-				animes := []*models.Anime{
-					{
-						ID:          1,
-						Title:       "Naruto",
-						Description: "A story about ninjas",
-						Rating:      8.5,
-						Episodes:    220,
-						Status:      "Completed",
-						StartDate:   time.Time{},
-						EndDate:     time.Time{},
-						CreatedAt:   time.Time{},
-						UpdatedAt:   time.Time{},
-						Genres: []models.Genre{
-							{
-								ID:   1,
-								Name: "Action",
-							},
-						},
-					},
-				}
-				mockAnimeService.EXPECT().
-					GetAnimesByGenre(gomock.Any(), "1", 1, 10).
-					Return(animes, int64(1), nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"data": []interface{}{
-					map[string]interface{}{
-						"id":          float64(1),
-						"title":       "Naruto",
-						"description": "A story about ninjas",
-						"rating":      8.5,
-						"episodes":    float64(220),
-						"status":      "Completed",
-						"start_date":  "0001-01-01T00:00:00Z",
-						"end_date":    "0001-01-01T00:00:00Z",
-						"created_at":  "0001-01-01T00:00:00Z",
-						"updated_at":  "0001-01-01T00:00:00Z",
-						"genres": []interface{}{
-							map[string]interface{}{
-								"id":         float64(1),
-								"name":       "Action",
-								"created_at": "0001-01-01T00:00:00Z",
-								"updated_at": "0001-01-01T00:00:00Z",
-								"deleted_at": "0001-01-01T00:00:00Z",
-							},
-						},
-					},
-				},
-				"total": float64(1),
-				"page":  float64(1),
-				"limit": float64(10),
-			},
-		},
-		{
-			name:    "Invalid Genre ID",
-			genreID: "",
-			page:    1,
-			limit:   10,
-			setupMock: func() {
-				// No mock setup needed for invalid genre ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-001",
-					"message": "Invalid input",
-					"details": "Genre parameter is required",
-				},
-			},
-		},
-		{
-			name:    "Internal Server Error",
-			genreID: "1",
-			page:    1,
-			limit:   10,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					GetAnimesByGenre(gomock.Any(), "1", 1, 10).
-					Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to search animes by genre", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to search animes by genre",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/animes/genre/%s?page=%d&limit=%d", tt.genreID, tt.page, tt.limit), nil)
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"genre": tt.genreID})
-			rr := httptest.NewRecorder()
-
-			handler.GetAnimesByGenreHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
 }
 
-func TestAnimeHandler_AddGenresToAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// ---------------------------------------------------------------------------
+// GetAll
+// ---------------------------------------------------------------------------
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
+func (s *AnimeHandlerSuite) TestGetAll_Success() {
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10).
+		Return([]*models.Anime{
+			{ID: 1, Title: "Naruto"},
+			{ID: 2, Title: "One Piece"},
+		}, int64(2), nil).Once()
 
-	tests := []struct {
-		name           string
-		animeID        string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:    "Success",
-			animeID: "1",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					AddGenresToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(nil)
-			},
-			expectedStatus: http.StatusNoContent,
-			expectedBody:   nil,
-		},
-		{
-			name:    "Invalid Anime ID",
-			animeID: "invalid",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				// No mock setup needed for invalid anime ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code": "ERR-001",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-					"details": "The provided ID is not a valid unsigned integer.",
-					"message": "Invalid ID format",
-				},
-			},
-		},
-		{
-			name:    "Invalid Request Body",
-			animeID: "1",
-			requestBody: `{
-				"invalid": "json"
-			}`,
-			setupMock: func() {
-				// No mock setup needed for invalid request body
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-		{
-			name:    "Internal Server Error",
-			animeID: "1",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					AddGenresToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to add genres to anime", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to add genres to anime",
-				},
-			},
-		},
-	}
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodPost, "/animes/"+tt.animeID+"/genres", bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
-
-			// Set up the validated payload in context for handlers that expect it
-			if tt.name == "Success" || tt.name == "Internal Server Error" {
-				var payload struct {
-					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-				}
-				err := json.Unmarshal([]byte(tt.requestBody), &payload)
-				assert.NoError(t, err)
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
-				req = req.WithContext(ctx)
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler.AddGenresToAnimeHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			if tt.expectedBody == nil {
-				// For 204 No Content, expect empty body
-				assert.Empty(t, rr.Body.String())
-			} else {
-				var response map[string]interface{}
-				err := json.Unmarshal(rr.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedBody, response)
-			}
-		})
-	}
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.Equal(float64(2), body["total"])
+	s.NotNil(body["data"])
 }
 
-func TestAnimeHandler_RemoveGenresFromAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func (s *AnimeHandlerSuite) TestGetAll_InvalidPagination() {
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=0&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		animeID        string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:    "Success",
-			animeID: "1",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					RemoveGenresFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(nil)
-			},
-			expectedStatus: http.StatusNoContent,
-			expectedBody:   nil,
-		},
-		{
-			name:    "Invalid Anime ID",
-			animeID: "invalid",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				// No mock setup needed for invalid anime ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code": "ERR-001",
-					"context": map[string]interface{}{
-						"id": "invalid",
-					},
-					"details": "The provided ID is not a valid unsigned integer.",
-					"message": "Invalid ID format",
-				},
-			},
-		},
-		{
-			name:    "Invalid Request Body",
-			animeID: "1",
-			requestBody: `{
-				"invalid": "json"
-			}`,
-			setupMock: func() {
-				// No mock setup needed for invalid request body
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Invalid payload",
-					"details": "The request payload could not be retrieved.",
-				},
-			},
-		},
-		{
-			name:    "Internal Server Error",
-			animeID: "1",
-			requestBody: `{
-				"genre_ids": [1, 2, 3]
-			}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					RemoveGenresFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to remove genres from anime", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": map[string]interface{}{
-					"code":    "ERR-004",
-					"message": "Database error",
-					"details": "Failed to remove genres from anime",
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodDelete, "/animes/"+tt.animeID+"/genres", bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
-
-			// Set up the validated payload in context for handlers that expect it
-			if tt.name == "Success" || tt.name == "Internal Server Error" {
-				var payload struct {
-					GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-				}
-				err := json.Unmarshal([]byte(tt.requestBody), &payload)
-				assert.NoError(t, err)
-				ctx := req.Context()
-				ctx = context.WithValue(ctx, middleware.ValidatedPayloadKey, &payload)
-				req = req.WithContext(ctx)
-			}
-
-			rr := httptest.NewRecorder()
-
-			handler.RemoveGenresFromAnimeHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			if tt.expectedBody == nil {
-				// For 204 No Content, expect empty body
-				assert.Empty(t, rr.Body.String())
-			} else {
-				var response map[string]interface{}
-				err := json.Unmarshal(rr.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedBody, response)
-			}
-		})
-	}
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
 }
 
-func TestAnimeHandler_AddTagsToAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func (s *AnimeHandlerSuite) TestGetAll_InternalError() {
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10).
+		Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
 
-	tests := []struct {
-		name           string
-		animeID        string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:        "Success",
-			animeID:     "1",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					AddTagsToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Tags added successfully",
-			},
-		},
-		{
-			name:        "Invalid Anime ID",
-			animeID:     "invalid",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				// No mock setup needed for invalid anime ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": "invalid ID format",
-			},
-		},
-		{
-			name:        "Invalid Request Body",
-			animeID:     "1",
-			requestBody: `{"invalid": "json"`,
-			setupMock: func() {
-				// No mock setup needed for invalid request body
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
-			},
-		},
-		{
-			name:        "Internal Server Error",
-			animeID:     "1",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					AddTagsToAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to add tags to anime", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": "Database error",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
-
-			req := httptest.NewRequest(http.MethodPost, "/animes/"+tt.animeID+"/tags", bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
-
-			rr := httptest.NewRecorder()
-
-			handler.AddTagsToAnimeHandler(rr, req)
-
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
-	}
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
 }
 
-func TestAnimeHandler_RemoveTagsFromAnimeHandler(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// ---------------------------------------------------------------------------
+// Create
+// ---------------------------------------------------------------------------
 
-	mockAnimeService := mocks.NewMockAnimeServiceInterface(ctrl)
-	handler := NewAnimeHandler(mockAnimeService)
-
-	tests := []struct {
-		name           string
-		animeID        string
-		requestBody    string
-		setupMock      func()
-		expectedStatus int
-		expectedBody   map[string]interface{}
-	}{
-		{
-			name:        "Success",
-			animeID:     "1",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					RemoveTagsFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-			expectedBody: map[string]interface{}{
-				"message": "Tags removed successfully",
-			},
-		},
-		{
-			name:        "Invalid Anime ID",
-			animeID:     "invalid",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				// No mock setup needed for invalid anime ID
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": "invalid ID format",
-			},
-		},
-		{
-			name:        "Invalid Request Body",
-			animeID:     "1",
-			requestBody: `{"invalid": "json"`,
-			setupMock: func() {
-				// No mock setup needed for invalid request body
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
-			},
-		},
-		{
-			name:        "Internal Server Error",
-			animeID:     "1",
-			requestBody: `{"tag_ids": [1, 2, 3]}`,
-			setupMock: func() {
-				mockAnimeService.EXPECT().
-					RemoveTagsFromAnime(gomock.Any(), uint(1), []uint{1, 2, 3}).
-					Return(apperrors.NewError(apperrors.ErrInternalServer, "Database error", "Failed to remove tags from anime", http.StatusInternalServerError, nil, nil))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody: map[string]interface{}{
-				"error": "Database error",
-			},
-		},
+func (s *AnimeHandlerSuite) TestCreate_Success() {
+	payload := &models.AnimeCreateRequest{
+		Title:    "New Anime",
+		Episodes: 12,
+		Status:   "Completed",
+		Rating:   8.5,
+		GenreIDs: []uint{1},
+		TagIDs:   []uint{1},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock()
+	s.svc.EXPECT().CreateAnime(mock.Anything, mock.AnythingOfType("*models.Anime")).
+		Run(func(ctx context.Context, a *models.Anime) { a.ID = 1 }).
+		Return(nil).Once()
+	s.svc.EXPECT().AddGenresToAnime(mock.Anything, uint(1), []uint{1}).Return(nil).Once()
+	s.svc.EXPECT().AddTagsToAnime(mock.Anything, uint(1), []uint{1}).Return(nil).Once()
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(&models.Anime{ID: 1, Title: "New Anime"}, nil).Once()
 
-			req := httptest.NewRequest(http.MethodDelete, "/animes/"+tt.animeID+"/tags", bytes.NewBufferString(tt.requestBody))
-			req = req.WithContext(createTestContext())
-			req = mux.SetURLVars(req, map[string]string{"id": tt.animeID})
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
 
-			rr := httptest.NewRecorder()
+	s.Equal(http.StatusCreated, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.Equal(float64(1), body["id"])
+}
 
-			handler.RemoveTagsFromAnimeHandler(rr, req)
+func (s *AnimeHandlerSuite) TestCreate_MissingPayload() {
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(nil))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
 
-			assert.Equal(t, tt.expectedStatus, rr.Code)
-			var response map[string]interface{}
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedBody, response)
-		})
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *AnimeHandlerSuite) TestCreate_ServiceError() {
+	payload := &models.AnimeCreateRequest{
+		Title:    "New Anime",
+		Episodes: 12,
+		Status:   "Completed",
+		Rating:   8.5,
+		GenreIDs: []uint{1},
+		TagIDs:   []uint{1},
 	}
+
+	s.svc.EXPECT().CreateAnime(mock.Anything, mock.Anything).
+		Return(apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ---------------------------------------------------------------------------
+// Update
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestUpdate_Success() {
+	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
+
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(&models.Anime{ID: 1, Title: "Old Title", Genres: []models.Genre{}, Tags: []models.Tag{}}, nil).Once()
+	s.svc.EXPECT().UpdateAnime(mock.Anything, mock.Anything).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+}
+
+func (s *AnimeHandlerSuite) TestUpdate_InvalidID() {
+	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
+
+	req := httptest.NewRequest(http.MethodPut, "/animes/abc", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
+}
+
+func (s *AnimeHandlerSuite) TestUpdate_MissingPayload() {
+	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(nil))
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *AnimeHandlerSuite) TestUpdate_NotFound() {
+	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
+
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(999)).
+		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/animes/999", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "999"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
+}
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestDelete_Success() {
+	s.svc.EXPECT().DeleteAnime(mock.Anything, uint(1)).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodDelete, "/animes/1", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.DeleteAnimeHandler(rr, req)
+
+	s.Equal(http.StatusNoContent, rr.Code)
+	s.Empty(rr.Body.String())
+}
+
+func (s *AnimeHandlerSuite) TestDelete_InvalidID() {
+	req := httptest.NewRequest(http.MethodDelete, "/animes/abc", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+	rr := httptest.NewRecorder()
+	s.handler.DeleteAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
+}
+
+func (s *AnimeHandlerSuite) TestDelete_NotFound() {
+	s.svc.EXPECT().DeleteAnime(mock.Anything, uint(999)).
+		Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodDelete, "/animes/999", nil)
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "999"})
+	rr := httptest.NewRecorder()
+	s.handler.DeleteAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
+}
+
+// ---------------------------------------------------------------------------
+// SearchByTitle
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestSearchByTitle_Success() {
+	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Naruto", 1, 10).
+		Return([]*models.Anime{{ID: 1, Title: "Naruto"}}, int64(1), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimesByTitleHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.NotNil(body["data"])
+}
+
+func (s *AnimeHandlerSuite) TestSearchByTitle_NoResults() {
+	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Unknown", 1, 10).
+		Return([]*models.Anime{}, int64(0), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Unknown&page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimesByTitleHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.NotNil(body["data"])
+}
+
+func (s *AnimeHandlerSuite) TestSearchByTitle_InternalError() {
+	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Naruto", 1, 10).
+		Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimesByTitleHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ---------------------------------------------------------------------------
+// AddGenres
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestAddGenres_Success() {
+	payload := &models.AnimeGenresRequest{GenreIDs: []uint{1, 2}}
+
+	s.svc.EXPECT().AddGenresToAnime(mock.Anything, uint(1), []uint{1, 2}).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/animes/1/genres", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.AddGenresToAnimeHandler(rr, req)
+
+	s.Equal(http.StatusNoContent, rr.Code)
+	s.Empty(rr.Body.String())
+}
+
+func (s *AnimeHandlerSuite) TestAddGenres_InvalidID() {
+	payload := &models.AnimeGenresRequest{GenreIDs: []uint{1}}
+
+	req := httptest.NewRequest(http.MethodPost, "/animes/abc/genres", jsonBuf(payload))
+	ctx := withPayload(testCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+	rr := httptest.NewRecorder()
+	s.handler.AddGenresToAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
+}
+
+func (s *AnimeHandlerSuite) TestAddGenres_MissingPayload() {
+	req := httptest.NewRequest(http.MethodPost, "/animes/1/genres", jsonBuf(nil))
+	req = req.WithContext(testCtx())
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.AddGenresToAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
 }

@@ -15,7 +15,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"myanimeapi/api/middleware"
@@ -23,6 +22,7 @@ import (
 	"myanimeapi/api/services"
 	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
 	"github.com/gorilla/mux"
 )
@@ -133,16 +133,30 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Add genres if provided
 	if len(payload.GenreIDs) > 0 {
 		if err := h.service.AddGenresToAnime(r.Context(), anime.ID, payload.GenreIDs); err != nil {
-			// Log the error but don't fail the request
-			log.Printf("Failed to add genres to anime: %v", err)
+			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
+				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after genre association error")
+			}
+			if appErr, ok := err.(*errors.AppError); ok {
+				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+				return
+			}
+			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add genres to anime", "An internal server error occurred while adding genres to the anime.", nil)
+			return
 		}
 	}
 
 	// Add tags if provided
 	if len(payload.TagIDs) > 0 {
 		if err := h.service.AddTagsToAnime(r.Context(), anime.ID, payload.TagIDs); err != nil {
-			// Log the error but don't fail the request
-			log.Printf("Failed to add tags to anime: %v", err)
+			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
+				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after tag association error")
+			}
+			if appErr, ok := err.(*errors.AppError); ok {
+				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+				return
+			}
+			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add tags to anime", "An internal server error occurred while adding tags to the anime.", nil)
+			return
 		}
 	}
 
@@ -526,9 +540,7 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*struct {
-		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	})
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeGenresRequest)
 	if !ok {
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
@@ -585,9 +597,7 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Retrieve the validated and sanitized payload from the context
-	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*struct {
-		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	})
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeGenresRequest)
 	if !ok {
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
@@ -637,28 +647,28 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
-	var request struct {
-		TagIDs []uint `json:"tag_ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeTagsRequest)
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
-	if err := h.service.AddTagsToAnime(r.Context(), animeID, request.TagIDs); err != nil {
+	if err := h.service.AddTagsToAnime(r.Context(), animeID, payload.TagIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to add tags to anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add tags to anime", "An internal server error occurred while adding tags to the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Tags added successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // RemoveTagsFromAnimeHandler handles removing tags from an anime.
@@ -693,28 +703,28 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+			"id": vars["id"],
+		})
 		return
 	}
 
-	var request struct {
-		TagIDs []uint `json:"tag_ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeTagsRequest)
+	if !ok {
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
 		return
 	}
 
-	if err := h.service.RemoveTagsFromAnime(r.Context(), animeID, request.TagIDs); err != nil {
+	if err := h.service.RemoveTagsFromAnime(r.Context(), animeID, payload.TagIDs); err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
-			utils.WriteErrorResponse(w, appErr.StatusCode, appErr.Message)
+			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to remove tags from anime")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove tags from anime", "An internal server error occurred while removing tags from the anime.", nil)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Tags removed successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetAnimesByTitleHandler handles searching animes by title.
@@ -906,18 +916,10 @@ func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	protectedRouter.HandleFunc("/{id}", h.DeleteAnimeHandler).Methods("DELETE")
 
 	// Genre management routes
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(struct {
-		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	}{})(http.HandlerFunc(h.AddGenresToAnimeHandler))).Methods("POST")
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(struct {
-		GenreIDs []uint `json:"genre_ids" validate:"required,min=1"`
-	}{})(http.HandlerFunc(h.RemoveGenresFromAnimeHandler))).Methods("DELETE")
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.AddGenresToAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.RemoveGenresFromAnimeHandler))).Methods("DELETE")
 
 	// Tag management routes
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(struct {
-		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
-	}{})(http.HandlerFunc(h.AddTagsToAnimeHandler))).Methods("POST")
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(struct {
-		TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
-	}{})(http.HandlerFunc(h.RemoveTagsFromAnimeHandler))).Methods("DELETE")
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.AddTagsToAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.RemoveTagsFromAnimeHandler))).Methods("DELETE")
 }

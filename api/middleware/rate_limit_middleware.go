@@ -44,6 +44,46 @@ func (rl *RateLimiter) SetClock(clock func() time.Time) {
 	rl.clock = clock
 }
 
+// StrictRateLimitMiddleware returns a middleware that enforces a strict per-IP rate limit
+// with the given max requests per window. Intended for sensitive endpoints like password reset.
+func (rl *RateLimiter) StrictRateLimitMiddleware(maxRequests int, window time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log := logger.Get()
+			ip := clientIP(r)
+			key := "strict:" + r.URL.Path + ":" + ip
+
+			rl.mu.Lock()
+			if _, exists := rl.clients[key]; !exists {
+				rl.clients[key] = &clientInfo{}
+			}
+			if rl.clock().Sub(rl.clients[key].lastSeen) > window {
+				rl.clients[key].count = 0
+			}
+			rl.clients[key].count++
+			rl.clients[key].lastSeen = rl.clock()
+			count := rl.clients[key].count
+			rl.mu.Unlock()
+
+			if count > maxRequests {
+				log.WithFields(map[string]interface{}{
+					"ip":    ip,
+					"path":  r.URL.Path,
+					"count": count,
+					"limit": maxRequests,
+				}).Warning("Strict rate limit exceeded")
+				errors.WriteErrorResponse(w, http.StatusTooManyRequests, errors.ErrTooManyRequests,
+					"Too many requests",
+					"You have exceeded the rate limit for this endpoint. Please try again later.",
+					map[string]interface{}{"retry_after": window.String()},
+				)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // RateLimitMiddleware is an HTTP middleware that enforces rate limits based on the client's IP address.
 // It limits the number of requests a client can make within a specified time window.
 // The rate limit is stricter for authentication-related endpoints (e.g., /auth/authenticate, /auth/register).
@@ -57,13 +97,9 @@ func (rl *RateLimiter) SetClock(clock func() time.Time) {
 func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logger.Get()
+		ip := clientIP(r)
+
 		rl.mu.Lock()
-		defer rl.mu.Unlock()
-
-		// Get the client's IP address
-		ip := r.RemoteAddr
-
-		// Initialize client info if it doesn't exist
 		if _, exists := rl.clients[ip]; !exists {
 			rl.clients[ip] = &clientInfo{}
 		}
@@ -74,33 +110,28 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 
 		switch {
 		case strings.HasPrefix(r.URL.Path, "/auth/authenticate") || strings.HasPrefix(r.URL.Path, "/auth/register"):
-			// Stricter rate limit for authentication endpoints
 			limit = 5
 			window = time.Minute
 		default:
-			// Default rate limit for other endpoints
 			limit = 50
 			window = time.Minute
 		}
 
-		// Reset the count if the time window has passed
 		if rl.clock().Sub(rl.clients[ip].lastSeen) > window {
 			rl.clients[ip].count = 0
 		}
-
-		// Increment the request count and update the last seen time
 		rl.clients[ip].count++
 		rl.clients[ip].lastSeen = rl.clock()
+		count := rl.clients[ip].count
+		rl.mu.Unlock()
 
-		// Check if the request count exceeds the limit
-		if rl.clients[ip].count > limit {
+		if count > limit {
 			log.WithFields(map[string]interface{}{
 				"ip":         ip,
 				"path":       r.URL.Path,
-				"count":      rl.clients[ip].count,
+				"count":      count,
 				"limit":      limit,
 				"window":     window.String(),
-				"last_seen":  rl.clients[ip].lastSeen,
 				"user_agent": r.UserAgent(),
 				"request_id": r.Context().Value(RequestIDContextKey),
 			}).Warning("Rate limit exceeded")
@@ -109,19 +140,34 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Log the current state for debugging
 		log.WithFields(map[string]interface{}{
 			"ip":         ip,
 			"path":       r.URL.Path,
-			"count":      rl.clients[ip].count,
+			"count":      count,
 			"limit":      limit,
 			"window":     window.String(),
-			"last_seen":  rl.clients[ip].lastSeen,
 			"user_agent": r.UserAgent(),
 			"request_id": r.Context().Value(RequestIDContextKey),
 		}).Debug("Rate limit check passed")
 
-		// Call the next handler
 		next.ServeHTTP(w, r)
 	})
+}
+
+// clientIP extracts the real client IP, honouring X-Forwarded-For and X-Real-IP.
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if idx := strings.Index(xff, ","); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+	addr := r.RemoteAddr
+	if idx := strings.LastIndex(addr, ":"); idx != -1 {
+		return addr[:idx]
+	}
+	return addr
 }

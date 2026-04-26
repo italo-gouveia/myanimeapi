@@ -118,7 +118,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
 	genreService := services.NewGenreService(genreRepo)
 	tagService := services.NewTagService(tagRepo)
-	emailService := services.NewEmailService()
+	emailService, err := services.NewEmailService()
+	if err != nil {
+		log.WithField("error", err.Error()).Warning("Email service not configured — password reset emails will be unavailable")
+		emailService = nil
+	}
 	passwordResetService := services.NewPasswordResetService(userRepo, emailService, dbWrapper)
 	log.Info("Services initialized")
 
@@ -136,8 +140,8 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	animeHandler.RegisterAnimeRoutes(v1Router)
 	log.Info("Anime routes registered")
 
-	// Register user routes
-	userHandler.RegisterUserRoutes(v1Router)
+	// Register user routes (rate limiter passed for forgot-password endpoint)
+	userHandler.RegisterUserRoutes(v1Router, rateLimiter)
 	log.Info("User routes registered")
 
 	// Register review routes

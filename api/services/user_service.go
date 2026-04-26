@@ -18,6 +18,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"myanimeapi/api/auth"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
@@ -161,11 +163,20 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
 	user.UpdatedAt = time.Now()
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
+		// Handle unique constraint violation from concurrent inserts
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "unique") || strings.Contains(errMsg, "duplicate") {
+			s.logger.WithField("username", user.Username).Warning("Duplicate user on insert (race condition)")
+			return errors.NewError(errors.ErrConflict, "Username or email already exists", "Another account with the same username or email was registered concurrently", http.StatusConflict, map[string]interface{}{
+				"username": user.Username,
+				"email":    user.Email,
+			}, err)
+		}
 		s.logger.WithFields(map[string]interface{}{
 			"username": user.Username,
-			"error":    err.Error(),
+			"error":    errMsg,
 		}).Error("Failed to create user")
-		return errors.NewError(errors.ErrInternalServer, "Failed to create user", err.Error(), http.StatusInternalServerError, map[string]interface{}{
+		return errors.NewError(errors.ErrInternalServer, "Failed to create user", errMsg, http.StatusInternalServerError, map[string]interface{}{
 			"username": user.Username,
 			"email":    user.Email,
 		}, err)

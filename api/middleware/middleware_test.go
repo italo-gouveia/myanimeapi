@@ -27,12 +27,12 @@ const (
 
 // setup initializes the environment for testing.
 func setup() {
-	os.Setenv("JWT_SECRET_KEY", testSecretKey)
+	_ = os.Setenv("JWT_SECRET_KEY", testSecretKey)
 }
 
 // teardown cleans up the environment after testing.
 func teardown() {
-	os.Unsetenv("JWT_SECRET_KEY")
+	_ = os.Unsetenv("JWT_SECRET_KEY")
 }
 
 // TestRequestIDMiddleware tests the RequestID middleware functionality

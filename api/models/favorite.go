@@ -15,13 +15,13 @@ import "time"
 //	  "updated_at": "2025-02-20T19:27:00Z"
 //	}
 type Favorite struct {
-	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`          // Unique identifier for the favorite entry
-	UserID    uint      `json:"user_id" gorm:"not null" example:"1"`       // ID of the user who favorited the anime
-	AnimeID   uint      `json:"anime_id" gorm:"not null" example:"1"`      // ID of the favorited anime
-	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the favorite was created
-	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"` // Timestamp when the favorite was last updated
-	Anime     Anime     `json:"anime,omitempty" gorm:"foreignKey:AnimeID"` // Associated anime details
-	User      User      `json:"user,omitempty" gorm:"foreignKey:UserID"`   // Associated user details
+	ID        uint      `json:"id" gorm:"primaryKey" example:"1"`                                                          // Unique identifier for the favorite entry
+	UserID    uint      `json:"user_id" gorm:"not null;index:idx_favorites_user_anime,unique" example:"1"`                 // ID of the user who favorited the anime
+	AnimeID   uint      `json:"anime_id" gorm:"not null;index:idx_favorites_user_anime,unique;index:idx_favorites_anime"` // ID of the favorited anime
+	CreatedAt time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                                 // Timestamp when the favorite was created
+	UpdatedAt time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                                 // Timestamp when the favorite was last updated
+	Anime     Anime     `json:"anime,omitempty" gorm:"foreignKey:AnimeID"`                                                 // Associated anime details
+	User      User      `json:"user,omitempty" gorm:"foreignKey:UserID"`                                                   // Associated user details
 }
 
 // FavoriteCreateRequest represents the request payload for creating a favorite.
