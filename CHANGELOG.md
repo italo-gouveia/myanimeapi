@@ -1,3 +1,58 @@
+# [1.13.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.12.0...v1.13.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* handle json.Unmarshal errors in test files to satisfy linter requirements ([ddbd652](https://github.com/italo-gouveia/myanimeapi/commit/ddbd652b447a63cfe1f604ef8e706a2e280e6171))
+* **hooks:** add GOPATH/bin to PATH so golangci-lint is found after install ([68039be](https://github.com/italo-gouveia/myanimeapi/commit/68039be1e664bdca7782ab7f935e2f982c3a9828))
+* regenerate anime service mock with missing methods ([7e78476](https://github.com/italo-gouveia/myanimeapi/commit/7e784765b80f1f781340949079e1524025fa3897))
+* remove duplicate anime service mock file ([e207226](https://github.com/italo-gouveia/myanimeapi/commit/e20722648efc758c653dece822a5b4ab2b872440))
+* remove unsupported Favorites preload from AnimeRepository ([1651247](https://github.com/italo-gouveia/myanimeapi/commit/1651247ac27ccb879069d0cc87467a11124ad196))
+* **tests:** align test expectations with actual API responses ([fcd98fc](https://github.com/italo-gouveia/myanimeapi/commit/fcd98fc2442281e5a73888b3fa636a8674c75053))
+* **tests:** check error return from multipart writer Close ([fca1a76](https://github.com/italo-gouveia/myanimeapi/commit/fca1a762d72313bc09611fabddba335827696ba3))
+* **tests:** fix favorite integration tests ([8542aca](https://github.com/italo-gouveia/myanimeapi/commit/8542aca82c204830809b2fff02b4e1da4468ccd3))
+* **tests:** fix integration tests and improve API structure ([8a0e80d](https://github.com/italo-gouveia/myanimeapi/commit/8a0e80d16f8ba16dc66b620ea3fde1019513f8b3))
+* **tests:** fix linter error in favorite integration test ([98a7134](https://github.com/italo-gouveia/myanimeapi/commit/98a713420c6c5ee035f4f1d6e5925452a5d55852))
+* **tests:** fix linter errors in anime integration tests ([a3ffda1](https://github.com/italo-gouveia/myanimeapi/commit/a3ffda1f7b921124e973d7b675f91d5b30cd4442))
+* **tests:** update expected fields in GetAnimesByGenreHandler test to match API response ([055107c](https://github.com/italo-gouveia/myanimeapi/commit/055107c284f144191dcb19b64a1bf9aba1672485))
+* **tests:** update integration and favorite tests to match API response formats and improve error handling ([6f2dca8](https://github.com/italo-gouveia/myanimeapi/commit/6f2dca8824a9d053a6669b5a6eebccd09c445c40))
+* **tests:** update integration test expectations to match API response format ([3302ca4](https://github.com/italo-gouveia/myanimeapi/commit/3302ca4ef63116430060daa6b5f872727c0b8d41))
+* update tests and mocks for anime handlers, align status codes and response bodies, improve semantic match for handler expectations ([73bcb2a](https://github.com/italo-gouveia/myanimeapi/commit/73bcb2a93f5970c168ea502307d172fdd5dae220))
+
+
+### Features
+
+* **api:** standardize error handling and response formats ([30b4940](https://github.com/italo-gouveia/myanimeapi/commit/30b4940743f105d1101b87c381d19facdcd86244))
+* **auth:** improve user ID handling and test coverage ([c4c2f71](https://github.com/italo-gouveia/myanimeapi/commit/c4c2f71d88a3c10aa052e63cedaf12390cae37f8))
+* **ci:** add AI code review workflows and update CI configuration ([ae84fe9](https://github.com/italo-gouveia/myanimeapi/commit/ae84fe9214906f59a05049873d8da61de25b8118))
+* integrate SONAR_IMPROVMENTS work into main ([0953c39](https://github.com/italo-gouveia/myanimeapi/commit/0953c39be04817627c10057cbef2c969134a24a6))
+* **test:** add mock implementations for anime and favorite services ([c8615ce](https://github.com/italo-gouveia/myanimeapi/commit/c8615cedea8fff38881ea65f788422947bcfbf60))
+* **test:** add mock implementations for anime and favorite services ([85edc8f](https://github.com/italo-gouveia/myanimeapi/commit/85edc8f12bbe85bba3656aa170f4e7cc1e8ac950))
+* **tests:** add integration tests for anime and favorite handlers ([7b915a9](https://github.com/italo-gouveia/myanimeapi/commit/7b915a90f88c10f1e8ee4b6be0dbb2d605d7933c))
+
+
+### BREAKING CHANGES
+
+* **tests:** Search routes (/animes/search and /animes/genre/{genre}) are now public
+* **auth:** User ID is now stored as uint instead of string in context
+
+- Update auth middleware to parse and validate user ID from JWT claims
+- Modify context middleware to handle uint user IDs directly
+- Refactor integration tests to use proper authentication
+- Update test cases to match new error response format
+- Add comprehensive test coverage for unauthorized scenarios
+
+This change improves type safety and reduces potential runtime errors
+by handling user IDs as uint throughout the application instead of
+converting between string and uint in multiple places.
+* **api:** - Changed response format from "animes" to "data" in anime search endpoints
+- Modified genre search endpoint to use query parameters instead of path parameters
+- Simplified response structures by removing ToResponse() transformations
+- Standardized error response format across all handlers
+- Improved error messages and context handling
+
+This change improves API consistency and error handling while simplifying the response structure.
+
 # [1.12.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.11.0...v1.12.0) (2025-05-26)
 
 
