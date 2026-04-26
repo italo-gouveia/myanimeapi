@@ -47,9 +47,14 @@ test-e2e: ## Runs only E2E tests
 
 test-coverage: ## Runs tests with coverage
 	@echo "Running tests with coverage..."
-	go test -v -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+	@TEST_PKGS=$$(go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ./... 2>/dev/null | tr '\n' ' '); \
+	if [ -z "$$TEST_PKGS" ]; then \
+		echo "No test files found, skipping coverage"; \
+	else \
+		go test -v -coverprofile=coverage.out $$TEST_PKGS; \
+		go tool cover -html=coverage.out -o coverage.html; \
+		echo "Coverage report generated: coverage.html"; \
+	fi
 
 test-mocks: ## Generates mocks for tests
 	@echo "Generating mocks..."
