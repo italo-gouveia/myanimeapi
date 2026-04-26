@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-      - SONAR_IMPROVMENTS
   pull_request:
     branches:
       - main
-      - SONAR_IMPROVMENTS
-  workflow_dispatch:
 
 jobs:
   pre-build-validation:
@@ -146,15 +143,14 @@ jobs:
       - name: Debug downloaded files
         run: ls -la
 
-      - name: SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
+      - name: Run SonarCloud Analysis
+        uses: SonarSource/sonarcloud-github-action@v5.0.0
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >-
-            -Dsonar.go.coverage.reportPaths=coverage.out
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_GO_COVERAGE_REPORT_PATHS: coverage.out  # Specify the coverage report path
 
   security:
     name: Security Analysis

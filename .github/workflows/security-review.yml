@@ -1,0 +1,53 @@
+name: Security Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  security-review:
+    name: Security Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Install security tools
+        run: |
+          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run gosec security scan
+        run: gosec -fmt=json -out=gosec-report.json ./...
+        continue-on-error: true
+
+      - name: Run golangci-lint security checks
+        run: golangci-lint run --enable=gosec,gosimple,ineffassign,staticcheck ./...
+        continue-on-error: true
+
+      - name: Security Review with AI
+        uses: Codium-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          args: |
+            --mode review
+            --review.comment_lgtm false
+            --review.suggestions true
+            --review.estimate false
+            --review.extra_instructions "Você é um especialista em segurança de aplicações Go. Analise o código focando APENAS em questões de segurança: 1. Vulnerabilidades: SQL Injection, XSS, CSRF, injeção de comandos, path traversal. 2. Validação: Validação de entrada, sanitização, escape de caracteres. 3. Autenticação: Controle de acesso, verificação de permissões, tokens JWT. 4. Configuração: Variáveis de ambiente, logs sensíveis, headers de segurança. 5. Dependências: Vulnerabilidades conhecidas, versões desatualizadas. 6. Criptografia: Algoritmos adequados, geração segura de chaves. Use emojis: 🔒 (vulnerabilidade crítica), ⚠️ (risco), 💡 (sugestão), 🛡️ (boa prática). Seja MUITO específico sobre riscos e forneça exemplos de correção."

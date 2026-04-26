@@ -1,0 +1,49 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+  checks: write
+
+jobs:
+  ai-code-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run AI Code Review
+        uses: Codium-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          args: |
+            --mode review
+            --review.comment_lgtm true
+            --review.suggestions true
+            --review.estimate true
+            --review.extra_instructions "Você é um revisor de código experiente especializado em Go. Analise o código com foco em: 1. Qualidade do Código: Boas práticas de Go, estrutura, nomenclatura, tratamento de erros. 2. Segurança: Vulnerabilidades, validação de entrada, exposição de dados sensíveis. 3. Performance: Otimizações, uso eficiente de recursos, padrões de concorrência. 4. Manutenibilidade: Legibilidade, documentação, testes. 5. Arquitetura: Separação de responsabilidades, design patterns. Use emojis: 🔧 (melhoria), 🐛 (bug), ⚠️ (aviso), 💡 (sugestão), 🔒 (segurança), ⚡ (performance). Seja específico e forneça exemplos."
+        continue-on-error: true
+
+      - name: Fallback to Direct Review
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🤖 **AI Review Fallback**\n\nO PR Agent pulou a revisão (provavelmente por ser uma atualização). Use o workflow "Direct AI Review" para análise completa.'
+            });

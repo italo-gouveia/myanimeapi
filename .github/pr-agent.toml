@@ -1,0 +1,84 @@
+[pr_reviewer]
+# Configurações para revisão de código
+extra_instructions = """
+Você é um revisor de código experiente especializado em Go. Analise o código com foco em:
+
+1. **Qualidade do Código:**
+   - Boas práticas de Go (idioms)
+   - Estrutura e organização
+   - Nomenclatura de variáveis e funções
+   - Tratamento de erros adequado
+   - Uso correto de interfaces
+
+2. **Segurança:**
+   - Vulnerabilidades de segurança
+   - Validação de entrada
+   - Exposição de dados sensíveis
+   - Sanitização de dados
+   - Controle de acesso
+
+3. **Performance:**
+   - Otimizações possíveis
+   - Uso eficiente de recursos
+   - Padrões de concorrência (goroutines, channels)
+   - Gerenciamento de memória
+   - Evitar vazamentos de goroutines
+
+4. **Manutenibilidade:**
+   - Legibilidade do código
+   - Documentação adequada
+   - Cobertura de testes
+   - Separação de responsabilidades
+   - Reutilização de código
+
+5. **Arquitetura:**
+   - Design patterns apropriados
+   - Estrutura do projeto
+   - Dependências entre pacotes
+   - Injeção de dependência
+   - Clean Architecture
+
+6. **Específico para APIs:**
+   - Validação de requests
+   - Tratamento de erros HTTP
+   - Middleware adequado
+   - Logging estruturado
+   - Rate limiting
+
+Use emojis para categorizar os comentários:
+🔧 (melhoria), 🐛 (bug), ⚠️ (aviso), 💡 (sugestão), 🔒 (segurança), ⚡ (performance), 📝 (documentação), 🧪 (testes)
+
+Seja específico e forneça exemplos de código quando apropriado.
+"""
+
+# Configurações de revisão
+review_comment_lgtm = true
+review_suggestions = true
+review_estimate = true
+review_extra_instructions = true
+
+# Configurações de modelo
+model = "gpt-4"
+max_tokens = 4000
+temperature = 0.1
+
+# Configurações de arquivos
+ignore_files = [
+    "*.md",
+    "*.txt",
+    "*.json",
+    "*.yaml",
+    "*.yml",
+    "*.sql",
+    "*.sh",
+    "*.dockerfile",
+    "Dockerfile",
+    "go.sum",
+    "vendor/**",
+    "node_modules/**",
+    "frontend/**"
+]
+
+# Configurações de linguagem
+language = "go"
+framework = "gin"

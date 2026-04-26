@@ -1,0 +1,44 @@
+name: Simple AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install PR Agent
+        run: |
+          pip install pr-agent
+
+      - name: Run AI Review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          pr-agent review \
+            --github-token $GITHUB_TOKEN \
+            --openai-key $OPENAI_KEY \
+            --model gpt-4 \
+            --max-tokens 2000 \
+            --temperature 0.1 \
+            --system-prompt "Você é um revisor de código experiente especializado em Go. Analise o código com foco em: 1. Qualidade do Código: Boas práticas de Go, estrutura, nomenclatura, tratamento de erros. 2. Segurança: Vulnerabilidades, validação de entrada, exposição de dados sensíveis. 3. Performance: Otimizações, uso eficiente de recursos, padrões de concorrência. 4. Manutenibilidade: Legibilidade, documentação, testes. 5. Arquitetura: Separação de responsabilidades, design patterns. Use emojis: 🔧 (melhoria), 🐛 (bug), ⚠️ (aviso), 💡 (sugestão), 🔒 (segurança), ⚡ (performance). Seja específico e forneça exemplos."
