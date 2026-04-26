@@ -21,7 +21,9 @@ func multipartReq(t *testing.T, method, target string) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
 	req := httptest.NewRequest(method, target, body)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	return req
