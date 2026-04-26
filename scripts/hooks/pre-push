@@ -13,6 +13,9 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Add Go bin directory to PATH so installed tools are found
+export PATH="$PATH:$(go env GOPATH)/bin:$HOME/go/bin"
+
 # Check if golangci-lint is installed
 if ! command_exists golangci-lint; then
     echo -e "${YELLOW}Installing golangci-lint...${NC}"
