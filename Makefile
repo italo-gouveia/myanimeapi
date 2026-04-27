@@ -117,13 +117,9 @@ fmt: ## Formats the code
 	go vet ./...
 
 # Migrations
-migrate-up: ## Runs database migrations
-	@echo "Running migrations..."
-	@if [ -d "internal/database/migrations" ]; then \
-		echo "Migrations found in internal/database/migrations"; \
-	else \
-		echo "Migrations directory not found"; \
-	fi
+migrate-up: ## Runs database migrations (via the application itself at startup)
+	@echo "Migrations are embedded and run automatically at application startup."
+	@echo "To inspect migration files: ls internal/database/migrations/"
 
 # Swagger
 swagger: ## Generates Swagger documentation
@@ -179,6 +175,19 @@ test-setup: test-env-up ## Sets up complete test environment
 	@echo "export TEST_DB_PASSWORD=test"
 	@echo "export TEST_DB_NAME=test_db"
 	@echo "Test environment configured!"
+
+test-db: ## Starts Postgres and runs all tests (including DB-dependent ones)
+	@echo "Starting Postgres test container..."
+	docker-compose -f docker-compose.test.yml up -d postgres-test
+	@echo "Waiting for Postgres to be healthy..."
+	@until docker exec myanimeapi-postgres-test pg_isready -U test -d test_db > /dev/null 2>&1; do \
+		echo "  ...waiting"; sleep 2; \
+	done
+	@echo "Postgres is ready. Running all tests..."
+	TEST_DB_HOST=localhost TEST_DB_PORT=5433 TEST_DB_USER=test TEST_DB_PASSWORD=test TEST_DB_NAME=test_db \
+		go test -v -count=1 ./tests/...
+	@echo "Stopping Postgres test container..."
+	docker-compose -f docker-compose.test.yml stop postgres-test
 
 # CI/CD
 ci: quality test-coverage ## Runs CI pipeline
