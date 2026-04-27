@@ -119,7 +119,7 @@ func (s *SmokeSuite) TestAuth_Register_HappyPath() {
 		"email":    "smoke@example.com",
 		"password": "Password123!",
 	})
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusCreated, resp.StatusCode)
 	s.Contains(resp.Header.Get("Content-Type"), "application/json")
@@ -128,7 +128,7 @@ func (s *SmokeSuite) TestAuth_Register_HappyPath() {
 func (s *SmokeSuite) TestAuth_Register_BadJSON() {
 	resp, err := s.client.Post(s.url("/auth/register"), "application/json", bytes.NewReader([]byte("bad json{")))
 	s.Require().NoError(err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusBadRequest, resp.StatusCode)
 }
@@ -144,7 +144,7 @@ func (s *SmokeSuite) TestAuth_Authenticate_HappyPath() {
 		"username": "smokeuser",
 		"password": "Password123!",
 	})
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -157,7 +157,7 @@ func (s *SmokeSuite) TestAuth_Authenticate_HappyPath() {
 func (s *SmokeSuite) TestAuth_Authenticate_BadJSON() {
 	resp, err := s.client.Post(s.url("/auth/authenticate"), "application/json", bytes.NewReader([]byte("{oops")))
 	s.Require().NoError(err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusBadRequest, resp.StatusCode)
 }
@@ -177,7 +177,7 @@ func (s *SmokeSuite) TestAnime_GetAll_HappyPath() {
 		Return(animes, int64(2), nil).Once()
 
 	resp := s.getURL("/animes?page=1&limit=10")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -194,7 +194,7 @@ func (s *SmokeSuite) TestAnime_GetAll_DefaultPagination() {
 		Return([]*models.Anime{}, int64(0), nil).Once()
 
 	resp := s.getURL("/animes")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 }
@@ -207,7 +207,7 @@ func (s *SmokeSuite) TestAnime_GetByID_HappyPath() {
 		Return(anime, nil).Once()
 
 	resp := s.getURL("/animes/1")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -229,14 +229,14 @@ func (s *SmokeSuite) TestAnime_GetByID_NotFound() {
 		)).Once()
 
 	resp := s.getURL("/animes/999")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusNotFound, resp.StatusCode)
 }
 
 func (s *SmokeSuite) TestAnime_GetByID_InvalidID() {
 	resp := s.getURL("/animes/notanumber")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusBadRequest, resp.StatusCode)
 }
@@ -257,7 +257,7 @@ func (s *SmokeSuite) TestGenre_GetAll_HappyPath() {
 		Return(genres, int64(2), nil).Once()
 
 	resp := s.getURL("/genres")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 
@@ -282,7 +282,7 @@ func (s *SmokeSuite) TestTag_GetAll_HappyPath() {
 		Return(tags, int64(2), nil).Once()
 
 	resp := s.getURL("/tags")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	s.Equal(http.StatusOK, resp.StatusCode)
 
