@@ -1,743 +1,293 @@
-// tests/smoke/smoke_test.go
-// This package defines the smoke tests for the server.
-// It is used to test the server functionality.
-// It imports the necessary packages to run the tests.
-// It defines the TestMain function to initialize the mock database and handlers before running the tests.
-// It defines the TestRegisterUser function to test the user registration endpoint.
-// It defines the TestAuthenticateUser function to test the user authentication endpoint.
-// It defines the TestGetAnime function to test the endpoint to get an anime by ID.
-// It defines the TestCreateReview function to test the endpoint to create a review.
-// It uses the myanimeapi/internal/mocks package to create a mock database.
-// It uses the myanimeapi/pkg/handlers package to test the handlers.
-// It uses the myanimeapi/pkg/middleware package to simulate the middleware.
-// It uses the myanimeapi/pkg/models package to define the test models.
-// It uses the net/http/httptest package to create a new HTTP request.
-// It uses the os package to exit the tests with the correct status code.
-// It uses the testing package to define the tests.
-// It uses the gomock package to create a new mock controller.
-// It uses the gorm.io/gorm package to create a valid gorm.DB object for the mock to return.
-// It uses the golang/mock/gomock package to create a new mock controller.
-// It uses the encoding/json package to marshal and unmarshal JSON data.
-// It uses the bytes package to create a new buffer for the HTTP request.
-// It uses the context package to create a new context for the HTTP request.
-// It uses the http package to create a new HTTP request.
-// It uses the testing package to define the tests.
-// It uses the fmt package to print messages.
-// It uses the os package to exit the tests with the correct status code.
-// It uses the myanimeapi/pkg/handlers package to create the handlers.
-package main
+// Package smoke contains end-to-end smoke tests that spin up a real HTTP
+// server wired with mocked services and verify the critical happy paths with
+// actual HTTP round-trips — no database required.
+package smoke_test
 
-/*
 import (
 	"bytes"
-	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"myanimeapi/api/handlers"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
+	apperrors "myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
 
-	"myanimeapi/internal/errors" // Import the errors package
-
-	"github.com/golang/mock/gomock"
-	"gorm.io/gorm"
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
-// Define handler variables at the package level
-var (
-	authHandler   *handlers.AuthHandler
-	animeHandler  *handlers.AnimeHandler
-	reviewHandler *handlers.ReviewHandler
-	mockDB        *mocks.MockDBInterface
-	mockCtrl      *gomock.Controller
-)
+// ---------------------------------------------------------------------------
+// Suite
+// ---------------------------------------------------------------------------
 
-// TestMain initializes the mock database and handlers before running the tests
-func TestMain(m *testing.M) {
-	// Initialize the mock controller
-	mockCtrl = gomock.NewController(nil)
-	defer mockCtrl.Finish()
+// SmokeSuite verifies the most critical happy-path and error scenarios via
+// real HTTP round-trips. Each test gets fresh mocks and its own httptest.Server
+// so expectations are always fully isolated.
+type SmokeSuite struct {
+	suite.Suite
 
-	// Create the mock DB
-	mockDB = mocks.NewMockDBInterface(mockCtrl)
-
-	// Initialize handlers with the mock DB
-	authHandler = handlers.NewAuthHandler(mockDB)
-	animeHandler = handlers.NewAnimeHandler(mockDB)
-	reviewHandler = handlers.NewReviewHandler(mockDB)
-
-	// Run the tests
-	os.Exit(m.Run())
+	// rebuilt per test
+	server   *httptest.Server
+	client   *http.Client
+	authSvc  *mocks.MockAuthServiceInterface
+	animeSvc *mocks.MockAnimeServiceInterface
+	genreSvc *mocks.MockGenreServiceInterface
+	tagSvc   *mocks.MockTagServiceInterface
 }
 
-func TestHealthCheck(t *testing.T) {
-	// Initialize the mock controller
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
+func TestSmokeSuite(t *testing.T) {
+	suite.Run(t, new(SmokeSuite))
+}
 
-	// Create the mock DB
-	mockDB := mocks.NewMockDBInterface(mockCtrl)
+// SetupTest spins up a fresh server with fresh mocks before each test.
+func (s *SmokeSuite) SetupTest() {
+	s.authSvc = new(mocks.MockAuthServiceInterface)
+	s.animeSvc = new(mocks.MockAnimeServiceInterface)
+	s.genreSvc = new(mocks.MockGenreServiceInterface)
+	s.tagSvc = new(mocks.MockTagServiceInterface)
 
-	// Set up the expectation for IsHealthy
-	mockDB.EXPECT().IsHealthy().Return(true)
+	log := logger.New()
 
-	// Create a request to the health check endpoint
-	req, err := http.NewRequest("GET", "/v1/health", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	router := mux.NewRouter()
+	v1 := router.PathPrefix("/v1").Subrouter()
 
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
+	handlers.NewAuthHandler(s.authSvc, log).RegisterAuthRoutes(v1)
+	handlers.NewAnimeHandler(s.animeSvc).RegisterAnimeRoutes(v1)
+	handlers.NewGenreHandler(s.genreSvc).RegisterGenreRoutes(v1)
+	handlers.NewTagHandler(s.tagSvc).RegisterTagRoutes(v1)
 
-	// Call the handler with the mock database instance
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if mockDB == nil {
-			errors.WriteErrorResponse(w, http.StatusServiceUnavailable, errors.ErrServiceUnavailable, "Database instance not initialized", "The database instance is not initialized.")
-			return
-		}
+	s.server = httptest.NewServer(router)
+	s.client = s.server.Client()
+}
 
-		if mockDB.IsHealthy() {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("OK")); err != nil {
-				errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to write response", "An internal server error occurred while writing the response.")
-				return
-			}
-		} else {
-			errors.WriteErrorResponse(w, http.StatusServiceUnavailable, errors.ErrServiceUnavailable, "Database connection failed", "The database connection is not healthy.")
-		}
+// TearDownTest asserts all mock expectations and closes the server.
+func (s *SmokeSuite) TearDownTest() {
+	s.server.Close()
+	s.authSvc.AssertExpectations(s.T())
+	s.animeSvc.AssertExpectations(s.T())
+	s.genreSvc.AssertExpectations(s.T())
+	s.tagSvc.AssertExpectations(s.T())
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+func (s *SmokeSuite) url(path string) string {
+	return s.server.URL + "/v1" + path
+}
+
+func (s *SmokeSuite) postJSON(path string, body interface{}) *http.Response {
+	s.T().Helper()
+	b, err := json.Marshal(body)
+	s.Require().NoError(err)
+	resp, err := s.client.Post(s.url(path), "application/json", bytes.NewReader(b))
+	s.Require().NoError(err)
+	return resp
+}
+
+func (s *SmokeSuite) getURL(path string) *http.Response {
+	s.T().Helper()
+	resp, err := s.client.Get(s.url(path))
+	s.Require().NoError(err)
+	return resp
+}
+
+func (s *SmokeSuite) decodeBody(resp *http.Response, dst interface{}) {
+	s.T().Helper()
+	s.Require().NoError(json.NewDecoder(resp.Body).Decode(dst))
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+func (s *SmokeSuite) TestAuth_Register_HappyPath() {
+	s.authSvc.EXPECT().
+		RegisterUser(mock.Anything, mock.MatchedBy(func(u *models.User) bool {
+			return u.Username == "smokeuser" && u.Email == "smoke@example.com"
+		})).
+		Return(nil).Once()
+
+	resp := s.postJSON("/auth/register", map[string]string{
+		"username": "smokeuser",
+		"email":    "smoke@example.com",
+		"password": "Password123!",
 	})
+	defer resp.Body.Close()
 
-	// Serve the HTTP request
-	handler.ServeHTTP(rr, req)
+	s.Equal(http.StatusCreated, resp.StatusCode)
+	s.Contains(resp.Header.Get("Content-Type"), "application/json")
+}
 
-	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+func (s *SmokeSuite) TestAuth_Register_BadJSON() {
+	resp, err := s.client.Post(s.url("/auth/register"), "application/json", bytes.NewReader([]byte("bad json{")))
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+func (s *SmokeSuite) TestAuth_Authenticate_HappyPath() {
+	s.authSvc.EXPECT().
+		AuthenticateUser(mock.Anything, mock.MatchedBy(func(c *models.UserCredentials) bool {
+			return c.Username == "smokeuser" && c.Password == "Password123!"
+		})).
+		Return("jwt-smoke-token", nil).Once()
+
+	resp := s.postJSON("/auth/authenticate", map[string]string{
+		"username": "smokeuser",
+		"password": "Password123!",
+	})
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]interface{}
+	s.decodeBody(resp, &body)
+	data, _ := body["data"].(map[string]interface{})
+	s.Equal("jwt-smoke-token", data["token"])
+}
+
+func (s *SmokeSuite) TestAuth_Authenticate_BadJSON() {
+	resp, err := s.client.Post(s.url("/auth/authenticate"), "application/json", bytes.NewReader([]byte("{oops")))
+	s.Require().NoError(err)
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// Anime
+// ---------------------------------------------------------------------------
+
+func (s *SmokeSuite) TestAnime_GetAll_HappyPath() {
+	animes := []*models.Anime{
+		{ID: 1, Title: "Naruto", Episodes: 220, Status: "Completed", Rating: 9.0},
+		{ID: 2, Title: "One Piece", Episodes: 1000, Status: "Ongoing", Rating: 9.5},
 	}
 
-	// Check the response body
-	expected := "OK"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	s.animeSvc.EXPECT().
+		GetAllAnimes(mock.Anything, 1, 10).
+		Return(animes, int64(2), nil).Once()
+
+	resp := s.getURL("/animes?page=1&limit=10")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]interface{}
+	s.decodeBody(resp, &body)
+	data, _ := body["data"].([]interface{})
+	s.Len(data, 2)
+	s.Equal(float64(2), body["total"])
+}
+
+func (s *SmokeSuite) TestAnime_GetAll_DefaultPagination() {
+	s.animeSvc.EXPECT().
+		GetAllAnimes(mock.Anything, 1, 100).
+		Return([]*models.Anime{}, int64(0), nil).Once()
+
+	resp := s.getURL("/animes")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+}
+
+func (s *SmokeSuite) TestAnime_GetByID_HappyPath() {
+	anime := &models.Anime{ID: 1, Title: "Naruto", Episodes: 220, Status: "Completed", Rating: 9.0}
+
+	s.animeSvc.EXPECT().
+		GetAnimeByID(mock.Anything, uint(1)).
+		Return(anime, nil).Once()
+
+	resp := s.getURL("/animes/1")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusOK, resp.StatusCode)
+
+	var body map[string]interface{}
+	s.decodeBody(resp, &body)
+	s.Equal("Naruto", body["title"])
+	s.Equal(float64(1), body["id"])
+}
+
+func (s *SmokeSuite) TestAnime_GetByID_NotFound() {
+	s.animeSvc.EXPECT().
+		GetAnimeByID(mock.Anything, uint(999)).
+		Return(nil, apperrors.NewError(
+			apperrors.ErrResourceNotFound,
+			"Anime not found",
+			"No anime with that ID",
+			http.StatusNotFound,
+			nil, nil,
+		)).Once()
+
+	resp := s.getURL("/animes/999")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusNotFound, resp.StatusCode)
+}
+
+func (s *SmokeSuite) TestAnime_GetByID_InvalidID() {
+	resp := s.getURL("/animes/notanumber")
+	defer resp.Body.Close()
+
+	s.Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// Genre
+// ---------------------------------------------------------------------------
+
+func (s *SmokeSuite) TestGenre_GetAll_HappyPath() {
+	genres := []models.Genre{
+		{ID: 1, Name: "Action"},
+		{ID: 2, Name: "Adventure"},
 	}
 
-	// Verify that all expectations were met
-	mockCtrl.Finish()
-}*/
+	// The handler always calls GetAllGenres(ctx, 1, 10)
+	s.genreSvc.EXPECT().
+		GetAllGenres(mock.Anything, 1, 10).
+		Return(genres, int64(2), nil).Once()
 
-// TestRegisterUser tests the user registration endpoint
-/*func TestRegisterUser(t *testing.T) {
-	// Reset mock expectations before each test
-	mockCtrl.Finish()
-	mockCtrl = gomock.NewController(t)
+	resp := s.getURL("/genres")
+	defer resp.Body.Close()
 
-	tests := []struct {
-		name           string
-		user           models.User
-		setupMocks     func()
-		expectedStatus int
-		checkResponse  func(*httptest.ResponseRecorder)
-	}{
-		{
-			name: "Successful Registration",
-			user: models.User{
-				Username: "testuser",
-				Email:    "test@example.com",
-				Password: "password123",
-			},
-			setupMocks: func() {
-				// Create a mock DB instance for the chain
-				mockDBInstance := &gorm.DB{}
+	s.Equal(http.StatusOK, resp.StatusCode)
 
-				// Expect username check
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "testuser").
-					Return(mockDBInstance)
+	var list []interface{}
+	s.decodeBody(resp, &list)
+	s.Len(list, 2)
+}
 
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+// ---------------------------------------------------------------------------
+// Tag
+// ---------------------------------------------------------------------------
 
-				// Expect email check
-				mockDB.EXPECT().
-					Where(gomock.Any(), "email = ?", "test@example.com").
-					Return(mockDBInstance)
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-
-				// Expect user creation
-				mockDB.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, user interface{}) *gorm.DB {
-						u := user.(*models.User)
-						u.ID = 1
-						u.CreatedAt = time.Now()
-						u.UpdatedAt = time.Now()
-						return &gorm.DB{}
-					})
-			},
-			expectedStatus: http.StatusCreated,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response models.User
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode response: %v", err)
-				}
-				if response.ID != 1 {
-					t.Errorf("Expected user ID 1, got %d", response.ID)
-				}
-				if response.Username != "testuser" {
-					t.Errorf("Expected username 'testuser', got %s", response.Username)
-				}
-				if response.Email != "test@example.com" {
-					t.Errorf("Expected email 'test@example.com', got %s", response.Email)
-				}
-			},
-		},
-		{
-			name: "Username Already Exists",
-			user: models.User{
-				Username: "existinguser",
-				Email:    "new@example.com",
-				Password: "password123",
-			},
-			setupMocks: func() {
-				// Expect username check to find existing user
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "existinguser").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{})
-			},
-			expectedStatus: http.StatusConflict,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response errors.ErrorResponse
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode error response: %v", err)
-				}
-				if response.Error.Message != "User with this username already exists" {
-					t.Errorf("Expected error message about existing username, got %s", response.Error.Message)
-				}
-			},
-		},
-		{
-			name: "Email Already Exists",
-			user: models.User{
-				Username: "newuser",
-				Email:    "existing@example.com",
-				Password: "password123",
-			},
-			setupMocks: func() {
-				// Expect username check
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "newuser").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-
-				// Expect email check to find existing user
-				mockDB.EXPECT().
-					Where(gomock.Any(), "email = ?", "existing@example.com").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{})
-			},
-			expectedStatus: http.StatusConflict,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response errors.ErrorResponse
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode error response: %v", err)
-				}
-				if response.Error.Message != "User with this email already exists" {
-					t.Errorf("Expected error message about existing email, got %s", response.Error.Message)
-				}
-			},
-		},
+func (s *SmokeSuite) TestTag_GetAll_HappyPath() {
+	tags := []models.Tag{
+		{ID: 1, Name: "Shounen"},
+		{ID: 2, Name: "Isekai"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Setup mocks
-			tt.setupMocks()
+	// The handler calls GetAllTags with default pagination (page=1, limit=100)
+	s.tagSvc.EXPECT().
+		GetAllTags(mock.Anything, 1, 100).
+		Return(tags, int64(2), nil).Once()
 
-			// Create request body
-			userJSON, err := json.Marshal(tt.user)
-			if err != nil {
-				t.Fatalf("Failed to marshal user: %v", err)
-			}
+	resp := s.getURL("/tags")
+	defer resp.Body.Close()
 
-			// Create request
-			req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(userJSON))
-			req.Header.Set("Content-Type", "application/json")
+	s.Equal(http.StatusOK, resp.StatusCode)
 
-			// Add validated payload to context
-			ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &tt.user)
-			req = req.WithContext(ctx)
-
-			// Create response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler := http.HandlerFunc(authHandler.RegisterUserHandler)
-			handler.ServeHTTP(rr, req)
-
-			// Check status code
-			if status := rr.Code; status != tt.expectedStatus {
-				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
-			}
-
-			// Check response
-			tt.checkResponse(rr)
-		})
-	}
-}*/
-
-// TestAuthenticateUser tests the user authentication endpoint
-/*func TestAuthenticateUser(t *testing.T) {
-	// Initialize the mock controller
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	// Create the mock DB
-	mockDB := mocks.NewMockDBInterface(mockCtrl)
-
-	// Create the auth handler with the mock DB
-	authHandler := handlers.NewAuthHandler(mockDB)
-
-	tests := []struct {
-		name           string
-		credentials    models.UserCredentials
-		setupMocks     func()
-		expectedStatus int
-		checkResponse  func(*httptest.ResponseRecorder)
-	}{
-		{
-			name: "Successful Authentication",
-			credentials: models.UserCredentials{
-				Username: "testuser",
-				Password: "password123",
-			},
-			setupMocks: func() {
-				// Mock user lookup
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "testuser").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, _ ...interface{}) *gorm.DB {
-						// Simulate finding the user
-						return &gorm.DB{}
-					})
-
-				// Mock saving the migrated hash (if needed)
-				mockDB.EXPECT().
-					Save(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{}).
-					AnyTimes()
-			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response map[string]string
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode response: %v", err)
-				}
-				if _, exists := response["token"]; !exists {
-					t.Error("Response does not contain a token")
-				}
-			},
-		},
-		{
-			name: "User Not Found",
-			credentials: models.UserCredentials{
-				Username: "nonexistentuser",
-				Password: "password123",
-			},
-			setupMocks: func() {
-				// Mock user lookup failure
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "nonexistentuser").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-			},
-			expectedStatus: http.StatusUnauthorized,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response errors.ErrorResponse
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode error response: %v", err)
-				}
-				if response.Error.Message != "User not found" {
-					t.Errorf("Expected error message 'User not found', got %s", response.Error.Message)
-				}
-			},
-		},
-		{
-			name: "Invalid Password",
-			credentials: models.UserCredentials{
-				Username: "testuser",
-				Password: "wrongpassword",
-			},
-			setupMocks: func() {
-				// Mock user lookup success but password verification failure
-				mockDB.EXPECT().
-					Where(gomock.Any(), "username = ?", "testuser").
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(dest interface{}, _ ...interface{}) *gorm.DB {
-						user := dest.(*models.User)
-						user.Username = "testuser"
-						user.Password = "$2a$10$invalidhashforpassword" // Invalid hash that won't match
-						return &gorm.DB{}
-					})
-			},
-			expectedStatus: http.StatusUnauthorized,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var response errors.ErrorResponse
-				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("Failed to decode error response: %v", err)
-				}
-				if response.Error.Message != "Invalid credentials" {
-					t.Errorf("Expected error message 'Invalid credentials', got %s", response.Error.Message)
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Setup mocks
-			tt.setupMocks()
-
-			// Create request body
-			credentialsJSON, err := json.Marshal(tt.credentials)
-			if err != nil {
-				t.Fatalf("Failed to marshal credentials: %v", err)
-			}
-
-			// Create request
-			req := httptest.NewRequest("POST", "/auth/authenticate", bytes.NewBuffer(credentialsJSON))
-			req.Header.Set("Content-Type", "application/json")
-
-			// Add validated payload to context
-			ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &tt.credentials)
-			req = req.WithContext(ctx)
-
-			// Create response recorder
-			rr := httptest.NewRecorder()
-
-			// Call the handler
-			handler := http.HandlerFunc(authHandler.AuthenticateHandler)
-			handler.ServeHTTP(rr, req)
-
-			// Check status code
-			if status := rr.Code; status != tt.expectedStatus {
-				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
-			}
-
-			// Check response
-			tt.checkResponse(rr)
-		})
-	}
-}*/
-
-// TestGetAnime tests the endpoint to get an anime by ID
-/*func TestGetAnime(t *testing.T) {
-	// Create a new HTTP request
-	req, err := http.NewRequest("GET", "/anime/1", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a valid gorm.DB object for the mock to return
-	mockDBInstance := &gorm.DB{}
-
-	// Set up mock expectations
-	mockDB.EXPECT().
-		First(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
-		Do(func(dest interface{}, conds ...interface{}) {
-			// Simulate a found anime
-			destAnime := dest.(*models.Anime)
-			*destAnime = models.Anime{
-				ID:    1,
-				Title: "Naruto",
-			}
-		})
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(animeHandler.GetAnimeHandler)
-
-	// Serve the HTTP request
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	// Check the response body
-	var anime models.Anime
-	if err := json.NewDecoder(rr.Body).Decode(&anime); err != nil {
-		t.Fatal(err)
-	}
-	if anime.ID != 1 {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			anime.ID, 1)
-	}
-}*/
-
-// TestCreateReview tests the endpoint to create a review
-/*func TestCreateReview(t *testing.T) {
-	// Create a new HTTP request
-	review := models.Review{
-		UserID:  1,
-		AnimeID: 1,
-		Content: "Great anime!",
-		Rating:  9,
-	}
-	reviewJSON, _ := json.Marshal(review)
-	req, err := http.NewRequest("POST", "/reviews", bytes.NewBuffer(reviewJSON))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Simulate the middleware by adding the payload to the request context
-	ctx := context.WithValue(req.Context(), middleware.ValidatedPayloadKey, &review)
-	req = req.WithContext(ctx)
-
-	// Create a valid gorm.DB object for the mock to return
-	mockDBInstance := &gorm.DB{}
-
-	// Set up mock expectations
-	mockDB.EXPECT().
-		Create(gomock.Any(), gomock.Any()).
-		Return(mockDBInstance).
-		Do(func(value interface{}, conds ...interface{}) {
-			// Simulate the created review
-			destReview := value.(*models.Review)
-			*destReview = review
-		})
-
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(reviewHandler.CreateReviewHandler)
-
-	// Serve the HTTP request
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
-
-	// Check the response body
-	var responseReview models.Review
-	if err := json.NewDecoder(rr.Body).Decode(&responseReview); err != nil {
-		t.Fatal(err)
-	}
-	if responseReview.Content != review.Content {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			responseReview.Content, review.Content)
-	}
-}*/
-
-// TestFavorites tests the favorite-related endpoints
-/*func TestFavorites(t *testing.T) {
-	// Reset mock expectations before each test
-	mockCtrl.Finish()
-	mockCtrl = gomock.NewController(t)
-
-	tests := []struct {
-		name           string
-		setupMocks     func()
-		request        func() *http.Request
-		expectedStatus int
-		checkResponse  func(*httptest.ResponseRecorder)
-	}{
-		{
-			name: "Add Favorite Success",
-			setupMocks: func() {
-				// Mock anime existence check
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{}).
-					Do(func(dest interface{}, _ ...interface{}) {
-						anime := dest.(*models.Anime)
-						*anime = models.Anime{ID: 1, Title: "Test Anime"}
-					})
-
-				// Mock favorite existence check
-				mockDB.EXPECT().
-					Where(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{})
-
-				mockDB.EXPECT().
-					First(gomock.Any(), gomock.Any()).
-					Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-
-				// Mock favorite creation
-				mockDB.EXPECT().
-					Create(gomock.Any()).
-					Return(&gorm.DB{}).
-					Do(func(value interface{}, _ ...interface{}) {
-						favorite := value.(*models.Favorite)
-						*favorite = models.Favorite{
-							ID:        1,
-							UserID:    1,
-							AnimeID:   1,
-							CreatedAt: time.Now(),
-							UpdatedAt: time.Now(),
-						}
-					})
-			},
-			request: func() *http.Request {
-				req := httptest.NewRequest("POST", "/favorites", bytes.NewBufferString(`{"anime_id": 1}`))
-				req.Header.Set("Content-Type", "application/json")
-				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
-				return req.WithContext(ctx)
-			},
-			expectedStatus: http.StatusCreated,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var favorite models.Favorite
-				if err := json.NewDecoder(rr.Body).Decode(&favorite); err != nil {
-					t.Errorf("Failed to decode response: %v", err)
-				}
-				if favorite.ID != 1 {
-					t.Errorf("Expected favorite ID 1, got %d", favorite.ID)
-				}
-				if favorite.AnimeID != 1 {
-					t.Errorf("Expected anime ID 1, got %d", favorite.AnimeID)
-				}
-			},
-		},
-		{
-			name: "Get Favorites Success",
-			setupMocks: func() {
-				mockDB.EXPECT().
-					Preload(gomock.Any()).
-					Return(mockDB)
-
-				mockDB.EXPECT().
-					Where(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(mockDB)
-
-				mockDB.EXPECT().
-					Find(gomock.Any()).
-					Return(&gorm.DB{}).
-					Do(func(dest interface{}, _ ...interface{}) {
-						favorites := dest.(*[]models.Favorite)
-						*favorites = []models.Favorite{
-							{
-								ID:        1,
-								UserID:    1,
-								AnimeID:   1,
-								CreatedAt: time.Now(),
-								UpdatedAt: time.Now(),
-								Anime: models.Anime{
-									ID:    1,
-									Title: "Test Anime",
-								},
-							},
-						}
-					})
-			},
-			request: func() *http.Request {
-				req := httptest.NewRequest("GET", "/favorites", nil)
-				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
-				return req.WithContext(ctx)
-			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				var favorites []models.Favorite
-				if err := json.NewDecoder(rr.Body).Decode(&favorites); err != nil {
-					t.Errorf("Failed to decode response: %v", err)
-				}
-				if len(favorites) != 1 {
-					t.Errorf("Expected 1 favorite, got %d", len(favorites))
-				}
-				if favorites[0].Anime.Title != "Test Anime" {
-					t.Errorf("Expected anime title 'Test Anime', got %s", favorites[0].Anime.Title)
-				}
-			},
-		},
-		{
-			name: "Remove Favorite Success",
-			setupMocks: func() {
-				mockDB.EXPECT().
-					Where(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(mockDB)
-
-				mockDB.EXPECT().
-					Delete(gomock.Any()).
-					Return(&gorm.DB{})
-			},
-			request: func() *http.Request {
-				req := httptest.NewRequest("DELETE", "/favorites/1", nil)
-				ctx := context.WithValue(req.Context(), "user", &models.User{ID: 1})
-				return req.WithContext(ctx)
-			},
-			expectedStatus: http.StatusNoContent,
-			checkResponse: func(rr *httptest.ResponseRecorder) {
-				if rr.Body.Len() != 0 {
-					t.Error("Expected empty response body")
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMocks()
-
-			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/favorites":
-					if r.Method == "POST" {
-						favoriteHandler.AddFavoriteHandler(w, r)
-					} else if r.Method == "GET" {
-						favoriteHandler.GetFavoritesHandler(w, r)
-					}
-				case "/favorites/1":
-					if r.Method == "DELETE" {
-						favoriteHandler.RemoveFavoriteHandler(w, r)
-					}
-				}
-			})
-
-			handler.ServeHTTP(rr, tt.request())
-
-			if status := rr.Code; status != tt.expectedStatus {
-				t.Errorf("Handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
-			}
-
-			tt.checkResponse(rr)
-		})
-	}
-}*/
+	var body map[string]interface{}
+	s.decodeBody(resp, &body)
+	data, _ := body["data"].([]interface{})
+	s.Len(data, 2)
+}
