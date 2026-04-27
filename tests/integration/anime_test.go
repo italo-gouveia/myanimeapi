@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"myanimeapi/api/handlers"
+	httphandler "myanimeapi/api/adapters/http"
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/internal/errors"
@@ -87,7 +87,7 @@ func (m *MockAnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint
 	return args.Error(0)
 }
 
-func setupAnimeTestRouter(handler *handlers.AnimeHandler) *mux.Router {
+func setupAnimeTestRouter(handler *httphandler.AnimeHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Public routes (no authentication required) - Order matters!
@@ -119,7 +119,7 @@ func generateAnimeTestToken() string {
 
 func TestGetAnimeByID(t *testing.T) {
 	mockService := &MockAnimeService{}
-	handler := handlers.NewAnimeHandler(mockService)
+	handler := httphandler.NewAnimeHandler(mockService)
 	router := setupAnimeTestRouter(handler)
 	token := generateAnimeTestToken()
 
@@ -222,7 +222,7 @@ func TestGetAnimeByID(t *testing.T) {
 
 func TestGetAnimesByTitle(t *testing.T) {
 	mockService := &MockAnimeService{}
-	handler := handlers.NewAnimeHandler(mockService)
+	handler := httphandler.NewAnimeHandler(mockService)
 	router := setupAnimeTestRouter(handler)
 
 	tests := []struct {
@@ -333,7 +333,7 @@ func TestGetAnimesByTitle(t *testing.T) {
 
 func TestGetAnimesByGenre(t *testing.T) {
 	mockService := &MockAnimeService{}
-	handler := handlers.NewAnimeHandler(mockService)
+	handler := httphandler.NewAnimeHandler(mockService)
 	router := setupAnimeTestRouter(handler)
 
 	tests := []struct {

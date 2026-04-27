@@ -1,4 +1,4 @@
-package handlers
+package httphandler
 
 import (
 	"encoding/json"
@@ -17,29 +17,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// api/handlers/user_handler.go
-// Package handlers provides HTTP handlers for user-related routes in the MyAnimeAPI application.
-// It defines methods to handle user registration, authentication, profile management, and account operations.
-// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
-//
-// Example usage:
-//
-//	userService := services.NewUserService(userRepo)
-//	genreService := services.NewGenreService(genreRepo)
-//	userHandler := handlers.NewUserHandler(userService, genreService)
-//	router := mux.NewRouter()
-//	userHandler.RegisterUserRoutes(router)
-//
-//	http.ListenAndServe(":8080", router)
-
 // UserLoginRequest represents the request payload for user login
 type UserLoginRequest struct {
-	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`     // Username for authentication
-	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"` // Password for authentication
+	Username string `json:"username" validate:"required,min=3,max=50" example:"john_doe"`
+	Password string `json:"password" validate:"required,min=5,max=100" example:"password123"`
 }
 
 // UserHandler defines the handlers for user-related routes.
-// It contains a user service for handling user-related business logic and a genre service for managing user genre preferences.
 type UserHandler struct {
 	userService      services.UserServiceInterface
 	genreService     services.GenreServiceInterface
@@ -47,13 +31,6 @@ type UserHandler struct {
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-// It accepts a user service and genre service and returns a pointer to a UserHandler.
-//
-// Example:
-//
-//	userService := services.NewUserService(userRepo)
-//	genreService := services.NewGenreService(genreRepo)
-//	userHandler := NewUserHandler(userService, genreService)
 func NewUserHandler(userService services.UserServiceInterface, genreService services.GenreServiceInterface, passwordResetSvc services.PasswordResetServiceInterface) *UserHandler {
 	return &UserHandler{
 		userService:      userService,
@@ -74,40 +51,6 @@ func (h *UserHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, d
 }
 
 // Register handles user registration requests.
-// It validates the input payload and uses the service to create the user.
-// If successful, it returns the created user as a JSON response.
-//
-// @Summary Register a new user
-// @Description Register a new user with the provided credentials
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param request body models.UserCreateRequest true "User registration data"
-// @Success 201 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 409 {object} errors.ErrorResponse "Username or email already exists"
-// @Failure 500 {object} errors.ErrorResponse "Failed to create user"
-// @Router /users/register [post]
-// @Example
-//
-//	{
-//	  "username": "johndoe",
-//	  "email": "john@example.com",
-//	  "password": "securepassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "User registered successfully",
-//	  "data": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "email": "john@example.com",
-//	    "created_at": "2024-02-20T19:27:00Z"
-//	  }
-//	}
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -151,41 +94,6 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login handles user authentication requests.
-// It validates the credentials and generates a JWT token upon successful authentication.
-// If successful, it returns the token and user information as a JSON response.
-//
-// @Summary Login user
-// @Description Authenticate a user with username and password
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param request body models.UserCredentials true "User credentials"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 401 {object} errors.ErrorResponse "Invalid credentials"
-// @Failure 500 {object} errors.ErrorResponse "Failed to authenticate user"
-// @Router /users/login [post]
-// @Example
-//
-//	{
-//	  "username": "johndoe",
-//	  "password": "securepassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Login successful",
-//	  "data": {
-//	    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-//	    "user": {
-//	      "id": 1,
-//	      "username": "johndoe",
-//	      "email": "john@example.com"
-//	    }
-//	  }
-//	}
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -232,41 +140,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProfile retrieves the authenticated user's profile information.
-// It uses the user ID from the request context to fetch the user's details.
-// If successful, it returns the user's profile as a JSON response.
-//
-// @Summary Get user profile
-// @Description Get the authenticated user's profile information
-// @Tags users
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} models.Response
-// @Failure 401 {object} errors.ErrorResponse "User not authenticated"
-// @Failure 500 {object} errors.ErrorResponse "Failed to get user profile"
-// @Router /users/profile [get]
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Profile retrieved successfully",
-//	  "data": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "email": "john@example.com",
-//	    "profile_pic": "https://example.com/profile.jpg",
-//	    "bio": "Anime enthusiast",
-//	    "social_links": {
-//	      "twitter": "https://twitter.com/johndoe",
-//	      "instagram": "https://instagram.com/johndoe"
-//	    },
-//	    "genres": [
-//	      {
-//	        "id": 1,
-//	        "name": "Action"
-//	      }
-//	    ]
-//	  }
-//	}
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -304,56 +177,6 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateProfile updates the authenticated user's profile information.
-// It validates the input payload and uses the service to update the user's details.
-// If successful, it returns the updated user profile as a JSON response.
-//
-// @Summary Update user profile
-// @Description Update the authenticated user's profile information
-// @Tags users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body models.UserUpdateRequest true "Profile update request"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 401 {object} errors.ErrorResponse "User not authenticated"
-// @Failure 500 {object} errors.ErrorResponse "Failed to update profile"
-// @Router /users/profile [put]
-// @Example
-//
-//	{
-//	  "username": "newusername",
-//	  "email": "newemail@example.com",
-//	  "profile_pic": "https://example.com/new-profile.jpg",
-//	  "bio": "Updated bio",
-//	  "social_links": {
-//	    "twitter": "https://twitter.com/newusername"
-//	  },
-//	  "genre_ids": [1, 2, 3]
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Profile updated successfully",
-//	  "data": {
-//	    "id": 1,
-//	    "username": "newusername",
-//	    "email": "newemail@example.com",
-//	    "profile_pic": "https://example.com/new-profile.jpg",
-//	    "bio": "Updated bio",
-//	    "social_links": {
-//	      "twitter": "https://twitter.com/newusername"
-//	    },
-//	    "genres": [
-//	      {
-//	        "id": 1,
-//	        "name": "Action"
-//	      }
-//	    ]
-//	  }
-//	}
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -440,34 +263,6 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangePassword handles password change requests for authenticated users.
-// It validates the current password and updates to the new password if valid.
-// If successful, it returns a success message as a JSON response.
-//
-// @Summary Change user password
-// @Description Change the authenticated user's password
-// @Tags users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body models.ChangePasswordRequest true "Password change request"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 401 {object} errors.ErrorResponse "Invalid current password"
-// @Failure 500 {object} errors.ErrorResponse "Failed to change password"
-// @Router /users/change-password [post]
-// @Example
-//
-//	{
-//	  "current_password": "oldpassword123",
-//	  "new_password": "newpassword456"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Password changed successfully"
-//	}
 func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -521,33 +316,6 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeactivateAccount handles account deactivation requests for authenticated users.
-// It validates the user's password and deactivates the account if valid.
-// If successful, it returns a success message as a JSON response.
-//
-// @Summary Deactivate user account
-// @Description Deactivate the authenticated user's account
-// @Tags users
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body models.DeactivateAccountRequest true "Account deactivation request"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 401 {object} errors.ErrorResponse "Invalid password"
-// @Failure 500 {object} errors.ErrorResponse "Failed to deactivate account"
-// @Router /users/deactivate [post]
-// @Example
-//
-//	{
-//	  "password": "currentpassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Account deactivated successfully"
-//	}
 func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -601,28 +369,6 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 // RequestPasswordReset handles requests to reset a password
-// @Summary Request password reset
-// @Description Send a password reset email to the user's email address
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param request body models.PasswordResetRequest true "Password reset request"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 500 {object} errors.ErrorResponse "Failed to process password reset request"
-// @Router /users/forgot-password [post]
-// @Example
-//
-//	{
-//	  "email": "user@example.com"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "If an account exists with this email, you will receive password reset instructions."
-//	}
 func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -658,29 +404,6 @@ func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Reques
 }
 
 // ResetPassword handles requests to set a new password
-// @Summary Reset password
-// @Description Reset user's password using a valid reset token
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param request body models.ResetPasswordRequest true "Password reset request"
-// @Success 200 {object} models.Response
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body or token"
-// @Failure 500 {object} errors.ErrorResponse "Failed to reset password"
-// @Router /users/reset-password [post]
-// @Example
-//
-//	{
-//	  "token": "valid-reset-token",
-//	  "new_password": "newSecurePassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Password has been reset successfully."
-//	}
 func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{
@@ -739,8 +462,6 @@ func passwordResetRateLimit() (int, time.Duration) {
 }
 
 // RegisterUserRoutes registers the user-related routes with the router.
-// rateLimiter is applied with a configurable strict limit on the password-reset endpoint.
-// Env vars: FORGOT_PASSWORD_RATE_LIMIT (default 5), FORGOT_PASSWORD_RATE_WINDOW_HOURS (default 1).
 func (h *UserHandler) RegisterUserRoutes(router *mux.Router, rateLimiter PasswordResetRateLimiter) {
 	maxReqs, window := passwordResetRateLimit()
 	resetLimiter := rateLimiter.StrictRateLimitMiddleware(maxReqs, window)
@@ -761,6 +482,7 @@ func (h *UserHandler) RegisterUserRoutes(router *mux.Router, rateLimiter Passwor
 	protected.HandleFunc("/delete", h.DeleteAccount).Methods(http.MethodDelete)
 }
 
+// DeleteAccount handles account deletion for authenticated users.
 func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
 	logFields := map[string]interface{}{

@@ -1,17 +1,6 @@
-// api/handlers/auth_handler.go
-// Package handlers provides HTTP handlers for authentication-related routes in the MyAnimeAPI application.
-// It defines methods to handle user registration and authentication, including password hashing and JWT token generation.
-// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and token generation.
-//
-// Example usage:
-//
-//	db := // initialize your database connection
-//	authHandler := handlers.NewAuthHandler(db)
-//	router := mux.NewRouter()
-//	authHandler.RegisterAuthRoutes(router)
-//
-//	http.ListenAndServe(":8080", router)
-package handlers
+// api/adapters/http/auth_handler.go
+// Package httphandler provides HTTP handlers for authentication-related routes in the MyAnimeAPI application.
+package httphandler
 
 import (
 	"encoding/json"
@@ -24,23 +13,15 @@ import (
 	"myanimeapi/internal/logger"
 
 	"github.com/gorilla/mux"
-	// for writeJSONResponse
 )
 
 // AuthHandler handles authentication-related HTTP requests.
-// It contains an auth service for handling authentication business logic.
 type AuthHandler struct {
 	authService services.AuthServiceInterface
 	logger      *logger.Logger
 }
 
 // NewAuthHandler creates a new instance of AuthHandler.
-// It accepts an auth service and returns a pointer to an AuthHandler.
-//
-// Example:
-//
-//	authService := services.NewAuthService(userRepo)
-//	authHandler := NewAuthHandler(authService)
 func NewAuthHandler(authService services.AuthServiceInterface, logger *logger.Logger) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
@@ -61,8 +42,6 @@ func (h *AuthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, d
 }
 
 // RegisterUserHandler handles user registration requests.
-// It validates the input payload and uses the service to register the user.
-// If successful, it returns the created user as a JSON response.
 //
 // @Summary Register a new user
 // @Description Register a new user with the provided credentials
@@ -74,27 +53,6 @@ func (h *AuthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, d
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/register [post]
-// @Example
-//
-//	{
-//	  "username": "johndoe",
-//	  "email": "john@example.com",
-//	  "password": "securepassword123"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "User registered successfully",
-//	  "data": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "is_admin": false,
-//	    "created_at": "2024-02-20T19:27:00Z",
-//	    "updated_at": "2024-02-20T19:27:00Z"
-//	  }
-//	}
 func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	log := h.logger
 	logFields := map[string]interface{}{
@@ -143,7 +101,6 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 // AuthenticateUserHandler handles user authentication requests.
-// It validates the credentials and returns a JWT token if successful.
 //
 // @Summary Authenticate a user
 // @Description Authenticate a user and return a JWT token

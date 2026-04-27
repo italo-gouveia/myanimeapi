@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"myanimeapi/api/handlers"
+	httphandler "myanimeapi/api/adapters/http"
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/internal/errors"
@@ -44,7 +44,7 @@ func (m *MockFavoriteService) GetFavorites(ctx context.Context, userID uint) ([]
 	return args.Get(0).([]models.Favorite), args.Error(1)
 }
 
-func setupFavoriteTestRouter(handler *handlers.FavoriteHandler) *mux.Router {
+func setupFavoriteTestRouter(handler *httphandler.FavoriteHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Create a subrouter for protected routes
@@ -70,7 +70,7 @@ func generateFavoriteTestToken() string {
 
 func TestAddFavorite(t *testing.T) {
 	mockService := &MockFavoriteService{}
-	handler := handlers.NewFavoriteHandler(mockService)
+	handler := httphandler.NewFavoriteHandler(mockService)
 	router := setupFavoriteTestRouter(handler)
 
 	// Generate test token
@@ -186,7 +186,7 @@ func TestAddFavorite(t *testing.T) {
 
 func TestRemoveFavorite(t *testing.T) {
 	mockService := &MockFavoriteService{}
-	handler := handlers.NewFavoriteHandler(mockService)
+	handler := httphandler.NewFavoriteHandler(mockService)
 	router := setupFavoriteTestRouter(handler)
 
 	// Generate test token
@@ -274,7 +274,7 @@ func TestRemoveFavorite(t *testing.T) {
 
 func TestGetFavorites(t *testing.T) {
 	mockService := &MockFavoriteService{}
-	handler := handlers.NewFavoriteHandler(mockService)
+	handler := httphandler.NewFavoriteHandler(mockService)
 	router := setupFavoriteTestRouter(handler)
 	token := generateFavoriteTestToken()
 

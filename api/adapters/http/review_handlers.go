@@ -1,17 +1,6 @@
-// api/handlers/review_handlers.go
-// Package handlers provides HTTP handlers for review-related routes in the MyAnimeAPI application.
-// It defines methods to handle requests for retrieving, creating, updating, and deleting reviews.
-// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
-//
-// Example usage:
-//
-//	reviewService := services.NewReviewService(repository)
-//	reviewHandler := handlers.NewReviewHandler(reviewService)
-//	router := mux.NewRouter()
-//	reviewHandler.RegisterReviewRoutes(router)
-//
-//	http.ListenAndServe(":8080", router)
-package handlers
+// api/adapters/http/review_handlers.go
+// Package httphandler provides HTTP handlers for review-related routes in the MyAnimeAPI application.
+package httphandler
 
 import (
 	"encoding/json"
@@ -31,7 +20,6 @@ import (
 )
 
 // ReviewHandler defines the handlers for review-related routes.
-// It contains a review service for handling business logic.
 type ReviewHandler struct {
 	reviewService services.ReviewServiceInterface
 	storageSvc    services.StorageServiceInterface
@@ -39,12 +27,6 @@ type ReviewHandler struct {
 }
 
 // NewReviewHandler creates a new instance of ReviewHandler.
-// It accepts a review service and returns a pointer to a ReviewHandler.
-//
-// Example:
-//
-//	reviewService := services.NewReviewService(repository)
-//	reviewHandler := NewReviewHandler(reviewService)
 func NewReviewHandler(reviewService services.ReviewServiceInterface, storageSvc services.StorageServiceInterface) *ReviewHandler {
 	return &ReviewHandler{
 		reviewService: reviewService,
@@ -54,13 +36,6 @@ func NewReviewHandler(reviewService services.ReviewServiceInterface, storageSvc 
 }
 
 // RegisterReviewRoutes registers all review-related routes with a *mux.Router.
-// It sets up the routes for review management, including public and protected endpoints.
-//
-// Routes registered:
-// - GET /reviews/{id} - Get a specific review (public)
-// - POST /reviews - Create a new review (protected)
-// - PUT /reviews/{id} - Update a review (protected)
-// - DELETE /reviews/{id} - Delete a review (protected)
 func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/reviews/{id}", h.GetReviewHandler).Methods("GET")
@@ -76,49 +51,12 @@ func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 }
 
 // GetReviewHandler retrieves a review by its ID.
-// It validates the ID, queries the service, and returns the review as a JSON response.
-// If the ID is invalid or the review is not found, it returns an appropriate error response.
-//
-// @Summary Get a review by ID
-// @Description Retrieve a review by its ID
-// @Tags reviews
-// @Produce json
-// @Param id path int true "Review ID"
-// @Success 200 {object} models.ReviewResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
-// @Failure 404 {object} errors.ErrorResponse "Review not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve review"
-// @Router /reviews/{id} [get]
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "user_id": 1,
-//	  "anime_id": 1,
-//	  "content": "Great anime!",
-//	  "rating": 9,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z",
-//	  "user": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "is_admin": false
-//	  },
-//	  "anime": {
-//	    "id": 1,
-//	    "title": "Naruto",
-//	    "description": "A story about ninjas.",
-//	    "rating": 8.5
-//	  }
-//	}
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Debug: Log the raw ID string
 	h.logger.WithField("raw_id", idStr).Debug("Raw ID string")
 
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		h.logger.WithField("err", err).Warning("Invalid ID format")
@@ -128,10 +66,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Debug: Log the parsed ID
 	h.logger.WithField("parsed_id", id).Debug("Parsed ID")
 
-	// Get review from service
 	review, err := h.reviewService.GetReviewByID(r.Context(), id)
 	if err != nil {
 		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
@@ -141,7 +77,6 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Create a custom response to exclude sensitive data
 	response := models.ReviewResponse{
 		ID:        review.ID,
 		CreatedAt: review.CreatedAt,
@@ -174,52 +109,6 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 }
 
 // CreateReviewHandler creates a new review in the database.
-// It validates the input payload and uses the service to create the review.
-// If successful, it returns the created review as a JSON response.
-//
-// @Summary Create a new review
-// @Description Create a new review for an anime
-// @Tags reviews
-// @Accept multipart/form-data
-// @Produce json
-// @Param review body models.ReviewCreateRequest true "Review data"
-// @Param media formData file false "Media files (images or videos)"
-// @Success 201 {object} models.ReviewResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
-// @Failure 404 {object} errors.ErrorResponse "User or anime not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to create review"
-// @Router /reviews [post]
-// @Security BearerAuth
-// @Example
-//
-//	{
-//	  "anime_id": 1,
-//	  "content": "Great anime!",
-//	  "rating": 9
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "user_id": 1,
-//	  "anime_id": 1,
-//	  "content": "Great anime!",
-//	  "rating": 9,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T12:00:00Z",
-//	  "user": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "is_admin": false
-//	  },
-//	  "anime": {
-//	    "id": 1,
-//	    "title": "Naruto",
-//	    "description": "A story about ninjas.",
-//	    "rating": 8.5
-//	  }
-//	}
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form
 	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
@@ -259,14 +148,12 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	if form != nil && form.File != nil {
 		for _, files := range form.File {
 			for _, file := range files {
-				// Determine media type from file extension
 				ext := strings.ToLower(filepath.Ext(file.Filename))
 				mediaType := "image"
 				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
 					mediaType = "video"
 				}
 
-				// Upload file
 				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
 				if err != nil {
 					h.logger.WithField("err", err).Warning("Failed to upload file")
@@ -276,7 +163,6 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 					return
 				}
 
-				// Add media attachment to review
 				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
 					Type: mediaType,
 					URL:  fileURL,
@@ -304,7 +190,6 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Create response
 	response := models.ReviewResponse{
 		ID:        createdReview.ID,
 		CreatedAt: createdReview.CreatedAt,
@@ -327,7 +212,6 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		MediaAttachments: createdReview.MediaAttachments,
 	}
 
-	// Set response headers and encode response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -340,58 +224,10 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 }
 
 // UpdateReviewHandler updates an existing review in the database.
-// It validates the ID and input payload, uses the service to update the review,
-// and returns the updated review as a JSON response.
-//
-// @Summary Update a review
-// @Description Update an existing review's details
-// @Tags reviews
-// @Accept multipart/form-data
-// @Produce json
-// @Param id path int true "Review ID"
-// @Param review body models.ReviewUpdateRequest true "Updated review data"
-// @Param media formData file false "Media files (images or videos)"
-// @Success 200 {object} models.ReviewResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid input or missing required fields"
-// @Failure 401 {object} errors.ErrorResponse "Unauthorized to update this review"
-// @Failure 404 {object} errors.ErrorResponse "Review not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to update review"
-// @Router /reviews/{id} [put]
-// @Security BearerAuth
-// @Example
-//
-//	{
-//	  "content": "Updated review content",
-//	  "rating": 8
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "user_id": 1,
-//	  "anime_id": 1,
-//	  "content": "Updated review content",
-//	  "rating": 8,
-//	  "created_at": "2023-10-01T12:00:00Z",
-//	  "updated_at": "2023-10-01T13:00:00Z",
-//	  "user": {
-//	    "id": 1,
-//	    "username": "johndoe",
-//	    "is_admin": false
-//	  },
-//	  "anime": {
-//	    "id": 1,
-//	    "title": "Naruto",
-//	    "description": "A story about ninjas.",
-//	    "rating": 8.5
-//	  }
-//	}
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		h.logger.WithField("err", err).Warning("Invalid ID format")
@@ -446,7 +282,6 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Update only the fields that were provided in the request
 	if payload.Content != "" {
 		review.Content = payload.Content
 	}
@@ -459,14 +294,12 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	if form != nil && form.File != nil {
 		for _, files := range form.File {
 			for _, file := range files {
-				// Determine media type from file extension
 				ext := strings.ToLower(filepath.Ext(file.Filename))
 				mediaType := "image"
 				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
 					mediaType = "video"
 				}
 
-				// Upload file
 				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
 				if err != nil {
 					h.logger.WithField("err", err).Warning("Failed to upload file")
@@ -476,7 +309,6 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 					return
 				}
 
-				// Add media attachment to review
 				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
 					Type: mediaType,
 					URL:  fileURL,
@@ -485,7 +317,6 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	// Update review using service
 	if err := h.reviewService.UpdateReview(r.Context(), review); err != nil {
 		h.logger.WithField("err", err).Warning("Failed to update review")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update review", "An internal server error occurred while updating the review.", map[string]interface{}{
@@ -494,7 +325,6 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get the updated review with user and anime details
 	updatedReview, err := h.reviewService.GetReviewByID(r.Context(), review.ID)
 	if err != nil {
 		h.logger.WithField("err", err).Warning("Failed to get updated review")
@@ -504,7 +334,6 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Create a custom response to exclude sensitive data
 	response := models.ReviewResponse{
 		ID:        updatedReview.ID,
 		CreatedAt: updatedReview.CreatedAt,
@@ -538,32 +367,10 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 }
 
 // DeleteReviewHandler handles the deletion of a review.
-// It validates the ID and uses the service to delete the review.
-// If successful, it returns a success message as a JSON response.
-//
-// @Summary Delete a review
-// @Description Delete an existing review by its ID
-// @Tags reviews
-// @Produce json
-// @Param id path int true "Review ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse "Invalid ID format"
-// @Failure 401 {object} errors.ErrorResponse "Unauthorized to delete this review"
-// @Failure 404 {object} errors.ErrorResponse "Review not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to delete review"
-// @Router /reviews/{id} [delete]
-// @Security BearerAuth
-// @ExampleResponse
-//
-//	{
-//	  "status": "success",
-//	  "message": "Review deleted successfully"
-//	}
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	// Validate ID
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
 		h.logger.WithField("err", err).Warning("Invalid ID format")
@@ -573,7 +380,6 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get user ID from context
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
@@ -581,7 +387,6 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get the existing review
 	review, err := h.reviewService.GetReviewByID(r.Context(), id)
 	if err != nil {
 		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
@@ -591,7 +396,6 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Check if user is authorized to delete the review
 	if review.UserID != userID {
 		h.logger.WithFields(map[string]interface{}{
 			"review_user_id":  review.UserID,
@@ -601,7 +405,6 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Delete review using service
 	if err := h.reviewService.DeleteReview(r.Context(), id); err != nil {
 		h.logger.WithField("err", err).Warning("Failed to delete review")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete review", "An internal server error occurred while deleting the review.", map[string]interface{}{

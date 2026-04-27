@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"myanimeapi/api/handlers"
+	httphandler "myanimeapi/api/adapters/http"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
@@ -30,7 +30,7 @@ import (
 func newAuthRouter(svc *mocks.MockAuthServiceInterface) *mux.Router {
 	log := logger.New()
 	router := mux.NewRouter()
-	handlers.NewAuthHandler(svc, log).RegisterAuthRoutes(router)
+	httphandler.NewAuthHandler(svc, log).RegisterAuthRoutes(router)
 	return router
 }
 

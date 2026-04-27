@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"myanimeapi/api/handlers"
+	httphandler "myanimeapi/api/adapters/http"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
@@ -56,10 +56,10 @@ func (s *SmokeSuite) SetupTest() {
 	router := mux.NewRouter()
 	v1 := router.PathPrefix("/v1").Subrouter()
 
-	handlers.NewAuthHandler(s.authSvc, log).RegisterAuthRoutes(v1)
-	handlers.NewAnimeHandler(s.animeSvc).RegisterAnimeRoutes(v1)
-	handlers.NewGenreHandler(s.genreSvc).RegisterGenreRoutes(v1)
-	handlers.NewTagHandler(s.tagSvc).RegisterTagRoutes(v1)
+	httphandler.NewAuthHandler(s.authSvc, log).RegisterAuthRoutes(v1)
+	httphandler.NewAnimeHandler(s.animeSvc).RegisterAnimeRoutes(v1)
+	httphandler.NewGenreHandler(s.genreSvc).RegisterGenreRoutes(v1)
+	httphandler.NewTagHandler(s.tagSvc).RegisterTagRoutes(v1)
 
 	s.server = httptest.NewServer(router)
 	s.client = s.server.Client()

@@ -1,4 +1,4 @@
-package handlers
+package httphandler
 
 import (
 	"encoding/json"
@@ -13,33 +13,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// api/handlers/tag_handler.go
-// Package handlers provides HTTP handlers for tag-related routes in the MyAnimeAPI application.
-// It defines methods to handle tag creation, retrieval, updating, and deletion.
-// The package uses the Gorilla Mux router for routing, GORM for database interactions, and middleware for request validation and authentication.
-//
-// Example usage:
-//
-//	tagService := services.NewTagService(repository)
-//	tagHandler := handlers.NewTagHandler(tagService)
-//	router := mux.NewRouter()
-//	tagHandler.RegisterTagRoutes(router)
-//
-//	http.ListenAndServe(":8080", router)
-
 // TagHandler handles HTTP requests for tag operations.
-// It contains a tag service for handling business logic.
 type TagHandler struct {
 	tagService services.TagServiceInterface
 }
 
 // NewTagHandler creates a new TagHandler instance.
-// It accepts a tag service interface and returns a pointer to a TagHandler.
-//
-// Example:
-//
-//	tagService := services.NewTagService(repository)
-//	tagHandler := NewTagHandler(tagService)
 func NewTagHandler(tagService services.TagServiceInterface) *TagHandler {
 	return &TagHandler{
 		tagService: tagService,
@@ -47,14 +26,6 @@ func NewTagHandler(tagService services.TagServiceInterface) *TagHandler {
 }
 
 // RegisterTagRoutes registers all tag-related routes with a *mux.Router.
-// It sets up the routes for tag management, including public and protected endpoints.
-//
-// Routes registered:
-// - GET /tags - Get all tags (public)
-// - GET /tags/{id} - Get a specific tag (public)
-// - POST /tags - Create a new tag (protected)
-// - PUT /tags/{id} - Update a tag (protected)
-// - DELETE /tags/{id} - Delete a tag (protected)
 func (h *TagHandler) RegisterTagRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/tags", h.GetAllTagsHandler).Methods("GET")
@@ -71,8 +42,6 @@ func (h *TagHandler) RegisterTagRoutes(router *mux.Router) {
 }
 
 // CreateTagHandler handles the creation of a new tag.
-// It validates the input payload and uses the service to create the tag.
-// If successful, it returns the created tag as a JSON response.
 //
 // @Summary Create a new tag
 // @Description Create a new tag with the provided details
@@ -117,19 +86,6 @@ func (h *TagHandler) CreateTagHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetTagHandler handles retrieving a tag by ID.
-// It validates the ID, queries the service, and returns the tag as a JSON response.
-// If the ID is invalid or the tag is not found, it returns an appropriate error response.
-//
-// @Summary Get a tag by ID
-// @Description Get a tag's details by its ID
-// @Tags tags
-// @Produce json
-// @Param id path int true "Tag ID"
-// @Success 200 {object} models.TagResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid tag ID"
-// @Failure 404 {object} errors.ErrorResponse "Tag not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve tag"
-// @Router /tags/{id} [get]
 func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
@@ -158,19 +114,6 @@ func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllTagsHandler handles retrieving all tags.
-// It queries the service and returns the tags as a JSON response.
-// If an error occurs, it returns an appropriate error response.
-//
-// @Summary Get all tags
-// @Description Get a list of all tags
-// @Tags tags
-// @Produce json
-// @Param page query int false "Page number (default: 1)"
-// @Param limit query int false "Items per page (default: 10)"
-// @Success 200 {array} models.TagResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid pagination parameters"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve tags"
-// @Router /tags [get]
 func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get pagination parameters from query
 	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
@@ -215,23 +158,6 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateTagHandler handles updating an existing tag.
-// It validates the ID and input payload, uses the service to update the tag,
-// and returns the updated tag as a JSON response.
-//
-// @Summary Update a tag
-// @Description Update an existing tag's details
-// @Tags tags
-// @Accept json
-// @Produce json
-// @Param id path int true "Tag ID"
-// @Param tag body models.TagUpdateRequest true "Updated tag details"
-// @Success 200 {object} models.TagResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 404 {object} errors.ErrorResponse "Tag not found"
-// @Failure 409 {object} errors.ErrorResponse "Tag name already exists"
-// @Failure 500 {object} errors.ErrorResponse "Failed to update tag"
-// @Router /tags/{id} [put]
-// @Security BearerAuth
 func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
@@ -272,20 +198,6 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteTagHandler handles the deletion of a tag.
-// It validates the ID and uses the service to delete the tag.
-// If successful, it returns a success message as a JSON response.
-//
-// @Summary Delete a tag
-// @Description Delete an existing tag by its ID
-// @Tags tags
-// @Produce json
-// @Param id path int true "Tag ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse "Invalid tag ID"
-// @Failure 404 {object} errors.ErrorResponse "Tag not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to delete tag"
-// @Router /tags/{id} [delete]
-// @Security BearerAuth
 func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])

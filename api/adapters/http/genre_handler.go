@@ -1,4 +1,4 @@
-package handlers
+package httphandler
 
 import (
 	"encoding/json"
@@ -15,19 +15,12 @@ import (
 )
 
 // GenreHandler handles HTTP requests for genre operations.
-// It contains a genre service for handling business logic.
 type GenreHandler struct {
 	genreService services.GenreServiceInterface
 	logger       *logger.Logger
 }
 
 // NewGenreHandler creates a new GenreHandler instance.
-// It accepts a genre service interface and returns a pointer to a GenreHandler.
-//
-// Example:
-//
-//	genreService := services.NewGenreService(repository)
-//	genreHandler := NewGenreHandler(genreService)
 func NewGenreHandler(genreService services.GenreServiceInterface) *GenreHandler {
 	return &GenreHandler{
 		genreService: genreService,
@@ -36,17 +29,6 @@ func NewGenreHandler(genreService services.GenreServiceInterface) *GenreHandler 
 }
 
 // RegisterGenreRoutes registers all genre-related routes with a *mux.Router.
-// It sets up the routes for genre management, including public and protected endpoints.
-//
-// Routes registered:
-// - GET /genres - Get all genres (public)
-// - GET /genres/{id} - Get a specific genre (public)
-// - GET /genres/search - Search genres by name (public)
-// - POST /genres - Create a new genre (protected)
-// - PUT /genres/{id} - Update a genre (protected)
-// - DELETE /genres/{id} - Delete a genre (protected)
-// - POST /genres/bulk - Create multiple genres (protected)
-// - DELETE /genres/bulk - Delete multiple genres (protected)
 func (h *GenreHandler) RegisterGenreRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
 	router.HandleFunc("/genres", h.GetAllGenresHandler).Methods("GET")
@@ -66,8 +48,6 @@ func (h *GenreHandler) RegisterGenreRoutes(router *mux.Router) {
 }
 
 // CreateGenreHandler handles the creation of a new genre.
-// It retrieves the validated and sanitized payload from the context,
-// uses the service to create the genre, and returns the created genre as a JSON response.
 //
 // @Summary Create a new genre
 // @Description Create a new genre with the provided details
@@ -81,20 +61,6 @@ func (h *GenreHandler) RegisterGenreRoutes(router *mux.Router) {
 // @Failure 500 {object} errors.ErrorResponse "Failed to create genre"
 // @Router /genres [post]
 // @Security BearerAuth
-// @Example
-//
-//	{
-//	  "name": "Action"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "name": "Action",
-//	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:27:00Z"
-//	}
 func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Genre)
@@ -128,27 +94,6 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 }
 
 // GetGenreHandler handles retrieving a genre by ID.
-// It validates the ID, queries the service, and returns the genre as a JSON response.
-// If the ID is invalid or the genre is not found, it returns an appropriate error response.
-//
-// @Summary Get a genre by ID
-// @Description Get a genre's details by its ID
-// @Tags genres
-// @Produce json
-// @Param id path int true "Genre ID"
-// @Success 200 {object} models.GenreResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid genre ID"
-// @Failure 404 {object} errors.ErrorResponse "Genre not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve genre"
-// @Router /genres/{id} [get]
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "name": "Action",
-//	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:27:00Z"
-//	}
 func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
@@ -191,32 +136,6 @@ func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllGenresHandler handles retrieving all genres.
-// It queries the service and returns the genres as a JSON response.
-// If an error occurs, it returns an appropriate error response.
-//
-// @Summary Get all genres
-// @Description Get a list of all genres
-// @Tags genres
-// @Produce json
-// @Success 200 {array} models.GenreResponse
-// @Failure 500 {object} errors.ErrorResponse "Failed to retrieve genres"
-// @Router /genres [get]
-// @ExampleResponse
-//
-//	[
-//	  {
-//	    "id": 1,
-//	    "name": "Action",
-//	    "created_at": "2025-02-20T19:27:00Z",
-//	    "updated_at": "2025-02-20T19:27:00Z"
-//	  },
-//	  {
-//	    "id": 2,
-//	    "name": "Comedy",
-//	    "created_at": "2025-02-20T19:27:00Z",
-//	    "updated_at": "2025-02-20T19:27:00Z"
-//	  }
-//	]
 func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Request) {
 	genres, _, err := h.genreService.GetAllGenres(r.Context(), 1, 10)
 	if err != nil {
@@ -248,37 +167,6 @@ func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // UpdateGenreHandler handles updating an existing genre.
-// It retrieves the validated and sanitized payload from the context,
-// uses the service to update the genre, and returns the updated genre as a JSON response.
-//
-// @Summary Update a genre
-// @Description Update an existing genre's details
-// @Tags genres
-// @Accept json
-// @Produce json
-// @Param id path int true "Genre ID"
-// @Param genre body models.Genre true "Updated genre details"
-// @Success 200 {object} models.GenreResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 404 {object} errors.ErrorResponse "Genre not found"
-// @Failure 409 {object} errors.ErrorResponse "Genre name already exists"
-// @Failure 500 {object} errors.ErrorResponse "Failed to update genre"
-// @Router /genres/{id} [put]
-// @Security BearerAuth
-// @Example
-//
-//	{
-//	  "name": "Updated Action"
-//	}
-//
-// @ExampleResponse
-//
-//	{
-//	  "id": 1,
-//	  "name": "Updated Action",
-//	  "created_at": "2025-02-20T19:27:00Z",
-//	  "updated_at": "2025-02-20T19:28:00Z"
-//	}
 func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
@@ -327,20 +215,6 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 }
 
 // DeleteGenreHandler handles deleting a genre by ID.
-// It validates the ID, uses the service to delete the genre,
-// and returns a success response if the deletion is successful.
-//
-// @Summary Delete a genre
-// @Description Delete a genre by its ID
-// @Tags genres
-// @Produce json
-// @Param id path int true "Genre ID"
-// @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse "Invalid genre ID"
-// @Failure 404 {object} errors.ErrorResponse "Genre not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to delete genre"
-// @Router /genres/{id} [delete]
-// @Security BearerAuth
 func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
@@ -374,20 +248,6 @@ func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request
 }
 
 // SearchGenresHandler handles searching genres by name.
-// It validates the query parameter, uses the service to search for genres,
-// and returns the matching genres as a JSON response.
-//
-// @Summary Search genres
-// @Description Search genres by name
-// @Tags genres
-// @Produce json
-// @Param query query string true "Search query"
-// @Param page query int false "Page number (default: 1)"
-// @Param limit query int false "Items per page (default: 10)"
-// @Success 200 {array} models.GenreResponse
-// @Failure 400 {object} errors.ErrorResponse "Missing search query"
-// @Failure 500 {object} errors.ErrorResponse "Failed to search genres"
-// @Router /genres/search [get]
 func (h *GenreHandler) SearchGenresHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	if query == "" {
@@ -444,21 +304,6 @@ type BulkCreateGenresRequest struct {
 }
 
 // BulkCreateGenresHandler handles creating multiple genres in bulk.
-// It validates the input payload, uses the service to create the genres,
-// and returns the created genres as a JSON response.
-//
-// @Summary Create multiple genres
-// @Description Create multiple genres in bulk
-// @Tags genres
-// @Accept json
-// @Produce json
-// @Param request body BulkCreateGenresRequest true "List of genres to create"
-// @Success 201 {array} models.GenreResponse
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 409 {object} errors.ErrorResponse "Genre name already exists"
-// @Failure 500 {object} errors.ErrorResponse "Failed to create genres"
-// @Router /genres/bulk [post]
-// @Security BearerAuth
 func (h *GenreHandler) BulkCreateGenresHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkCreateGenresRequest)
@@ -490,21 +335,6 @@ type BulkDeleteGenresRequest struct {
 }
 
 // BulkDeleteGenresHandler handles deleting multiple genres in bulk.
-// It validates the input payload, uses the service to delete the genres,
-// and returns a success response if the deletion is successful.
-//
-// @Summary Delete multiple genres
-// @Description Delete multiple genres in bulk
-// @Tags genres
-// @Accept json
-// @Produce json
-// @Param request body BulkDeleteGenresRequest true "List of genre IDs to delete"
-// @Success 204 "No Content"
-// @Failure 400 {object} errors.ErrorResponse "Invalid request body"
-// @Failure 404 {object} errors.ErrorResponse "Genre not found"
-// @Failure 500 {object} errors.ErrorResponse "Failed to delete genres"
-// @Router /genres/bulk [delete]
-// @Security BearerAuth
 func (h *GenreHandler) BulkDeleteGenresHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkDeleteGenresRequest)

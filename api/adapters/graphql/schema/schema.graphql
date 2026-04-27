@@ -1,0 +1,56 @@
+scalar Time
+
+type Anime {
+  id: ID!
+  title: String!
+  description: String
+  rating: Float
+  episodes: Int
+  status: String
+  startDate: Time
+  endDate: Time
+  genres: [Genre!]
+  tags: [Tag!]
+}
+
+type Genre {
+  id: ID!
+  name: String!
+}
+
+type Tag {
+  id: ID!
+  name: String!
+}
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  isAdmin: Boolean!
+  isActive: Boolean!
+}
+
+type AuthPayload {
+  token: String!
+}
+
+type AnimeList {
+  data: [Anime!]!
+  total: Int!
+}
+
+type Query {
+  anime(id: ID!): Anime
+  animes(page: Int, limit: Int): AnimeList!
+  animesByTitle(title: String!, page: Int, limit: Int): AnimeList!
+  genre(id: ID!): Genre
+  genres(page: Int, limit: Int): [Genre!]!
+}
+
+type Mutation {
+  register(username: String!, email: String!, password: String!): User!
+  login(username: String!, password: String!): AuthPayload!
+  createAnime(title: String!, description: String, episodes: Int, status: String): Anime!
+  deleteAnime(id: ID!): Boolean!
+}

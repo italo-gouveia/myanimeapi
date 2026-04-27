@@ -13,7 +13,7 @@ import (
 	"os"
 	"testing"
 
-	"myanimeapi/api/handlers"
+	httphandler "myanimeapi/api/adapters/http"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	"myanimeapi/api/middleware"
@@ -31,13 +31,13 @@ import (
 
 func newGenreRouter(svc *mocks.MockGenreServiceInterface) *mux.Router {
 	router := mux.NewRouter()
-	handlers.NewGenreHandler(svc).RegisterGenreRoutes(router)
+	httphandler.NewGenreHandler(svc).RegisterGenreRoutes(router)
 	return router
 }
 
 func newTagRouter(svc *mocks.MockTagServiceInterface) *mux.Router {
 	router := mux.NewRouter()
-	handlers.NewTagHandler(svc).RegisterTagRoutes(router)
+	httphandler.NewTagHandler(svc).RegisterTagRoutes(router)
 	return router
 }
 
