@@ -11,7 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"myanimeapi/api/models"
+	internaldb "myanimeapi/internal/database"
 	"myanimeapi/internal/config"
 	testconfig "myanimeapi/tests/config"
 )
@@ -81,16 +81,9 @@ func getEnv(key, defaultValue string) string {
 }
 
 func runMigrations(t *testing.T, db *gorm.DB) {
-	// Run your migrations here
-	err := db.AutoMigrate(
-		&models.User{},
-		&models.Anime{},
-		&models.Review{},
-		&models.Genre{},
-		&models.Tag{},
-		&models.Favorite{},
-	)
-	require.NoError(t, err)
+	t.Helper()
+	err := internaldb.RunMigrations(db)
+	require.NoError(t, err, "database migrations should apply cleanly")
 }
 
 // CleanupTestDatabase removes all test data

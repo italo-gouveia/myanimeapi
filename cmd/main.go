@@ -33,6 +33,7 @@ import (
 	"myanimeapi/api/services"
 	"myanimeapi/internal/config"
 	"myanimeapi/internal/db"
+	internaldb "myanimeapi/internal/database"
 	"myanimeapi/internal/logger"
 
 	gorillahandlers "github.com/gorilla/handlers"
@@ -109,9 +110,15 @@ func main() {
 	// Wrap the *gorm.DB instance in the GormDB struct
 	dbWrapper := db.NewGormDB(gormDB)
 
-	// AutoMigrate the database schema
-	err = database.SetupDatabase(gormDB)
-	if err != nil {
+	// Run SQL migrations (schema management)
+	if err = internaldb.RunMigrations(gormDB); err != nil {
+		log.WithField("error", err.Error()).Error("Error running database migrations")
+		os.Exit(1)
+	}
+	log.Info("Database migrations applied successfully")
+
+	// Seed admin user (if env vars are set)
+	if err = database.SetupDatabase(gormDB); err != nil {
 		log.WithField("error", err.Error()).Error("Error setting up database")
 		os.Exit(1)
 	}

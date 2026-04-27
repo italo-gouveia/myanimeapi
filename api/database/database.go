@@ -1,18 +1,17 @@
 // api/database/database.go
-// Package database provides functionality to initialize and manage the database schema for the MyAnimeAPI application.
-// It uses GORM (Go Object-Relational Mapping) to automatically create or update the database schema based on the defined models.
-// The package is responsible for ensuring the database is properly set up when the application starts.
+// Package database provides post-migration database initialisation for the
+// MyAnimeAPI application.  Schema management is handled separately by
+// internal/database.RunMigrations, which must be called before SetupDatabase.
 //
 // Example usage:
 //
-//	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
-//	if err != nil {
-//	    log.Fatalf("Error opening database connection: %v", err)
+//	// 1. Run SQL migrations first
+//	if err := internaldb.RunMigrations(gormDB); err != nil {
+//	    log.Fatalf("migrations: %v", err)
 //	}
-//
-//	err = database.SetupDatabase(db)
-//	if err != nil {
-//	    log.Fatalf("Error setting up database schema: %v", err)
+//	// 2. Seed the admin user (if env vars are set)
+//	if err := database.SetupDatabase(gormDB); err != nil {
+//	    log.Fatalf("setup: %v", err)
 //	}
 package database
 
@@ -27,36 +26,11 @@ import (
 	gormErrors "gorm.io/gorm/logger"
 )
 
-// SetupDatabase initializes the database schema by automatically migrating the defined models
-// and creates an admin user if specified by environment variables and not already present.
-// It uses GORM's AutoMigrate function to create or update the database tables.
-// If the migration or admin creation fails, an error is returned.
-//
-// Example:
-//
-//	err := database.SetupDatabase(db)
-//	if err != nil {
-//	    log.Fatalf("Error setting up database schema: %v", err)
-//	}
+// SetupDatabase creates the admin user when the ADMIN_USERNAME, ADMIN_EMAIL,
+// and ADMIN_PASSWORD environment variables are all set and the user does not
+// already exist.  It is idempotent — running it multiple times is safe.
 func SetupDatabase(db *gorm.DB) error {
 	log := logger.New()
-
-	// AutoMigrate to create/update schema
-	err := db.AutoMigrate(
-		&models.User{},
-		&models.Anime{},
-		&models.Review{},
-		&models.Favorite{},
-		&models.Genre{},
-		&models.Tag{},
-		&models.PasswordResetToken{},
-		&models.MediaAttachment{},
-	)
-	if err != nil {
-		log.WithField("error", err.Error()).Error("Error setting up database schema during AutoMigrate")
-		return err
-	}
-	log.Info("Database schema auto-migration completed successfully")
 
 	// Create admin user if needed
 	adminUsername := os.Getenv("ADMIN_USERNAME")
@@ -65,12 +39,12 @@ func SetupDatabase(db *gorm.DB) error {
 
 	if adminUsername == "" || adminEmail == "" || adminPassword == "" {
 		log.Info("ADMIN_USERNAME, ADMIN_EMAIL, or ADMIN_PASSWORD not set. Skipping admin user creation.")
-		return nil // Not an error, just skipping
+		return nil
 	}
 
 	// Check if admin user with email already exists
 	var existingUserByEmail models.User
-	err = db.Where("email = ?", adminEmail).First(&existingUserByEmail).Error
+	err := db.Where("email = ?", adminEmail).First(&existingUserByEmail).Error
 	if err == nil {
 		log.WithFields(map[string]interface{}{
 			"email":  adminEmail,
@@ -83,7 +57,7 @@ func SetupDatabase(db *gorm.DB) error {
 			"email": adminEmail,
 			"error": err.Error(),
 		}).Error("Error checking for admin user by email. Skipping admin creation.")
-		return err // Return actual DB error
+		return err
 	}
 
 	// Check if admin user with username already exists
@@ -101,7 +75,7 @@ func SetupDatabase(db *gorm.DB) error {
 			"username": adminUsername,
 			"error":    err.Error(),
 		}).Error("Error checking for admin user by username. Skipping admin creation.")
-		return err // Return actual DB error
+		return err
 	}
 
 	log.WithFields(map[string]interface{}{

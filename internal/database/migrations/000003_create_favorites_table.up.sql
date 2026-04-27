@@ -1,10 +1,14 @@
+-- ============================================================
+-- 000003 — favorites table (Favorite model, table = "favorites")
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS favorites (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    user_id BIGINT NOT NULL,
-    anime_id BIGINT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (anime_id) REFERENCES anime(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_anime (user_id, anime_id)
-); 
+    id         BIGSERIAL    PRIMARY KEY,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    user_id    BIGINT        NOT NULL REFERENCES users  (id) ON DELETE CASCADE,
+    anime_id   BIGINT        NOT NULL REFERENCES animes (id) ON DELETE CASCADE,
+    CONSTRAINT uq_favorites_user_anime UNIQUE (user_id, anime_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorites_anime ON favorites (anime_id);
