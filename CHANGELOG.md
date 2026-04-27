@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.1...v1.13.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* **smoke:** suppress errcheck lint on resp.Body.Close defers ([a5f2a9f](https://github.com/italo-gouveia/myanimeapi/commit/a5f2a9f3cdef17e0e4b62e4f7d47abbf7535a85d))
+
 ## [1.13.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.0...v1.13.1) (2026-04-26)
 
 
