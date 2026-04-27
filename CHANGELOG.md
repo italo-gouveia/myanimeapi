@@ -1,3 +1,15 @@
+# [1.14.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.2...v1.14.0) (2026-04-27)
+
+
+### Bug Fixes
+
+* **test-env:** remove initdb.d mount and add test-db make target ([c21c210](https://github.com/italo-gouveia/myanimeapi/commit/c21c2105a0bc4b8b8b158a7d26fa52b2b62f63be))
+
+
+### Features
+
+* **migrations:** replace AutoMigrate with golang-migrate SQL migrations ([#45](https://github.com/italo-gouveia/myanimeapi/issues/45)) ([10eb1d2](https://github.com/italo-gouveia/myanimeapi/commit/10eb1d2d23108743da95ee9487682d3eb380e9f6))
+
 ## [1.13.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.1...v1.13.2) (2026-04-27)
 
 
