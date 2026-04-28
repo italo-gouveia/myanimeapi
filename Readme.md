@@ -1,6 +1,6 @@
 # MyAnimeAPI
 
-MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authentication. It is built using Go, Gorilla Mux for routing, GORM for database interactions, and supports PostgreSQL as the database backend.
+MyAnimeAPI is a multi-protocol API for managing anime, users, reviews, and authentication. It exposes both a **REST** interface and a **GraphQL** interface, built on a hexagonal architecture so new adapters (gRPC, WebSocket, etc.) can be added without touching business logic. The backend is written in Go, uses Gorilla Mux for REST routing, gqlgen for GraphQL, GORM for database interactions, and PostgreSQL as the database.
 
 ---
 
@@ -80,17 +80,18 @@ MyAnimeAPI is a RESTful API for managing anime, users, reviews, and authenticati
 
 ## Technologies Used
 
-- **Go**: Backend programming language (v1.22)
-- **Gorilla Mux**: HTTP router and dispatcher (v1.8.1)
-- **GORM**: ORM for database interactions (v1.25.12)
-- **PostgreSQL**: Relational database
-- **JWT**: JSON Web Tokens for authentication (v5.2.2)
-- **Swagger**: API documentation (v1.16.4)
+- **Go**: Backend programming language (v1.23+)
+- **Gorilla Mux**: HTTP router and dispatcher
+- **gqlgen**: Code-first GraphQL server (`github.com/99designs/gqlgen`)
+- **GORM**: ORM for database interactions
+- **PostgreSQL**: Relational database (v15)
+- **golang-migrate**: SQL-based schema migrations (embedded in binary)
+- **JWT**: JSON Web Tokens for authentication
+- **Swagger**: REST API documentation (swaggo)
 - **Docker**: Containerization for easy deployment and development
-- **Validator**: Input validation (v10.25.0)
-- **AWS SDK**: For S3 storage integration (v1.50.35)
-- **Bluemonday**: HTML sanitization (v1.0.27)
-- **Prometheus**: Metrics collection and monitoring
+- **Validator**: Input validation
+- **AWS SDK**: For S3 storage integration (optional)
+- **Bluemonday**: HTML sanitization
 - **GolangCI-Lint**: Code quality and style checking
 - **SonarCloud**: Code quality and security analysis
 - **Semantic Release**: Automated version management
@@ -144,33 +145,61 @@ The Swagger documentation will be available at `http://localhost:8080/swagger/in
 
 ## Project Structure
 
+The project follows a **hexagonal architecture** (Ports & Adapters), where business logic in `api/services/` and `api/repositories/` is completely decoupled from the protocol adapters (`http`, `graphql`). Adding a new adapter (gRPC, WebSocket, etc.) only requires creating a new directory under `api/adapters/`.
+
 ```
 myanimeapi/
 ├── api/
-│   ├── handlers/     # HTTP request handlers
-│   ├── models/       # Data models and DTOs
-│   ├── services/     # Business logic layer
-│   ├── repositories/ # Data access layer
-│   ├── middleware/   # HTTP middleware
-│   ├── auth/         # Authentication related code
-│   ├── utils/        # Utility functions
-│   └── mocks/        # Mock implementations for testing
+│   ├── adapters/
+│   │   ├── http/         # REST input adapter (package httphandler)
+│   │   │   ├── anime_handlers.go
+│   │   │   ├── auth_handler.go
+│   │   │   ├── favorite_handler.go
+│   │   │   ├── genre_handler.go
+│   │   │   ├── review_handlers.go
+│   │   │   ├── tag_handler.go
+│   │   │   └── user_handler.go
+│   │   └── graphql/      # GraphQL input adapter (package graphql)
+│   │       ├── schema/schema.graphql
+│   │       ├── generated/generated.go
+│   │       ├── model/models_gen.go
+│   │       ├── resolver.go
+│   │       └── schema.resolvers.go
+│   ├── models/           # Shared domain models and DTOs
+│   ├── services/         # Application layer / use cases (input ports)
+│   ├── repositories/     # Data access interfaces + implementations (output ports)
+│   ├── middleware/       # HTTP middleware (auth, logging, rate limiting)
+│   ├── auth/             # JWT helpers and password hashing
+│   ├── utils/            # Shared utilities
+│   ├── database/         # Admin user seeding
+│   ├── mocks/            # Generated mocks for testing
+│   └── routes/           # Composition root — wires all adapters + services
 ├── cmd/
-│   ├── main.go       # Application entry point
-│   └── docs/         # Swagger documentation
+│   ├── main.go           # Application entry point
+│   └── docs/             # Generated Swagger documentation
 ├── internal/
-│   ├── config/       # Configuration management
-│   ├── database/     # Database connection and setup
-│   ├── errors/       # Custom error types
-│   ├── logger/       # Logging configuration
-│   ├── services/     # Internal services
-│   └── utils/        # Internal utilities
+│   ├── config/           # Configuration loading
+│   ├── database/         # golang-migrate runner (embedded SQL migrations)
+│   │   └── migrations/   # SQL migration files (*.up.sql / *.down.sql)
+│   ├── db/               # GORM abstraction interface
+│   ├── errors/           # Custom application error types
+│   ├── logger/           # Structured logging (logrus)
+│   └── utils/            # Internal utilities
 ├── tests/
-│   ├── e2e/         # End-to-end tests
-│   ├── integration/ # Integration tests
-│   └── smoke/       # Smoke tests
-├── frontend/        # Next.js frontend application
-└── assets/         # Project diagrams and documentation
+│   ├── e2e/              # End-to-end tests (real DB required)
+│   ├── integration/      # Integration tests (mock services or real DB)
+│   ├── smoke/            # Smoke tests against running server
+│   ├── fixtures/         # Shared test data factories
+│   ├── suites/           # Reusable test suite base types
+│   └── config/           # Test-specific configuration
+│   (unit tests live co-located with source: api/adapters/http/*_test.go etc.)
+├── scripts/
+│   └── hooks/pre-push    # Git pre-push validation (lint + tests)
+├── frontend/             # Next.js frontend (developed separately)
+├── docker-compose.yml    # Production stack (PostgreSQL 15 + API)
+├── docker-compose.test.yml # Test stack (PostgreSQL 15 on :5433 + Redis + MinIO)
+├── gqlgen.yml            # gqlgen code generation config
+└── assets/               # Architecture diagrams
 ```
 
 ## API Endpoints
@@ -282,6 +311,41 @@ myanimeapi/
 | GET | `/v1/reviews/user/{id}` | Get user's reviews | No |
 | GET | `/v1/reviews/anime/{id}` | Get anime's reviews | No |
 
+### GraphQL
+
+The GraphQL endpoint runs alongside REST and exposes the same business logic through a typed schema.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/graphql` | POST | GraphQL query / mutation endpoint |
+| `/v1/graphql/playground` | GET | Interactive GraphQL Playground (dev) |
+
+**Available Queries:**
+
+```graphql
+query {
+  anime(id: "1") { id title rating genres { name } }
+  animes(page: 1, limit: 20) { total data { id title } }
+  animesByTitle(title: "Naruto", page: 1, limit: 10) { total data { id title } }
+  genre(id: "1") { id name }
+  genres(page: 1, limit: 50) { id name }
+}
+```
+
+**Available Mutations:**
+
+```graphql
+mutation {
+  login(username: "user", password: "pass") { token }
+  register(username: "new", email: "new@example.com", password: "pass") { id username }
+  createAnime(title: "Attack on Titan", episodes: 75, status: "Completed") { id title }
+  deleteAnime(id: "1")
+}
+```
+
+Schema source: [`api/adapters/graphql/schema/schema.graphql`](api/adapters/graphql/schema/schema.graphql)  
+Code generation config: [`gqlgen.yml`](gqlgen.yml)
+
 ## Documentation
 
 ### Swagger Documentation
@@ -289,11 +353,16 @@ myanimeapi/
 Generate Swagger documentation:
 
 ```bash
-swag init --dir ./cmd,./api/handlers,./api/models,./internal/errors --output ./cmd/docs
+swag init -g cmd/main.go --dir ./cmd,./api/adapters/http,./api/models,./internal/errors -o ./cmd/docs
 ```
 
+Or simply:
 
-The API documentation is available at `/swagger/index.html` when running the server. It provides detailed information about:
+```bash
+make swagger
+```
+
+The REST documentation is available at `/swagger/index.html` when running the server. It provides detailed information about:
 
 - Available endpoints
 - Request/response schemas
@@ -314,51 +383,54 @@ The GoDoc documentation is available at [pkg.go.dev](https://pkg.go.dev/github.c
 
 ## Testing
 
-### Unit Tests
+Unit tests live **co-located** with the source they test (`api/adapters/http/*_test.go`, etc.) following Go convention. Integration, E2E, and smoke tests live under `tests/`.
 
-Run unit tests:
+### Unit Tests (co-located)
 
 ```bash
-go test ./... -v
+# All packages (includes co-located unit tests)
+go test ./api/... -v
+
+# Specific adapter
+go test ./api/adapters/http/... -v
 ```
 
 ### Integration Tests
-
-Run integration tests:
 
 ```bash
 go test ./tests/integration/... -v
 ```
 
-### End-to-End Tests
-
-Run end-to-end tests:
+### End-to-End Tests (requires PostgreSQL)
 
 ```bash
-go test ./tests/e2e/... -v
+# Start test DB first, then run
+make test-db
 ```
 
-### Smoke Tests
-
-Run smoke tests:
+### Smoke Tests (requires running server)
 
 ```bash
 go test ./tests/smoke/... -v
 ```
 
-### Test Coverage
+### All Tests with DB
 
-Generate test coverage report:
+```bash
+# Starts postgres:5433 via Docker, runs all tests, stops container
+make test-db
+```
+
+### Test Coverage
 
 ```bash
 go test ./... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 ```
 
-# TODO: Need to be updated the images/diagrams
 ## Diagrams
 
-This section provides visual representations of the application's architecture, database schema, component interactions, deployment flow, and key workflows.
+Visual representations of the architecture, database schema, and key workflows. Images are stored in `./assets/`. Diagrams reflect the **pre-hexagonal** state and will be updated in a future iteration.
 
 ---
 

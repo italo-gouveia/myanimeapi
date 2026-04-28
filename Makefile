@@ -125,7 +125,7 @@ migrate-up: ## Runs database migrations (via the application itself at startup)
 swagger: ## Generates Swagger documentation
 	@echo "Generating Swagger documentation..."
 	@if command -v swag > /dev/null; then \
-		swag init -g cmd/main.go -o cmd/docs; \
+		swag init -g cmd/main.go --dir ./cmd,./api/adapters/http,./api/models,./internal/errors -o cmd/docs; \
 		echo "Swagger documentation generated!"; \
 	else \
 		echo "swag not found. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \

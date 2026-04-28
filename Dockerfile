@@ -16,8 +16,8 @@ COPY . .
 # Install swag CLI for generating Swagger documentation
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
-# Generate Swagger documentation
-RUN swag init --dir ./cmd,./api/handlers,./api/models,./internal/errors --output ./cmd/docs
+# Generate Swagger documentation (source dir updated after hexagonal refactor)
+RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./internal/errors --output ./cmd/docs
 
 # Build the Go binary (statically linked)
 RUN CGO_ENABLED=0 go build -o main ./cmd
@@ -33,9 +33,6 @@ WORKDIR /app
 
 # Copy the pre-built binary from the builder stage
 COPY --from=builder /app/main .
-
-# Debug: List files in the /app directory
-RUN ls -l /app
 
 # Ensure the binary is executable
 RUN chmod +x /app/main

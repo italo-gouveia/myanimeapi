@@ -1,16 +1,25 @@
-version: '3'
+version: '3.8'
+
 services:
   db:
-    image: postgres:14
+    image: postgres:15-alpine
     container_name: myanimeapi-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: myanimeapi
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-myanimeapi}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user} -d ${DB_NAME:-myanimeapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   api:
     build:
       context: .
@@ -18,14 +27,15 @@ services:
     container_name: myanimeapi-api
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=myanimeapi
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
 volumes:
   db_data:
+    driver: local
