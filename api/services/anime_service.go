@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"myanimeapi/api/adapters/cache"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
@@ -10,6 +12,12 @@ import (
 	"net/http"
 	"time"
 )
+
+// animeListCache is used to serialise paginated anime lists into/out of cache.
+type animeListCache struct {
+	Items []*models.Anime `json:"items"`
+	Total int64           `json:"total"`
+}
 
 // AnimeServiceInterface defines the interface for anime service operations
 type AnimeServiceInterface interface {
@@ -34,6 +42,7 @@ type AnimeService struct {
 	tagRepo    repositories.TagRepository
 	reviewRepo repositories.ReviewRepository
 	logger     *logger.Logger
+	cache      cache.CacheInterface
 }
 
 // NewAnimeService creates a new AnimeService instance
@@ -42,6 +51,7 @@ func NewAnimeService(
 	genreRepo repositories.GenreRepository,
 	tagRepo repositories.TagRepository,
 	reviewRepo repositories.ReviewRepository,
+	cacheImpl cache.CacheInterface,
 ) *AnimeService {
 	return &AnimeService{
 		animeRepo:  animeRepo,
@@ -49,12 +59,23 @@ func NewAnimeService(
 		tagRepo:    tagRepo,
 		reviewRepo: reviewRepo,
 		logger:     logger.New(),
+		cache:      cacheImpl,
 	}
 }
 
 // GetAnimeByID retrieves an anime by ID
 func (s *AnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.Anime, error) {
 	s.logger.WithField("anime_id", id).Info("Retrieving anime")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyAnime(id)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var anime models.Anime
+		if jsonErr := json.Unmarshal(data, &anime); jsonErr == nil {
+			s.logger.WithField("anime_id", id).Info("Anime cache hit")
+			return &anime, nil
+		}
+	}
 
 	animeInterface, err := s.animeRepo.GetByID(ctx, id)
 	if err != nil {
@@ -80,6 +101,11 @@ func (s *AnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.Anime
 			nil)
 	}
 
+	// Populate cache
+	if data, jsonErr := json.Marshal(anime); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLAnime)
+	}
+
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":   id,
 		"anime_name": anime.Title,
@@ -93,6 +119,16 @@ func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int) ([]*mo
 		"page":  page,
 		"limit": limit,
 	}).Info("Retrieving all animes")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyAnimeList(page, limit)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var cached animeListCache
+		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+			s.logger.WithFields(map[string]interface{}{"page": page, "limit": limit}).Info("Anime list cache hit")
+			return cached.Items, cached.Total, nil
+		}
+	}
 
 	animesInterface, total, err := s.animeRepo.GetAll(ctx, page, limit)
 	if err != nil {
@@ -124,6 +160,11 @@ func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int) ([]*mo
 				nil)
 		}
 		animes[i] = anime
+	}
+
+	// Populate cache
+	if data, jsonErr := json.Marshal(animeListCache{Items: animes, Total: total}); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLList)
 	}
 
 	s.logger.WithFields(map[string]interface{}{
@@ -165,6 +206,9 @@ func (s *AnimeService) CreateAnime(ctx context.Context, anime *models.Anime) err
 			},
 			err)
 	}
+
+	// Invalidate list caches — new item may appear in any page
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
 
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":   anime.ID,
@@ -227,6 +271,10 @@ func (s *AnimeService) UpdateAnime(ctx context.Context, anime *models.Anime) err
 			err)
 	}
 
+	// Invalidate the single-item entry and all list pages
+	_ = s.cache.Delete(ctx, cache.KeyAnime(anime.ID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
+
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":   anime.ID,
 		"anime_name": anime.Title,
@@ -277,6 +325,10 @@ func (s *AnimeService) DeleteAnime(ctx context.Context, id uint) error {
 			err)
 	}
 
+	// Invalidate the single-item entry and all list pages
+	_ = s.cache.Delete(ctx, cache.KeyAnime(id))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
+
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":   id,
 		"anime_name": animeModel.Title,
@@ -291,6 +343,16 @@ func (s *AnimeService) GetAnimesByTitle(ctx context.Context, title string, page,
 		"page":  page,
 		"limit": limit,
 	}).Info("Retrieving animes by title")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyAnimeSearch(title, page, limit)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var cached animeListCache
+		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+			s.logger.WithField("title", title).Info("Anime search cache hit")
+			return cached.Items, cached.Total, nil
+		}
+	}
 
 	animes, total, err := s.animeRepo.GetByTitle(ctx, title, page, limit)
 	if err != nil {
@@ -312,6 +374,11 @@ func (s *AnimeService) GetAnimesByTitle(ctx context.Context, title string, page,
 	result := make([]*models.Anime, len(animes))
 	for i := range animes {
 		result[i] = &animes[i]
+	}
+
+	// Populate cache
+	if data, jsonErr := json.Marshal(animeListCache{Items: result, Total: total}); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLList)
 	}
 
 	s.logger.WithFields(map[string]interface{}{
@@ -477,6 +544,10 @@ func (s *AnimeService) AddGenresToAnime(ctx context.Context, animeID uint, genre
 			err)
 	}
 
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyAnime(animeID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
+
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":  animeID,
 		"genre_ids": genreIDs,
@@ -548,6 +619,10 @@ func (s *AnimeService) RemoveGenresFromAnime(ctx context.Context, animeID uint, 
 			},
 			err)
 	}
+
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyAnime(animeID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
 
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id":  animeID,
@@ -622,6 +697,10 @@ func (s *AnimeService) AddTagsToAnime(ctx context.Context, animeID uint, tagIDs 
 			err)
 	}
 
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyAnime(animeID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
+
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id": animeID,
 		"tag_ids":  tagIDs,
@@ -693,6 +772,10 @@ func (s *AnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint, ta
 			},
 			err)
 	}
+
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyAnime(animeID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllAnimes)
 
 	s.logger.WithFields(map[string]interface{}{
 		"anime_id": animeID,

@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"myanimeapi/api/adapters/cache"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
@@ -13,6 +15,12 @@ import (
 const (
 	defaultPaginationLimit = 1000
 )
+
+// tagListCache is used to serialise paginated tag lists into/out of cache.
+type tagListCache struct {
+	Items []models.Tag `json:"items"`
+	Total int64        `json:"total"`
+}
 
 // TagServiceInterface defines the interface for tag operations
 type TagServiceInterface interface {
@@ -28,19 +36,31 @@ type TagServiceInterface interface {
 type TagService struct {
 	tagRepo repositories.TagRepository
 	log     *logger.Logger
+	cache   cache.CacheInterface
 }
 
 // NewTagService creates a new TagService instance
-func NewTagService(tagRepo repositories.TagRepository) *TagService {
+func NewTagService(tagRepo repositories.TagRepository, cacheImpl cache.CacheInterface) *TagService {
 	return &TagService{
 		tagRepo: tagRepo,
 		log:     logger.New(),
+		cache:   cacheImpl,
 	}
 }
 
 // GetTagByID retrieves a tag by ID
 func (s *TagService) GetTagByID(ctx context.Context, id uint) (*models.Tag, error) {
 	s.log.WithField("id", id).Info("Retrieving tag by ID")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyTag(id)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var tag models.Tag
+		if jsonErr := json.Unmarshal(data, &tag); jsonErr == nil {
+			s.log.WithField("id", id).Info("Tag cache hit")
+			return &tag, nil
+		}
+	}
 
 	tagInterface, err := s.tagRepo.GetByID(ctx, id)
 	if err != nil {
@@ -55,6 +75,11 @@ func (s *TagService) GetTagByID(ctx context.Context, id uint) (*models.Tag, erro
 		}, nil)
 	}
 
+	// Populate cache
+	if data, jsonErr := json.Marshal(tag); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLTag)
+	}
+
 	return tag, nil
 }
 
@@ -64,6 +89,16 @@ func (s *TagService) GetAllTags(ctx context.Context, page, limit int) ([]models.
 		"page":  page,
 		"limit": limit,
 	}).Info("Retrieving all tags")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyTagList(page, limit)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var cached tagListCache
+		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+			s.log.WithFields(map[string]interface{}{"page": page, "limit": limit}).Info("Tag list cache hit")
+			return cached.Items, cached.Total, nil
+		}
+	}
 
 	tagsInterface, total, err := s.tagRepo.GetAll(ctx, page, limit)
 	if err != nil {
@@ -80,6 +115,11 @@ func (s *TagService) GetAllTags(ctx context.Context, page, limit int) ([]models.
 			}, nil)
 		}
 		tags[i] = *tag
+	}
+
+	// Populate cache
+	if data, jsonErr := json.Marshal(tagListCache{Items: tags, Total: total}); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLList)
 	}
 
 	return tags, total, nil
@@ -107,6 +147,9 @@ func (s *TagService) CreateTag(ctx context.Context, tag *models.Tag) error {
 	if err := s.tagRepo.Create(ctx, tag); err != nil {
 		return fmt.Errorf("failed to create tag: %w", err)
 	}
+
+	// Invalidate list caches
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllTags)
 
 	return nil
 }
@@ -143,6 +186,10 @@ func (s *TagService) UpdateTag(ctx context.Context, tag *models.Tag) error {
 		return fmt.Errorf("failed to update tag: %w", err)
 	}
 
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyTag(tag.ID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllTags)
+
 	return nil
 }
 
@@ -158,6 +205,10 @@ func (s *TagService) DeleteTag(ctx context.Context, id uint) error {
 	if err := s.tagRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete tag: %w", err)
 	}
+
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyTag(id))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllTags)
 
 	return nil
 }

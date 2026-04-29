@@ -2,13 +2,21 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"myanimeapi/api/adapters/cache"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 	"net/http"
 )
+
+// genreListCache is used to serialise paginated genre lists into/out of cache.
+type genreListCache struct {
+	Items []models.Genre `json:"items"`
+	Total int64          `json:"total"`
+}
 
 // GenreServiceInterface defines the interface for genre operations
 type GenreServiceInterface interface {
@@ -27,19 +35,31 @@ type GenreServiceInterface interface {
 type GenreService struct {
 	genreRepo repositories.GenreRepository
 	logger    *logger.Logger
+	cache     cache.CacheInterface
 }
 
 // NewGenreService creates a new GenreService instance
-func NewGenreService(genreRepo repositories.GenreRepository) *GenreService {
+func NewGenreService(genreRepo repositories.GenreRepository, cacheImpl cache.CacheInterface) *GenreService {
 	return &GenreService{
 		genreRepo: genreRepo,
 		logger:    logger.New(),
+		cache:     cacheImpl,
 	}
 }
 
 // GetGenreByID retrieves a genre by ID
 func (s *GenreService) GetGenreByID(ctx context.Context, id uint) (*models.Genre, error) {
 	s.logger.WithField("genre_id", id).Info("Retrieving genre")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyGenre(id)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var genre models.Genre
+		if jsonErr := json.Unmarshal(data, &genre); jsonErr == nil {
+			s.logger.WithField("genre_id", id).Info("Genre cache hit")
+			return &genre, nil
+		}
+	}
 
 	genreInterface, err := s.genreRepo.GetByID(ctx, id)
 	if err != nil {
@@ -65,6 +85,11 @@ func (s *GenreService) GetGenreByID(ctx context.Context, id uint) (*models.Genre
 			nil)
 	}
 
+	// Populate cache
+	if data, jsonErr := json.Marshal(genre); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLGenre)
+	}
+
 	s.logger.WithFields(map[string]interface{}{
 		"genre_id":   id,
 		"genre_name": genre.Name,
@@ -78,6 +103,16 @@ func (s *GenreService) GetAllGenres(ctx context.Context, page, limit int) ([]mod
 		"page":  page,
 		"limit": limit,
 	}).Info("Retrieving all genres")
+
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyGenreList(page, limit)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var cached genreListCache
+		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+			s.logger.WithFields(map[string]interface{}{"page": page, "limit": limit}).Info("Genre list cache hit")
+			return cached.Items, cached.Total, nil
+		}
+	}
 
 	genresInterface, total, err := s.genreRepo.GetAll(ctx, page, limit)
 	if err != nil {
@@ -109,6 +144,11 @@ func (s *GenreService) GetAllGenres(ctx context.Context, page, limit int) ([]mod
 				nil)
 		}
 		genres[i] = *genre
+	}
+
+	// Populate cache
+	if data, jsonErr := json.Marshal(genreListCache{Items: genres, Total: total}); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLList)
 	}
 
 	s.logger.WithFields(map[string]interface{}{
@@ -152,6 +192,9 @@ func (s *GenreService) CreateGenre(ctx context.Context, genre *models.Genre) err
 			},
 			err)
 	}
+
+	// Invalidate list caches
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllGenres)
 
 	s.logger.WithFields(map[string]interface{}{
 		"genre_id":   genre.ID,
@@ -208,6 +251,10 @@ func (s *GenreService) UpdateGenre(ctx context.Context, genre *models.Genre) err
 			err)
 	}
 
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyGenre(genre.ID))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllGenres)
+
 	s.logger.WithFields(map[string]interface{}{
 		"genre_id":   genre.ID,
 		"genre_name": genre.Name,
@@ -237,6 +284,10 @@ func (s *GenreService) DeleteGenre(ctx context.Context, id uint) error {
 			},
 			err)
 	}
+
+	// Invalidate single-item and list caches
+	_ = s.cache.Delete(ctx, cache.KeyGenre(id))
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllGenres)
 
 	s.logger.WithFields(map[string]interface{}{
 		"genre_id":   id,
@@ -319,6 +370,9 @@ func (s *GenreService) BulkCreateGenres(ctx context.Context, genres []models.Gen
 			err)
 	}
 
+	// Invalidate list caches
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllGenres)
+
 	s.logger.WithField("count", len(genres)).Info("Successfully bulk created genres")
 	return nil
 }
@@ -339,6 +393,14 @@ func (s *GenreService) BulkDeleteGenres(ctx context.Context, ids []uint) error {
 			},
 			err)
 	}
+
+	// Invalidate individual and list caches for all deleted IDs
+	cacheKeys := make([]string, len(ids))
+	for i, id := range ids {
+		cacheKeys[i] = cache.KeyGenre(id)
+	}
+	_ = s.cache.Delete(ctx, cacheKeys...)
+	_ = s.cache.DeleteByPattern(ctx, cache.PatternAllGenres)
 
 	s.logger.WithField("genre_ids", ids).Info("Successfully bulk deleted genres")
 	return nil
