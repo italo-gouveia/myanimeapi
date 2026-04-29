@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# Built application binary (prevent accidental commit)
+/main
+/main.exe
+
 # Test binary, built with `go test -c`
 *.test
 
