@@ -1,3 +1,11 @@
+# [1.15.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.14.0...v1.15.0) (2026-04-29)
+
+
+### Features
+
+* **architecture:** hexagonal restructure + GraphQL input adapter ([638b800](https://github.com/italo-gouveia/myanimeapi/commit/638b8005b518a62b6f92e69918f459c0a80a8cb8))
+* **cache:** add Redis output adapter with graceful degradation ([#40](https://github.com/italo-gouveia/myanimeapi/issues/40)) ([fe884db](https://github.com/italo-gouveia/myanimeapi/commit/fe884dbf28adc4f2f2063c7a262c0ccdffced719))
+
 # [1.14.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.13.2...v1.14.0) (2026-04-27)
 
 
