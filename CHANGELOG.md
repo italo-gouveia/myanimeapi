@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.16.0...v1.17.0) (2026-05-08)
+
+
+### Features
+
+* **anime:** GraphQL filtering, title sort, genre cache, repo tests, Swagger ([0f636c1](https://github.com/italo-gouveia/myanimeapi/commit/0f636c1360eda65da8e6e2844a4f1ddf711f7dca))
+
 # [1.16.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.15.0...v1.16.0) (2026-05-08)
 
 
