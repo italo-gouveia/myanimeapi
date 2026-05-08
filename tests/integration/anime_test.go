@@ -32,8 +32,8 @@ func (m *MockAnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.A
 	return args.Get(0).(*models.Anime), args.Error(1)
 }
 
-func (m *MockAnimeService) GetAllAnimes(ctx context.Context, page, limit int) ([]*models.Anime, int64, error) {
-	args := m.Called(ctx, page, limit)
+func (m *MockAnimeService) GetAllAnimes(ctx context.Context, page, limit int, filter models.AnimeFilter) ([]*models.Anime, int64, error) {
+	args := m.Called(ctx, page, limit, filter)
 	return args.Get(0).([]*models.Anime), args.Get(1).(int64), args.Error(2)
 }
 

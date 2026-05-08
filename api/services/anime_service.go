@@ -22,7 +22,7 @@ type animeListCache struct {
 // AnimeServiceInterface defines the interface for anime service operations
 type AnimeServiceInterface interface {
 	GetAnimeByID(ctx context.Context, id uint) (*models.Anime, error)
-	GetAllAnimes(ctx context.Context, page, limit int) ([]*models.Anime, int64, error)
+	GetAllAnimes(ctx context.Context, page, limit int, filter models.AnimeFilter) ([]*models.Anime, int64, error)
 	CreateAnime(ctx context.Context, anime *models.Anime) error
 	UpdateAnime(ctx context.Context, anime *models.Anime) error
 	DeleteAnime(ctx context.Context, id uint) error
@@ -113,24 +113,25 @@ func (s *AnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.Anime
 	return anime, nil
 }
 
-// GetAllAnimes retrieves all animes with pagination
-func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int) ([]*models.Anime, int64, error) {
+// GetAllAnimes retrieves animes with optional filtering, sorting, and pagination.
+func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int, filter models.AnimeFilter) ([]*models.Anime, int64, error) {
 	s.logger.WithFields(map[string]interface{}{
-		"page":  page,
-		"limit": limit,
-	}).Info("Retrieving all animes")
+		"page": page, "limit": limit,
+		"filter": filter.CacheKeySuffix(),
+	}).Info("Retrieving animes")
 
-	// Cache-aside: check cache first
-	cacheKey := cache.KeyAnimeList(page, limit)
+	// Cache-aside: the key encodes both pagination and filter params so
+	// different filter combinations never collide.
+	cacheKey := fmt.Sprintf("animes:p%d:l%d:%s", page, limit, filter.CacheKeySuffix())
 	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
 		var cached animeListCache
 		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
-			s.logger.WithFields(map[string]interface{}{"page": page, "limit": limit}).Info("Anime list cache hit")
+			s.logger.WithField("cache_key", cacheKey).Info("Anime list cache hit")
 			return cached.Items, cached.Total, nil
 		}
 	}
 
-	animesInterface, total, err := s.animeRepo.GetAll(ctx, page, limit)
+	animesInterface, total, err := s.animeRepo.GetWithFilters(ctx, filter, page, limit)
 	if err != nil {
 		s.logger.WithFields(map[string]interface{}{
 			"page":  page,
@@ -150,14 +151,10 @@ func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int) ([]*mo
 	for i, animeInterface := range animesInterface {
 		anime, ok := animeInterface.(*models.Anime)
 		if !ok {
-			s.logger.WithFields(map[string]interface{}{
-				"index": i,
-			}).Error("Invalid anime type in slice")
-			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid anime type", fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError,
-				map[string]interface{}{
-					"index": i,
-				},
-				nil)
+			s.logger.WithField("index", i).Error("Invalid anime type in slice")
+			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid anime type",
+				fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError,
+				map[string]interface{}{"index": i}, nil)
 		}
 		animes[i] = anime
 	}

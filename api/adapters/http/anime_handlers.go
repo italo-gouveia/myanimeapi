@@ -16,6 +16,7 @@ package httphandler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -167,16 +168,49 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAllAnimesHandler handles retrieving all animes with pagination.
+// GetAllAnimesHandler handles retrieving all animes with pagination, filtering, and sorting.
+//
+// Query parameters:
+//
+//	page        int     (default 1)
+//	limit       int     (default 10, max 100)
+//	status      string  "Airing" | "Completed" | "Upcoming"
+//	genre       string  exact genre name
+//	tag         string  exact tag name
+//	rating_min  float64 0–10
+//	rating_max  float64 0–10
+//	sort_by     string  "title" | "rating" | "episodes" | "created_at" | "start_date"
+//	order       string  "asc" | "desc"
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
-	// Get pagination parameters from query
-	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
+	q := r.URL.Query()
+
+	// Pagination
+	page, limit, err := utils.ValidatePagination(q.Get("page"), q.Get("limit"), 1, 100)
 	if err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
 		return
 	}
 
-	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit)
+	// Filter & sort
+	filter := models.AnimeFilter{
+		Status:    q.Get("status"),
+		Genre:     q.Get("genre"),
+		Tag:       q.Get("tag"),
+		SortBy:    q.Get("sort_by"),
+		SortOrder: q.Get("order"),
+	}
+	if v := q.Get("rating_min"); v != "" {
+		filter.RatingMin, _ = strconv.ParseFloat(v, 64)
+	}
+	if v := q.Get("rating_max"); v != "" {
+		filter.RatingMax, _ = strconv.ParseFloat(v, 64)
+	}
+	if err := filter.Validate(); err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid filter parameters", err.Error(), nil)
+		return
+	}
+
+	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit, filter)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)

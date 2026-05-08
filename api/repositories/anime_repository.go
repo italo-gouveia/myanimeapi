@@ -240,6 +240,98 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 	return animes, total, nil
 }
 
+// GetWithFilters retrieves animes applying optional filters, a sort order, and
+// pagination. Genre and tag filtering use EXISTS subqueries to avoid duplicate
+// rows that JOINs on many-to-many tables can produce.
+func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.AnimeFilter, page, limit int) ([]interface{}, int64, error) {
+	r.logger.WithFields(map[string]interface{}{
+		"page": page, "limit": limit,
+		"status": filter.Status, "genre": filter.Genre, "tag": filter.Tag,
+		"rating_min": filter.RatingMin, "rating_max": filter.RatingMax,
+		"sort_by": filter.SortBy, "sort_order": filter.SortOrder,
+	}).Info("Retrieving animes with filters")
+
+	// Conditions are applied twice — once for COUNT and once for SELECT — so
+	// the total always reflects exactly the same result set as the returned page.
+
+	// --- COUNT ---
+	cq := r.db.WithContext(ctx).Model(&models.Anime{})
+	if filter.Status != "" {
+		cq = cq.Where("animes.status = ?", filter.Status)
+	}
+	if filter.RatingMin > 0 {
+		cq = cq.Where("animes.rating >= ?", filter.RatingMin)
+	}
+	if filter.RatingMax > 0 {
+		cq = cq.Where("animes.rating <= ?", filter.RatingMax)
+	}
+	if filter.Genre != "" {
+		cq = cq.Where(
+			"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
+			filter.Genre,
+		)
+	}
+	if filter.Tag != "" {
+		cq = cq.Where(
+			"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
+			filter.Tag,
+		)
+	}
+
+	var total int64
+	if err := cq.Count(&total).Error; err != nil {
+		r.logger.WithField("error", err.Error()).Error("Failed to count animes with filters")
+		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, nil, err)
+	}
+
+	// --- FETCH ---
+	fq := r.db.WithContext(ctx).Model(&models.Anime{})
+	if filter.Status != "" {
+		fq = fq.Where("animes.status = ?", filter.Status)
+	}
+	if filter.RatingMin > 0 {
+		fq = fq.Where("animes.rating >= ?", filter.RatingMin)
+	}
+	if filter.RatingMax > 0 {
+		fq = fq.Where("animes.rating <= ?", filter.RatingMax)
+	}
+	if filter.Genre != "" {
+		fq = fq.Where(
+			"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
+			filter.Genre,
+		)
+	}
+	if filter.Tag != "" {
+		fq = fq.Where(
+			"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
+			filter.Tag,
+		)
+	}
+
+	var animes []models.Anime
+	offset := (page - 1) * limit
+	if err := fq.
+		Preload("Genres").
+		Preload("Tags").
+		Preload("Reviews").
+		Order(filter.OrderClause()).
+		Offset(offset).
+		Limit(limit).
+		Find(&animes).Error; err != nil {
+		r.logger.WithField("error", err.Error()).Error("Failed to retrieve animes with filters")
+		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve animes", err.Error(), http.StatusInternalServerError, nil, err)
+	}
+
+	result := make([]interface{}, len(animes))
+	for i := range animes {
+		result[i] = &animes[i]
+	}
+
+	r.logger.WithFields(map[string]interface{}{"count": len(animes), "total": total}).
+		Info("Successfully retrieved animes with filters")
+	return result, total, nil
+}
+
 // GetReviewsForAnime retrieves reviews for a specific anime
 func (r *AnimeRepositoryImpl) GetReviewsForAnime(ctx context.Context, animeID uint, page, limit int) ([]models.Review, int64, error) {
 	r.logger.WithFields(map[string]interface{}{

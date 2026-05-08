@@ -99,7 +99,7 @@ func (s *AnimeHandlerSuite) TestGet_InternalError() {
 // ---------------------------------------------------------------------------
 
 func (s *AnimeHandlerSuite) TestGetAll_Success() {
-	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10).
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{}).
 		Return([]*models.Anime{
 			{ID: 1, Title: "Naruto"},
 			{ID: 2, Title: "One Piece"},
@@ -116,6 +116,36 @@ func (s *AnimeHandlerSuite) TestGetAll_Success() {
 	s.NotNil(body["data"])
 }
 
+func (s *AnimeHandlerSuite) TestGetAll_WithFilters() {
+	expected := models.AnimeFilter{
+		Status:    "Completed",
+		Genre:     "Action",
+		RatingMin: 7.5,
+		SortBy:    "rating",
+		SortOrder: "desc",
+	}
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, expected).
+		Return([]*models.Anime{{ID: 1, Title: "Naruto", Status: "Completed", Rating: 8.5}}, int64(1), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10&status=Completed&genre=Action&rating_min=7.5&sort_by=rating&order=desc", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.Equal(float64(1), body["total"])
+}
+
+func (s *AnimeHandlerSuite) TestGetAll_InvalidFilter() {
+	req := httptest.NewRequest(http.MethodGet, "/animes?status=Invalid", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
+}
+
 func (s *AnimeHandlerSuite) TestGetAll_InvalidPagination() {
 	req := httptest.NewRequest(http.MethodGet, "/animes?page=0&limit=10", nil)
 	req = req.WithContext(testCtx())
@@ -126,7 +156,7 @@ func (s *AnimeHandlerSuite) TestGetAll_InvalidPagination() {
 }
 
 func (s *AnimeHandlerSuite) TestGetAll_InternalError() {
-	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10).
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{}).
 		Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10", nil)

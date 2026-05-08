@@ -173,7 +173,7 @@ func (s *SmokeSuite) TestAnime_GetAll_HappyPath() {
 	}
 
 	s.animeSvc.EXPECT().
-		GetAllAnimes(mock.Anything, 1, 10).
+		GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{}).
 		Return(animes, int64(2), nil).Once()
 
 	resp := s.getURL("/animes?page=1&limit=10")
@@ -190,7 +190,7 @@ func (s *SmokeSuite) TestAnime_GetAll_HappyPath() {
 
 func (s *SmokeSuite) TestAnime_GetAll_DefaultPagination() {
 	s.animeSvc.EXPECT().
-		GetAllAnimes(mock.Anything, 1, 100).
+		GetAllAnimes(mock.Anything, 1, 100, models.AnimeFilter{}).
 		Return([]*models.Anime{}, int64(0), nil).Once()
 
 	resp := s.getURL("/animes")

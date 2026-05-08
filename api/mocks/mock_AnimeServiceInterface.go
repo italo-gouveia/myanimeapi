@@ -212,9 +212,9 @@ func (_c *MockAnimeServiceInterface_DeleteAnime_Call) RunAndReturn(run func(cont
 	return _c
 }
 
-// GetAllAnimes provides a mock function with given fields: ctx, page, limit
-func (_m *MockAnimeServiceInterface) GetAllAnimes(ctx context.Context, page int, limit int) ([]*models.Anime, int64, error) {
-	ret := _m.Called(ctx, page, limit)
+// GetAllAnimes provides a mock function with given fields: ctx, page, limit, filter
+func (_m *MockAnimeServiceInterface) GetAllAnimes(ctx context.Context, page int, limit int, filter models.AnimeFilter) ([]*models.Anime, int64, error) {
+	ret := _m.Called(ctx, page, limit, filter)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAllAnimes")
@@ -223,25 +223,25 @@ func (_m *MockAnimeServiceInterface) GetAllAnimes(ctx context.Context, page int,
 	var r0 []*models.Anime
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) ([]*models.Anime, int64, error)); ok {
-		return rf(ctx, page, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, models.AnimeFilter) ([]*models.Anime, int64, error)); ok {
+		return rf(ctx, page, limit, filter)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) []*models.Anime); ok {
-		r0 = rf(ctx, page, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, models.AnimeFilter) []*models.Anime); ok {
+		r0 = rf(ctx, page, limit, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*models.Anime)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int, int) int64); ok {
-		r1 = rf(ctx, page, limit)
+	if rf, ok := ret.Get(1).(func(context.Context, int, int, models.AnimeFilter) int64); ok {
+		r1 = rf(ctx, page, limit, filter)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, int, int) error); ok {
-		r2 = rf(ctx, page, limit)
+	if rf, ok := ret.Get(2).(func(context.Context, int, int, models.AnimeFilter) error); ok {
+		r2 = rf(ctx, page, limit, filter)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -258,13 +258,14 @@ type MockAnimeServiceInterface_GetAllAnimes_Call struct {
 //   - ctx context.Context
 //   - page int
 //   - limit int
-func (_e *MockAnimeServiceInterface_Expecter) GetAllAnimes(ctx interface{}, page interface{}, limit interface{}) *MockAnimeServiceInterface_GetAllAnimes_Call {
-	return &MockAnimeServiceInterface_GetAllAnimes_Call{Call: _e.mock.On("GetAllAnimes", ctx, page, limit)}
+//   - filter models.AnimeFilter
+func (_e *MockAnimeServiceInterface_Expecter) GetAllAnimes(ctx interface{}, page interface{}, limit interface{}, filter interface{}) *MockAnimeServiceInterface_GetAllAnimes_Call {
+	return &MockAnimeServiceInterface_GetAllAnimes_Call{Call: _e.mock.On("GetAllAnimes", ctx, page, limit, filter)}
 }
 
-func (_c *MockAnimeServiceInterface_GetAllAnimes_Call) Run(run func(ctx context.Context, page int, limit int)) *MockAnimeServiceInterface_GetAllAnimes_Call {
+func (_c *MockAnimeServiceInterface_GetAllAnimes_Call) Run(run func(ctx context.Context, page int, limit int, filter models.AnimeFilter)) *MockAnimeServiceInterface_GetAllAnimes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int), args[2].(int))
+		run(args[0].(context.Context), args[1].(int), args[2].(int), args[3].(models.AnimeFilter))
 	})
 	return _c
 }
@@ -274,7 +275,7 @@ func (_c *MockAnimeServiceInterface_GetAllAnimes_Call) Return(_a0 []*models.Anim
 	return _c
 }
 
-func (_c *MockAnimeServiceInterface_GetAllAnimes_Call) RunAndReturn(run func(context.Context, int, int) ([]*models.Anime, int64, error)) *MockAnimeServiceInterface_GetAllAnimes_Call {
+func (_c *MockAnimeServiceInterface_GetAllAnimes_Call) RunAndReturn(run func(context.Context, int, int, models.AnimeFilter) ([]*models.Anime, int64, error)) *MockAnimeServiceInterface_GetAllAnimes_Call {
 	_c.Call.Return(run)
 	return _c
 }

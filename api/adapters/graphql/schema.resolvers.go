@@ -104,7 +104,7 @@ func (r *queryResolver) Anime(ctx context.Context, id string) (*model.Anime, err
 // Animes is the resolver for the animes field.
 func (r *queryResolver) Animes(ctx context.Context, page *int, limit *int) (*model.AnimeList, error) {
 	p, l := paginationArgs(page, limit)
-	animes, total, err := r.AnimeService.GetAllAnimes(ctx, p, l)
+	animes, total, err := r.AnimeService.GetAllAnimes(ctx, p, l, models.AnimeFilter{})
 	if err != nil {
 		return nil, err
 	}

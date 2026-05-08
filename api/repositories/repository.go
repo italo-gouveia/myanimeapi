@@ -74,6 +74,10 @@ type AnimeRepository interface {
 
 	// GetReviewsForAnime retrieves reviews for a specific anime
 	GetReviewsForAnime(ctx context.Context, animeID uint, page, limit int) ([]models.Review, int64, error)
+
+	// GetWithFilters retrieves animes with optional filtering, sorting, and pagination.
+	// Filters are applied via subqueries to avoid JOIN-induced duplicate rows.
+	GetWithFilters(ctx context.Context, filter models.AnimeFilter, page, limit int) ([]interface{}, int64, error)
 }
 
 // ReviewRepository defines the methods for review-related database operations

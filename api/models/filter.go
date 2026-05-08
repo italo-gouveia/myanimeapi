@@ -1,0 +1,99 @@
+// api/models/filter.go
+// AnimeFilter is a value object that carries all optional filter and sort
+// parameters accepted by the anime list endpoint.
+package models
+
+import (
+	"fmt"
+	"strings"
+)
+
+// AllowedSortFields maps public-facing sort_by values to the fully-qualified
+// column name used in ORDER BY. Only whitelisted values are accepted to prevent
+// SQL injection.
+var AllowedSortFields = map[string]string{
+	"title":      "animes.title",
+	"rating":     "animes.rating",
+	"episodes":   "animes.episodes",
+	"created_at": "animes.created_at",
+	"start_date": "animes.start_date",
+}
+
+// AllowedStatuses is the set of valid status values for filtering.
+var AllowedStatuses = map[string]struct{}{
+	"Airing":    {},
+	"Completed": {},
+	"Upcoming":  {},
+}
+
+// AnimeFilter carries all optional filter and sort parameters for the anime
+// list endpoint. Zero values mean "no constraint / use default".
+type AnimeFilter struct {
+	// Status filters by exact status: "Airing", "Completed", or "Upcoming".
+	Status string
+	// Genre filters to animes that belong to a genre with this exact name.
+	Genre string
+	// Tag filters to animes that have a tag with this exact name.
+	Tag string
+	// RatingMin includes only animes with rating >= RatingMin. 0 = no lower bound.
+	RatingMin float64
+	// RatingMax includes only animes with rating <= RatingMax. 0 = no upper bound.
+	RatingMax float64
+	// SortBy is the field to sort by. Must be a key in AllowedSortFields.
+	SortBy string
+	// SortOrder is "asc" (default) or "desc".
+	SortOrder string
+}
+
+// Validate returns a descriptive error if any field contains an invalid value.
+func (f AnimeFilter) Validate() error {
+	if f.Status != "" {
+		if _, ok := AllowedStatuses[f.Status]; !ok {
+			return fmt.Errorf("invalid status %q: allowed values are Airing, Completed, Upcoming", f.Status)
+		}
+	}
+	if f.SortBy != "" {
+		if _, ok := AllowedSortFields[f.SortBy]; !ok {
+			keys := make([]string, 0, len(AllowedSortFields))
+			for k := range AllowedSortFields {
+				keys = append(keys, k)
+			}
+			return fmt.Errorf("invalid sort_by %q: allowed values are %s", f.SortBy, strings.Join(keys, ", "))
+		}
+	}
+	if f.SortOrder != "" && f.SortOrder != "asc" && f.SortOrder != "desc" {
+		return fmt.Errorf("invalid order %q: allowed values are asc, desc", f.SortOrder)
+	}
+	if f.RatingMin < 0 || f.RatingMin > 10 {
+		return fmt.Errorf("rating_min must be between 0 and 10")
+	}
+	if f.RatingMax < 0 || f.RatingMax > 10 {
+		return fmt.Errorf("rating_max must be between 0 and 10")
+	}
+	if f.RatingMin > 0 && f.RatingMax > 0 && f.RatingMin > f.RatingMax {
+		return fmt.Errorf("rating_min cannot be greater than rating_max")
+	}
+	return nil
+}
+
+// OrderClause returns a safe SQL ORDER BY clause derived from the filter.
+// Defaults to "animes.created_at DESC" when no sort field is specified.
+func (f AnimeFilter) OrderClause() string {
+	col, ok := AllowedSortFields[f.SortBy]
+	if !ok {
+		return "animes.created_at DESC"
+	}
+	dir := "ASC"
+	if strings.ToLower(f.SortOrder) == "desc" {
+		dir = "DESC"
+	}
+	return fmt.Sprintf("%s %s", col, dir)
+}
+
+// CacheKeySuffix returns a deterministic string fragment encoding all filter
+// fields. Two equal AnimeFilter values always produce the same suffix, making
+// it safe to embed in cache keys.
+func (f AnimeFilter) CacheKeySuffix() string {
+	return fmt.Sprintf("st=%s:g=%s:t=%s:rmin=%.2f:rmax=%.2f:sort=%s:%s",
+		f.Status, f.Genre, f.Tag, f.RatingMin, f.RatingMax, f.SortBy, f.SortOrder)
+}
