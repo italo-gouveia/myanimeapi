@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.15.0...v1.16.0) (2026-05-08)
+
+
+### Features
+
+* **anime:** filtering, sorting and pagination for GET /animes ([#42](https://github.com/italo-gouveia/myanimeapi/issues/42)) ([818336a](https://github.com/italo-gouveia/myanimeapi/commit/818336a648d18a3969451eda063c1b280735e1c1))
+
 # [1.15.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.14.0...v1.15.0) (2026-04-29)
 
 
