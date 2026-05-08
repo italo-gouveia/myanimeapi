@@ -73,8 +73,8 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Anime         func(childComplexity int, id string) int
-		Animes        func(childComplexity int, page *int, limit *int) int
-		AnimesByTitle func(childComplexity int, title string, page *int, limit *int) int
+		Animes        func(childComplexity int, page *int, limit *int, filter *model.AnimeFilterInput) int
+		AnimesByTitle func(childComplexity int, title string, page *int, limit *int, sortBy *string, sortOrder *string) int
 		Genre         func(childComplexity int, id string) int
 		Genres        func(childComplexity int, page *int, limit *int) int
 	}
@@ -101,8 +101,8 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Anime(ctx context.Context, id string) (*model.Anime, error)
-	Animes(ctx context.Context, page *int, limit *int) (*model.AnimeList, error)
-	AnimesByTitle(ctx context.Context, title string, page *int, limit *int) (*model.AnimeList, error)
+	Animes(ctx context.Context, page *int, limit *int, filter *model.AnimeFilterInput) (*model.AnimeList, error)
+	AnimesByTitle(ctx context.Context, title string, page *int, limit *int, sortBy *string, sortOrder *string) (*model.AnimeList, error)
 	Genre(ctx context.Context, id string) (*model.Genre, error)
 	Genres(ctx context.Context, page *int, limit *int) ([]*model.Genre, error)
 }
@@ -281,7 +281,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.Animes(childComplexity, args["page"].(*int), args["limit"].(*int)), true
+		return e.ComplexityRoot.Query.Animes(childComplexity, args["page"].(*int), args["limit"].(*int), args["filter"].(*model.AnimeFilterInput)), true
 	case "Query.animesByTitle":
 		if e.ComplexityRoot.Query.AnimesByTitle == nil {
 			break
@@ -292,7 +292,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.AnimesByTitle(childComplexity, args["title"].(string), args["page"].(*int), args["limit"].(*int)), true
+		return e.ComplexityRoot.Query.AnimesByTitle(childComplexity, args["title"].(string), args["page"].(*int), args["limit"].(*int), args["sortBy"].(*string), args["sortOrder"].(*string)), true
 	case "Query.genre":
 		if e.ComplexityRoot.Query.Genre == nil {
 			break
@@ -367,7 +367,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAnimeFilterInput,
+	)
 	first := true
 
 	switch opCtx.Operation.Operation {
@@ -484,10 +486,20 @@ type AnimeList {
   total: Int!
 }
 
+input AnimeFilterInput {
+  status: String
+  genre: String
+  tag: String
+  ratingMin: Float
+  ratingMax: Float
+  sortBy: String
+  sortOrder: String
+}
+
 type Query {
   anime(id: ID!): Anime
-  animes(page: Int, limit: Int): AnimeList!
-  animesByTitle(title: String!, page: Int, limit: Int): AnimeList!
+  animes(page: Int, limit: Int, filter: AnimeFilterInput): AnimeList!
+  animesByTitle(title: String!, page: Int, limit: Int, sortBy: String, sortOrder: String): AnimeList!
   genre(id: ID!): Genre
   genres(page: Int, limit: Int): [Genre!]!
 }
@@ -861,6 +873,22 @@ func (ec *executionContext) field_Query_animesByTitle_args(ctx context.Context, 
 		return nil, err
 	}
 	args["limit"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "sortBy",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sortBy"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "sortOrder",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["sortOrder"] = arg4
 	return args, nil
 }
 
@@ -883,6 +911,14 @@ func (ec *executionContext) field_Query_animes_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["limit"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "filter",
+		func(ctx context.Context, v any) (*model.AnimeFilterInput, error) {
+			return ec.unmarshalOAnimeFilterInput2ᚖmyanimeapiᚋapiᚋadaptersᚋgraphqlᚋmodelᚐAnimeFilterInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg2
 	return args, nil
 }
 
@@ -1588,7 +1624,7 @@ func (ec *executionContext) _Query_animes(ctx context.Context, field graphql.Col
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Animes(ctx, fc.Args["page"].(*int), fc.Args["limit"].(*int))
+			return ec.Resolvers.Query().Animes(ctx, fc.Args["page"].(*int), fc.Args["limit"].(*int), fc.Args["filter"].(*model.AnimeFilterInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AnimeList) graphql.Marshaler {
@@ -1632,7 +1668,7 @@ func (ec *executionContext) _Query_animesByTitle(ctx context.Context, field grap
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().AnimesByTitle(ctx, fc.Args["title"].(string), fc.Args["page"].(*int), fc.Args["limit"].(*int))
+			return ec.Resolvers.Query().AnimesByTitle(ctx, fc.Args["title"].(string), fc.Args["page"].(*int), fc.Args["limit"].(*int), fc.Args["sortBy"].(*string), fc.Args["sortOrder"].(*string))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *model.AnimeList) graphql.Marshaler {
@@ -3050,6 +3086,78 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAnimeFilterInput(ctx context.Context, obj any) (model.AnimeFilterInput, error) {
+	var it model.AnimeFilterInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"status", "genre", "tag", "ratingMin", "ratingMax", "sortBy", "sortOrder"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "genre":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genre"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Genre = data
+		case "tag":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tag = data
+		case "ratingMin":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ratingMin"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RatingMin = data
+		case "ratingMax":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ratingMax"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RatingMax = data
+		case "sortBy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SortBy = data
+		case "sortOrder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortOrder"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SortOrder = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4225,6 +4333,14 @@ func (ec *executionContext) marshalOAnime2ᚖmyanimeapiᚋapiᚋadaptersᚋgraph
 		return graphql.Null
 	}
 	return ec._Anime(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAnimeFilterInput2ᚖmyanimeapiᚋapiᚋadaptersᚋgraphqlᚋmodelᚐAnimeFilterInput(ctx context.Context, v any) (*model.AnimeFilterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAnimeFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

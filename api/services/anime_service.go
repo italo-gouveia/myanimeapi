@@ -394,6 +394,16 @@ func (s *AnimeService) GetAnimesByGenre(ctx context.Context, genre string, page,
 		"limit": limit,
 	}).Info("Retrieving animes by genre")
 
+	// Cache-aside: check cache first
+	cacheKey := cache.KeyAnimeByGenre(genre, page, limit)
+	if data, err := s.cache.Get(ctx, cacheKey); err == nil {
+		var cached animeListCache
+		if jsonErr := json.Unmarshal(data, &cached); jsonErr == nil {
+			s.logger.WithField("genre", genre).Info("Anime genre cache hit")
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	animes, total, err := s.animeRepo.GetByGenre(ctx, genre, page, limit)
 	if err != nil {
 		s.logger.WithFields(map[string]interface{}{
@@ -413,6 +423,11 @@ func (s *AnimeService) GetAnimesByGenre(ctx context.Context, genre string, page,
 	result := make([]*models.Anime, len(animes))
 	for i := range animes {
 		result[i] = &animes[i]
+	}
+
+	// Populate cache
+	if data, jsonErr := json.Marshal(animeListCache{Items: result, Total: total}); jsonErr == nil {
+		_ = s.cache.Set(ctx, cacheKey, data, cache.TTLList)
 	}
 
 	s.logger.WithFields(map[string]interface{}{

@@ -170,17 +170,23 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetAllAnimesHandler handles retrieving all animes with pagination, filtering, and sorting.
 //
-// Query parameters:
-//
-//	page        int     (default 1)
-//	limit       int     (default 10, max 100)
-//	status      string  "Airing" | "Completed" | "Upcoming"
-//	genre       string  exact genre name
-//	tag         string  exact tag name
-//	rating_min  float64 0–10
-//	rating_max  float64 0–10
-//	sort_by     string  "title" | "rating" | "episodes" | "created_at" | "start_date"
-//	order       string  "asc" | "desc"
+// @Summary      List animes
+// @Description  Returns a paginated, filterable, sortable list of animes.
+// @Tags         anime
+// @Produce      json
+// @Param        page        query  int     false  "Page number (default 1)"
+// @Param        limit       query  int     false  "Items per page (default 100)"
+// @Param        status      query  string  false  "Filter by status"        Enums(Airing,Completed,Upcoming)
+// @Param        genre       query  string  false  "Filter by exact genre name"
+// @Param        tag         query  string  false  "Filter by exact tag name"
+// @Param        rating_min  query  number  false  "Minimum rating (0–10)"
+// @Param        rating_max  query  number  false  "Maximum rating (0–10)"
+// @Param        sort_by     query  string  false  "Sort field"              Enums(title,rating,episodes,created_at,start_date)
+// @Param        order       query  string  false  "Sort direction"          Enums(asc,desc)
+// @Success      200         {object}  object{data=[]models.AnimeResponse,total=integer,page=integer,limit=integer}
+// @Failure      400         {object}  errors.ErrorResponse  "Invalid filter or pagination"
+// @Failure      500         {object}  errors.ErrorResponse  "Internal server error"
+// @Router       /animes [get]
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
@@ -455,21 +461,46 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GetAnimesByTitleHandler handles searching animes by title.
+// GetAnimesByTitleHandler handles searching animes by title with optional sorting.
+//
+// @Summary      Search animes by title
+// @Description  Returns animes whose title contains the given string. Supports sort and pagination.
+// @Tags         anime
+// @Produce      json
+// @Param        title     query  string  true   "Title substring to search for"
+// @Param        page      query  int     false  "Page number (default 1)"
+// @Param        limit     query  int     false  "Items per page (default 100)"
+// @Param        sort_by   query  string  false  "Sort field"     Enums(title,rating,episodes,created_at,start_date)
+// @Param        order     query  string  false  "Sort direction" Enums(asc,desc)
+// @Success      200       {object}  object{data=[]models.AnimeResponse,total=integer,page=integer,limit=integer}
+// @Failure      400       {object}  errors.ErrorResponse
+// @Failure      500       {object}  errors.ErrorResponse
+// @Router       /animes/search [get]
 func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Query().Get("title")
+	q := r.URL.Query()
+	title := q.Get("title")
 	if title == "" {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid input", "Title parameter is required", nil)
 		return
 	}
 
-	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
+	page, limit, err := utils.ValidatePagination(q.Get("page"), q.Get("limit"), 1, 100)
 	if err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
 		return
 	}
 
-	animes, total, err := h.service.GetAnimesByTitle(r.Context(), title, page, limit)
+	filter := models.AnimeFilter{
+		Title:     title,
+		SortBy:    q.Get("sort_by"),
+		SortOrder: q.Get("order"),
+	}
+	if err := filter.Validate(); err != nil {
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid filter parameters", err.Error(), nil)
+		return
+	}
+
+	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit, filter)
 	if err != nil {
 		if appErr, ok := err.(*errors.AppError); ok {
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
@@ -479,8 +510,13 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	responses := make([]models.AnimeResponse, len(animes))
+	for i, anime := range animes {
+		responses[i] = anime.ToResponse()
+	}
+
 	response := map[string]interface{}{
-		"data":  animes,
+		"data":  responses,
 		"total": total,
 		"page":  page,
 		"limit": limit,

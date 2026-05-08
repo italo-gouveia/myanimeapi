@@ -240,7 +240,7 @@ func TestGetAnimesByTitle(t *testing.T) {
 			page:  "1",
 			limit: "10",
 			setupMock: func() {
-				mockService.On("GetAnimesByTitle", mock.Anything, "Test", 1, 10).Return([]*models.Anime{
+				mockService.On("GetAllAnimes", mock.Anything, 1, 10, models.AnimeFilter{Title: "Test"}).Return([]*models.Anime{
 					{
 						ID:    1,
 						Title: "Test Anime",
@@ -287,7 +287,7 @@ func TestGetAnimesByTitle(t *testing.T) {
 			page:  "1",
 			limit: "10",
 			setupMock: func() {
-				mockService.On("GetAnimesByTitle", mock.Anything, "Test", 1, 10).Return([]*models.Anime{}, int64(0), errors.NewError(errors.ErrInternalServer, "Database error", "Failed to search animes", http.StatusInternalServerError, nil, nil)).Once()
+				mockService.On("GetAllAnimes", mock.Anything, 1, 10, models.AnimeFilter{Title: "Test"}).Return([]*models.Anime{}, int64(0), errors.NewError(errors.ErrInternalServer, "Database error", "Failed to search animes", http.StatusInternalServerError, nil, nil)).Once()
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{

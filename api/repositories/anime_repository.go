@@ -256,6 +256,9 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 
 	// --- COUNT ---
 	cq := r.db.WithContext(ctx).Model(&models.Anime{})
+	if filter.Title != "" {
+		cq = cq.Where("animes.title LIKE ?", "%"+filter.Title+"%")
+	}
 	if filter.Status != "" {
 		cq = cq.Where("animes.status = ?", filter.Status)
 	}
@@ -286,6 +289,9 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 
 	// --- FETCH ---
 	fq := r.db.WithContext(ctx).Model(&models.Anime{})
+	if filter.Title != "" {
+		fq = fq.Where("animes.title LIKE ?", "%"+filter.Title+"%")
+	}
 	if filter.Status != "" {
 		fq = fq.Where("animes.status = ?", filter.Status)
 	}

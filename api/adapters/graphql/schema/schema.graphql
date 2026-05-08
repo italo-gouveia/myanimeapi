@@ -40,10 +40,20 @@ type AnimeList {
   total: Int!
 }
 
+input AnimeFilterInput {
+  status: String
+  genre: String
+  tag: String
+  ratingMin: Float
+  ratingMax: Float
+  sortBy: String
+  sortOrder: String
+}
+
 type Query {
   anime(id: ID!): Anime
-  animes(page: Int, limit: Int): AnimeList!
-  animesByTitle(title: String!, page: Int, limit: Int): AnimeList!
+  animes(page: Int, limit: Int, filter: AnimeFilterInput): AnimeList!
+  animesByTitle(title: String!, page: Int, limit: Int, sortBy: String, sortOrder: String): AnimeList!
   genre(id: ID!): Genre
   genres(page: Int, limit: Int): [Genre!]!
 }

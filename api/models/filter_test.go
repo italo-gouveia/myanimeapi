@@ -93,3 +93,10 @@ func TestAnimeFilter_CacheKeySuffix_DifferentFiltersProduceDifferentKeys(t *test
 	b := models.AnimeFilter{Status: "Completed"}.CacheKeySuffix()
 	assert.NotEqual(t, a, b)
 }
+
+func TestAnimeFilter_CacheKeySuffix_TitleIncluded(t *testing.T) {
+	a := models.AnimeFilter{Title: "Naruto"}.CacheKeySuffix()
+	b := models.AnimeFilter{Title: "Bleach"}.CacheKeySuffix()
+	assert.Contains(t, a, "ti=Naruto")
+	assert.NotEqual(t, a, b)
+}

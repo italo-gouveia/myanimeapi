@@ -29,6 +29,8 @@ var AllowedStatuses = map[string]struct{}{
 // AnimeFilter carries all optional filter and sort parameters for the anime
 // list endpoint. Zero values mean "no constraint / use default".
 type AnimeFilter struct {
+	// Title performs a case-insensitive LIKE search on animes.title.
+	Title string
 	// Status filters by exact status: "Airing", "Completed", or "Upcoming".
 	Status string
 	// Genre filters to animes that belong to a genre with this exact name.
@@ -94,6 +96,6 @@ func (f AnimeFilter) OrderClause() string {
 // fields. Two equal AnimeFilter values always produce the same suffix, making
 // it safe to embed in cache keys.
 func (f AnimeFilter) CacheKeySuffix() string {
-	return fmt.Sprintf("st=%s:g=%s:t=%s:rmin=%.2f:rmax=%.2f:sort=%s:%s",
-		f.Status, f.Genre, f.Tag, f.RatingMin, f.RatingMax, f.SortBy, f.SortOrder)
+	return fmt.Sprintf("st=%s:g=%s:t=%s:rmin=%.2f:rmax=%.2f:sort=%s:%s:ti=%s",
+		f.Status, f.Genre, f.Tag, f.RatingMin, f.RatingMax, f.SortBy, f.SortOrder, f.Title)
 }

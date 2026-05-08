@@ -19,6 +19,16 @@ type Anime struct {
 	Tags        []*Tag     `json:"tags,omitempty"`
 }
 
+type AnimeFilterInput struct {
+	Status    *string  `json:"status,omitempty"`
+	Genre     *string  `json:"genre,omitempty"`
+	Tag       *string  `json:"tag,omitempty"`
+	RatingMin *float64 `json:"ratingMin,omitempty"`
+	RatingMax *float64 `json:"ratingMax,omitempty"`
+	SortBy    *string  `json:"sortBy,omitempty"`
+	SortOrder *string  `json:"sortOrder,omitempty"`
+}
+
 type AnimeList struct {
 	Data  []*Anime `json:"data"`
 	Total int      `json:"total"`

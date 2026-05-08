@@ -336,7 +336,7 @@ func (s *AnimeHandlerSuite) TestDelete_NotFound() {
 // ---------------------------------------------------------------------------
 
 func (s *AnimeHandlerSuite) TestSearchByTitle_Success() {
-	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Naruto", 1, 10).
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{Title: "Naruto"}).
 		Return([]*models.Anime{{ID: 1, Title: "Naruto"}}, int64(1), nil).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&page=1&limit=10", nil)
@@ -350,7 +350,7 @@ func (s *AnimeHandlerSuite) TestSearchByTitle_Success() {
 }
 
 func (s *AnimeHandlerSuite) TestSearchByTitle_NoResults() {
-	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Unknown", 1, 10).
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{Title: "Unknown"}).
 		Return([]*models.Anime{}, int64(0), nil).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Unknown&page=1&limit=10", nil)
@@ -364,7 +364,7 @@ func (s *AnimeHandlerSuite) TestSearchByTitle_NoResults() {
 }
 
 func (s *AnimeHandlerSuite) TestSearchByTitle_InternalError() {
-	s.svc.EXPECT().GetAnimesByTitle(mock.Anything, "Naruto", 1, 10).
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{Title: "Naruto"}).
 		Return(nil, int64(0), apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&page=1&limit=10", nil)
@@ -373,6 +373,27 @@ func (s *AnimeHandlerSuite) TestSearchByTitle_InternalError() {
 	s.handler.GetAnimesByTitleHandler(rr, req)
 
 	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *AnimeHandlerSuite) TestSearchByTitle_WithSort() {
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{Title: "Naruto", SortBy: "rating", SortOrder: "desc"}).
+		Return([]*models.Anime{{ID: 1, Title: "Naruto", Rating: 9.0}}, int64(1), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&page=1&limit=10&sort_by=rating&order=desc", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimesByTitleHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+}
+
+func (s *AnimeHandlerSuite) TestSearchByTitle_InvalidSort() {
+	req := httptest.NewRequest(http.MethodGet, "/animes/search?title=Naruto&sort_by=invalid_col", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAnimesByTitleHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusBadRequest, apperrors.ErrInvalidInput)
 }
 
 // ---------------------------------------------------------------------------

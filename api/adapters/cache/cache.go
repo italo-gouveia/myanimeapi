@@ -78,6 +78,11 @@ func KeyAnimeSearch(title string, page, limit int) string {
 	return fmt.Sprintf("animes:search:%s:p%d:l%d", title, page, limit)
 }
 
+// KeyAnimeByGenre returns the cache key for a genre-filtered anime result page.
+func KeyAnimeByGenre(genre string, page, limit int) string {
+	return fmt.Sprintf("animes:genre:%s:p%d:l%d", genre, page, limit)
+}
+
 // KeyGenre returns the cache key for a single genre.
 func KeyGenre(id uint) string { return fmt.Sprintf("genre:%d", id) }
 
