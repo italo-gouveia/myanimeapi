@@ -576,20 +576,35 @@ func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
 	router.HandleFunc("/animes/search", h.GetAnimesByTitleHandler).Methods("GET")
 	router.HandleFunc("/animes/genre/{genre}", h.GetAnimesByGenreHandler).Methods("GET")
 
-	// Create a subrouter for protected routes
+	// Create a subrouter for protected routes (requires authentication)
 	protectedRouter := router.PathPrefix("/animes").Subrouter()
-	protectedRouter.Use(middleware.AuthMiddleware) // Apply authentication middleware
+	protectedRouter.Use(middleware.AuthMiddleware)
 
-	// Protected routes with payload validation
-	protectedRouter.Handle("", middleware.ValidateAndSanitizePayload(models.AnimeCreateRequest{})(http.HandlerFunc(h.CreateAnimeHandler))).Methods("POST")
-	protectedRouter.Handle("/{id}", middleware.ValidateAndSanitizePayload(models.AnimeUpdateRequest{})(http.HandlerFunc(h.UpdateAnimeHandler))).Methods("PUT")
-	protectedRouter.HandleFunc("/{id}", h.DeleteAnimeHandler).Methods("DELETE")
+	// Admin-only routes: create, update, delete anime
+	// RequireAdmin is applied per-handler so the middleware chain is explicit.
+	protectedRouter.Handle("", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeCreateRequest{})(http.HandlerFunc(h.CreateAnimeHandler)),
+	)).Methods("POST")
+	protectedRouter.Handle("/{id}", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeUpdateRequest{})(http.HandlerFunc(h.UpdateAnimeHandler)),
+	)).Methods("PUT")
+	protectedRouter.Handle("/{id}", middleware.RequireAdmin(
+		http.HandlerFunc(h.DeleteAnimeHandler),
+	)).Methods("DELETE")
 
-	// Genre management routes
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.AddGenresToAnimeHandler))).Methods("POST")
-	protectedRouter.Handle("/{id}/genres", middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.RemoveGenresFromAnimeHandler))).Methods("DELETE")
+	// Genre management routes — admin only
+	protectedRouter.Handle("/{id}/genres", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.AddGenresToAnimeHandler)),
+	)).Methods("POST")
+	protectedRouter.Handle("/{id}/genres", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeGenresRequest{})(http.HandlerFunc(h.RemoveGenresFromAnimeHandler)),
+	)).Methods("DELETE")
 
-	// Tag management routes
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.AddTagsToAnimeHandler))).Methods("POST")
-	protectedRouter.Handle("/{id}/tags", middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.RemoveTagsFromAnimeHandler))).Methods("DELETE")
+	// Tag management routes — admin only
+	protectedRouter.Handle("/{id}/tags", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.AddTagsToAnimeHandler)),
+	)).Methods("POST")
+	protectedRouter.Handle("/{id}/tags", middleware.RequireAdmin(
+		middleware.ValidateAndSanitizePayload(models.AnimeTagsRequest{})(http.HandlerFunc(h.RemoveTagsFromAnimeHandler)),
+	)).Methods("DELETE")
 }

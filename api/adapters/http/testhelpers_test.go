@@ -13,9 +13,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testCtx returns a context with a valid user ID — simulates an authenticated request.
+// testCtx returns a context with a valid user ID — simulates an authenticated (non-admin) request.
 func testCtx() context.Context {
 	return context.WithValue(context.Background(), middleware.UserContextKey, uint(1))
+}
+
+// adminCtx returns a context with a valid user ID and admin flag — simulates an admin request.
+func adminCtx() context.Context {
+	ctx := context.WithValue(context.Background(), middleware.UserContextKey, uint(1))
+	return context.WithValue(ctx, middleware.IsAdminContextKey, true)
 }
 
 // noAuthCtx returns a bare context with no user ID — simulates an unauthenticated request.

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -96,24 +97,27 @@ func setupAnimeTestRouter(handler *httphandler.AnimeHandler) *mux.Router {
 	router.HandleFunc("/animes", handler.GetAllAnimesHandler).Methods("GET")
 	router.HandleFunc("/animes/{id}", handler.GetAnimeHandler).Methods("GET")
 
-	// Create a subrouter for protected routes
+	// Create a subrouter for protected routes (authenticated + admin)
 	protectedRouter := router.PathPrefix("/animes").Subrouter()
 	protectedRouter.Use(middleware.AuthMiddleware)
 
-	// Protected routes
-	protectedRouter.HandleFunc("", handler.CreateAnimeHandler).Methods("POST")
-	protectedRouter.HandleFunc("/{id}", handler.UpdateAnimeHandler).Methods("PUT")
-	protectedRouter.HandleFunc("/{id}", handler.DeleteAnimeHandler).Methods("DELETE")
+	// Admin-only routes
+	protectedRouter.Handle("", middleware.RequireAdmin(http.HandlerFunc(handler.CreateAnimeHandler))).Methods("POST")
+	protectedRouter.Handle("/{id}", middleware.RequireAdmin(http.HandlerFunc(handler.UpdateAnimeHandler))).Methods("PUT")
+	protectedRouter.Handle("/{id}", middleware.RequireAdmin(http.HandlerFunc(handler.DeleteAnimeHandler))).Methods("DELETE")
 
 	return router
 }
 
 func generateAnimeTestToken() string {
-	// Set test secret key
 	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
-
-	// Generate token
 	token, _ := middleware.GenerateToken("1", true)
+	return token
+}
+
+func generateNonAdminTestToken() string {
+	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
+	token, _ := middleware.GenerateToken("2", false) // isAdmin = false
 	return token
 }
 
@@ -435,4 +439,51 @@ func TestGetAnimesByGenre(t *testing.T) {
 			mockService.AssertExpectations(t)
 		})
 	}
+}
+
+// TestAdminOnlyRoutes_ForbiddenForNonAdmin verifies that authenticated non-admin
+// users receive 403 Forbidden when attempting any admin-only anime mutation.
+func TestAdminOnlyRoutes_ForbiddenForNonAdmin(t *testing.T) {
+	mockService := &MockAnimeService{}
+	handler := httphandler.NewAnimeHandler(mockService)
+	router := setupAnimeTestRouter(handler)
+	nonAdminToken := generateNonAdminTestToken()
+
+	routes := []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodPost, "/animes", `{"title":"test"}`},
+		{http.MethodPut, "/animes/1", `{"title":"test"}`},
+		{http.MethodDelete, "/animes/1", ""},
+	}
+
+	for _, rt := range routes {
+		t.Run(rt.method+" "+rt.path, func(t *testing.T) {
+			var body *bytes.Buffer
+			if rt.body != "" {
+				body = bytes.NewBufferString(rt.body)
+			} else {
+				body = &bytes.Buffer{}
+			}
+
+			req := httptest.NewRequest(rt.method, rt.path, body)
+			req.Header.Set("Authorization", "Bearer "+nonAdminToken)
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusForbidden, w.Code, "expected 403 for non-admin on %s %s", rt.method, rt.path)
+
+			var resp map[string]interface{}
+			assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			errObj, ok := resp["error"].(map[string]interface{})
+			assert.True(t, ok, "response should contain error object")
+			assert.Equal(t, errors.ErrForbidden, errObj["code"])
+		})
+	}
+
+	mockService.AssertExpectations(t) // no service calls should have been made
 }
