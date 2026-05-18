@@ -190,7 +190,7 @@ func (s *AnimeHandlerSuite) TestCreate_Success() {
 		Return(&models.Anime{ID: 1, Title: "New Anime"}, nil).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	s.handler.CreateAnimeHandler(rr, req)
@@ -202,7 +202,7 @@ func (s *AnimeHandlerSuite) TestCreate_Success() {
 
 func (s *AnimeHandlerSuite) TestCreate_MissingPayload() {
 	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	rr := httptest.NewRecorder()
 	s.handler.CreateAnimeHandler(rr, req)
 
@@ -223,7 +223,7 @@ func (s *AnimeHandlerSuite) TestCreate_ServiceError() {
 		Return(apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	s.handler.CreateAnimeHandler(rr, req)
@@ -243,7 +243,7 @@ func (s *AnimeHandlerSuite) TestUpdate_Success() {
 	s.svc.EXPECT().UpdateAnime(mock.Anything, mock.Anything).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -256,7 +256,7 @@ func (s *AnimeHandlerSuite) TestUpdate_InvalidID() {
 	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
 
 	req := httptest.NewRequest(http.MethodPut, "/animes/abc", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
@@ -267,7 +267,7 @@ func (s *AnimeHandlerSuite) TestUpdate_InvalidID() {
 
 func (s *AnimeHandlerSuite) TestUpdate_MissingPayload() {
 	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.UpdateAnimeHandler(rr, req)
@@ -282,7 +282,7 @@ func (s *AnimeHandlerSuite) TestUpdate_NotFound() {
 		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodPut, "/animes/999", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "999"})
 	rr := httptest.NewRecorder()
@@ -299,7 +299,7 @@ func (s *AnimeHandlerSuite) TestDelete_Success() {
 	s.svc.EXPECT().DeleteAnime(mock.Anything, uint(1)).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1", nil)
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.DeleteAnimeHandler(rr, req)
@@ -310,7 +310,7 @@ func (s *AnimeHandlerSuite) TestDelete_Success() {
 
 func (s *AnimeHandlerSuite) TestDelete_InvalidID() {
 	req := httptest.NewRequest(http.MethodDelete, "/animes/abc", nil)
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
 	s.handler.DeleteAnimeHandler(rr, req)
@@ -323,7 +323,7 @@ func (s *AnimeHandlerSuite) TestDelete_NotFound() {
 		Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/999", nil)
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "999"})
 	rr := httptest.NewRecorder()
 	s.handler.DeleteAnimeHandler(rr, req)
@@ -406,7 +406,7 @@ func (s *AnimeHandlerSuite) TestAddGenres_Success() {
 	s.svc.EXPECT().AddGenresToAnime(mock.Anything, uint(1), []uint{1, 2}).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -420,7 +420,7 @@ func (s *AnimeHandlerSuite) TestAddGenres_InvalidID() {
 	payload := &models.AnimeGenresRequest{GenreIDs: []uint{1}}
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/abc/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
@@ -431,7 +431,7 @@ func (s *AnimeHandlerSuite) TestAddGenres_InvalidID() {
 
 func (s *AnimeHandlerSuite) TestAddGenres_MissingPayload() {
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/genres", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.AddGenresToAnimeHandler(rr, req)
@@ -445,7 +445,7 @@ func (s *AnimeHandlerSuite) TestAddGenres_ServiceError() {
 		Return(apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -463,7 +463,7 @@ func (s *AnimeHandlerSuite) TestRemoveGenres_Success() {
 	s.svc.EXPECT().RemoveGenresFromAnime(mock.Anything, uint(1), []uint{1, 2}).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -476,7 +476,7 @@ func (s *AnimeHandlerSuite) TestRemoveGenres_InvalidID() {
 	payload := &models.AnimeGenresRequest{GenreIDs: []uint{1}}
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/abc/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
@@ -487,7 +487,7 @@ func (s *AnimeHandlerSuite) TestRemoveGenres_InvalidID() {
 
 func (s *AnimeHandlerSuite) TestRemoveGenres_MissingPayload() {
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/genres", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.RemoveGenresFromAnimeHandler(rr, req)
@@ -501,7 +501,7 @@ func (s *AnimeHandlerSuite) TestRemoveGenres_ServiceError() {
 		Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/genres", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -519,7 +519,7 @@ func (s *AnimeHandlerSuite) TestAddTags_Success() {
 	s.svc.EXPECT().AddTagsToAnime(mock.Anything, uint(1), []uint{1, 2}).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -532,7 +532,7 @@ func (s *AnimeHandlerSuite) TestAddTags_InvalidID() {
 	payload := &models.AnimeTagsRequest{TagIDs: []uint{1}}
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/abc/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
@@ -543,7 +543,7 @@ func (s *AnimeHandlerSuite) TestAddTags_InvalidID() {
 
 func (s *AnimeHandlerSuite) TestAddTags_MissingPayload() {
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/tags", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.AddTagsToAnimeHandler(rr, req)
@@ -557,7 +557,7 @@ func (s *AnimeHandlerSuite) TestAddTags_ServiceError() {
 		Return(apperrors.NewError(apperrors.ErrInternalServer, "DB error", "", http.StatusInternalServerError, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodPost, "/animes/1/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -575,7 +575,7 @@ func (s *AnimeHandlerSuite) TestRemoveTags_Success() {
 	s.svc.EXPECT().RemoveTagsFromAnime(mock.Anything, uint(1), []uint{1, 2}).Return(nil).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
@@ -588,7 +588,7 @@ func (s *AnimeHandlerSuite) TestRemoveTags_InvalidID() {
 	payload := &models.AnimeTagsRequest{TagIDs: []uint{1}}
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/abc/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "abc"})
 	rr := httptest.NewRecorder()
@@ -599,7 +599,7 @@ func (s *AnimeHandlerSuite) TestRemoveTags_InvalidID() {
 
 func (s *AnimeHandlerSuite) TestRemoveTags_MissingPayload() {
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/tags", jsonBuf(nil))
-	req = req.WithContext(testCtx())
+	req = req.WithContext(adminCtx())
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
 	s.handler.RemoveTagsFromAnimeHandler(rr, req)
@@ -613,7 +613,7 @@ func (s *AnimeHandlerSuite) TestRemoveTags_ServiceError() {
 		Return(apperrors.NewError(apperrors.ErrResourceNotFound, "Anime not found", "", http.StatusNotFound, nil, nil)).Once()
 
 	req := httptest.NewRequest(http.MethodDelete, "/animes/1/tags", jsonBuf(payload))
-	ctx := withPayload(testCtx(), payload)
+	ctx := withPayload(adminCtx(), payload)
 	req = req.WithContext(ctx)
 	req = mux.SetURLVars(req, map[string]string{"id": "1"})
 	rr := httptest.NewRecorder()
