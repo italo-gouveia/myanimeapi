@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.17.0...v1.17.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* **security:** enforce admin-only access on all anime write operations ([#142](https://github.com/italo-gouveia/myanimeapi/issues/142)) ([f058dda](https://github.com/italo-gouveia/myanimeapi/commit/f058ddad828bad4b26be7058c3bc9df10f91bcf0)), closes [#147](https://github.com/italo-gouveia/myanimeapi/issues/147)
+
 # [1.17.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.16.0...v1.17.0) (2026-05-08)
 
 
