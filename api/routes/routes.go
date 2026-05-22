@@ -28,6 +28,7 @@ import (
 	gqlhandler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // RegisterRoutes registers all routes for the application.
@@ -57,6 +58,12 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 
 	// Apply error handling middleware
 	router.Use(middleware.ErrorHandlingMiddleware)
+
+	// Apply gzip compression middleware
+	router.Use(middleware.GzipMiddleware)
+
+	// Apply Prometheus metrics middleware
+	router.Use(middleware.MetricsMiddleware)
 
 	// Apply global middleware
 	router.Use(middleware.LoggingMiddleware)
@@ -203,6 +210,17 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	v1Router.Handle("/graphql", gqlSrv)
 	v1Router.Handle("/graphql/playground", playground.Handler("GraphQL Playground", "/v1/graphql"))
 	log.Info("GraphQL endpoint registered at /v1/graphql")
+
+	// Expose Prometheus metrics — intentionally on the root router (not v1) so it
+	// is reachable without authentication and excluded from rate limiting.
+	// @Summary Prometheus metrics
+	// @Description Exposes runtime metrics in Prometheus text format (scrape endpoint).
+	// @Tags monitoring
+	// @Produce text/plain
+	// @Success 200 {string} string "metrics"
+	// @Router /metrics [get]
+	router.Handle("/metrics", promhttp.Handler()).Methods("GET")
+	log.Info("Prometheus /metrics endpoint registered")
 
 	// Register Swagger documentation
 	if swaggerURL != "" {
