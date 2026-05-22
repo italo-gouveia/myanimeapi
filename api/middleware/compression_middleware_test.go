@@ -35,7 +35,7 @@ func TestGzipMiddleware_CompressesWhenAccepted(t *testing.T) {
 	// Body must be valid gzip that decompresses to the original payload.
 	gz, err := gzip.NewReader(rr.Body)
 	require.NoError(t, err)
-	defer gz.Close()
+	defer func() { require.NoError(t, gz.Close()) }()
 
 	body, err := io.ReadAll(gz)
 	require.NoError(t, err)
@@ -109,7 +109,7 @@ func TestGzipMiddleware_NonSuccessStatusCode(t *testing.T) {
 
 	gz, err := gzip.NewReader(rr.Body)
 	require.NoError(t, err)
-	defer gz.Close()
+	defer func() { require.NoError(t, gz.Close()) }()
 
 	body, err := io.ReadAll(gz)
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestGzipMiddleware_LargePayload(t *testing.T) {
 
 	gz, err := gzip.NewReader(rr.Body)
 	require.NoError(t, err)
-	defer gz.Close()
+	defer func() { require.NoError(t, gz.Close()) }()
 
 	body, err := io.ReadAll(gz)
 	require.NoError(t, err)
