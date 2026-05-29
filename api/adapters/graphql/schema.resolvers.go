@@ -8,11 +8,10 @@ package graphql
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	"myanimeapi/api/adapters/graphql/generated"
 	"myanimeapi/api/adapters/graphql/model"
 	"myanimeapi/api/models"
+	"strconv"
 )
 
 // Register is the resolver for the register field.
@@ -106,14 +105,32 @@ func (r *queryResolver) Animes(ctx context.Context, page *int, limit *int, filte
 		if filter.Genre != nil {
 			f.Genre = *filter.Genre
 		}
+		if len(filter.Genres) > 0 {
+			f.Genres = filter.Genres
+		}
 		if filter.Tag != nil {
 			f.Tag = *filter.Tag
+		}
+		if len(filter.Tags) > 0 {
+			f.Tags = filter.Tags
 		}
 		if filter.RatingMin != nil {
 			f.RatingMin = *filter.RatingMin
 		}
 		if filter.RatingMax != nil {
 			f.RatingMax = *filter.RatingMax
+		}
+		if filter.EpisodesMin != nil {
+			f.EpisodesMin = *filter.EpisodesMin
+		}
+		if filter.EpisodesMax != nil {
+			f.EpisodesMax = *filter.EpisodesMax
+		}
+		if filter.YearFrom != nil {
+			f.YearFrom = *filter.YearFrom
+		}
+		if filter.YearTo != nil {
+			f.YearTo = *filter.YearTo
 		}
 		if filter.SortBy != nil {
 			f.SortBy = *filter.SortBy
@@ -201,4 +218,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-

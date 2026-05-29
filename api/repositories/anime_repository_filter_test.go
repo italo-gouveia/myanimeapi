@@ -241,3 +241,88 @@ func TestGetWithFilters_CombinedFilters(t *testing.T) {
 	assert.Len(t, result, 1)
 	assert.Equal(t, "Naruto", result[0].(*models.Anime).Title)
 }
+
+// ---- Advanced search tests --------------------------------------------------
+
+func TestGetWithFilters_MultipleGenres_ANDSemantics(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	action := models.Genre{Name: "Action"}
+	adventure := models.Genre{Name: "Adventure"}
+	romance := models.Genre{Name: "Romance"}
+	require.NoError(t, db.Create(&action).Error)
+	require.NoError(t, db.Create(&adventure).Error)
+	require.NoError(t, db.Create(&romance).Error)
+
+	// "Naruto" has both Action and Adventure.
+	seed(t, db, &models.Anime{Title: "Naruto", Genres: []models.Genre{action, adventure}})
+	// "Bleach" has only Action.
+	seed(t, db, &models.Anime{Title: "Bleach", Genres: []models.Genre{action}})
+	// "Clannad" has only Romance.
+	seed(t, db, &models.Anime{Title: "Clannad", Genres: []models.Genre{romance}})
+
+	// Filter by Action AND Adventure — only Naruto qualifies.
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{
+		Genres: []string{"Action", "Adventure"},
+	}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, result, 1)
+	assert.Equal(t, "Naruto", result[0].(*models.Anime).Title)
+}
+
+func TestGetWithFilters_MultipleTags_ANDSemantics(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	ninja := models.Tag{Name: "Ninja"}
+	magic := models.Tag{Name: "Magic"}
+	require.NoError(t, db.Create(&ninja).Error)
+	require.NoError(t, db.Create(&magic).Error)
+
+	// "NinjaMage" has both Ninja and Magic.
+	seed(t, db, &models.Anime{Title: "NinjaMage", Tags: []models.Tag{ninja, magic}})
+	// "NinjaOnly" has only Ninja.
+	seed(t, db, &models.Anime{Title: "NinjaOnly", Tags: []models.Tag{ninja}})
+
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{
+		Tags: []string{"Ninja", "Magic"},
+	}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, result, 1)
+	assert.Equal(t, "NinjaMage", result[0].(*models.Anime).Title)
+}
+
+func TestGetWithFilters_EpisodesRange(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	seed(t, db, &models.Anime{Title: "Short", Episodes: 12})
+	seed(t, db, &models.Anime{Title: "Medium", Episodes: 26})
+	seed(t, db, &models.Anime{Title: "Long", Episodes: 100})
+
+	// Episodes between 20 and 50.
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{
+		EpisodesMin: 20,
+		EpisodesMax: 50,
+	}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, result, 1)
+	assert.Equal(t, "Medium", result[0].(*models.Anime).Title)
+}
+
+func TestGetWithFilters_EpisodesMin_Only(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	seed(t, db, &models.Anime{Title: "Short", Episodes: 12})
+	seed(t, db, &models.Anime{Title: "Long", Episodes: 100})
+
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{EpisodesMin: 50}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, "Long", result[0].(*models.Anime).Title)
+}

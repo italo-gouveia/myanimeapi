@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
@@ -174,18 +175,24 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 // @Description  Returns a paginated, filterable, sortable list of animes.
 // @Tags         anime
 // @Produce      json
-// @Param        page        query  int     false  "Page number (default 1)"
-// @Param        limit       query  int     false  "Items per page (default 100)"
-// @Param        status      query  string  false  "Filter by status"        Enums(Airing,Completed,Upcoming)
-// @Param        genre       query  string  false  "Filter by exact genre name"
-// @Param        tag         query  string  false  "Filter by exact tag name"
-// @Param        rating_min  query  number  false  "Minimum rating (0–10)"
-// @Param        rating_max  query  number  false  "Maximum rating (0–10)"
-// @Param        sort_by     query  string  false  "Sort field"              Enums(title,rating,episodes,created_at,start_date)
-// @Param        order       query  string  false  "Sort direction"          Enums(asc,desc)
-// @Success      200         {object}  object{data=[]models.AnimeResponse,total=integer,page=integer,limit=integer}
-// @Failure      400         {object}  errors.ErrorResponse  "Invalid filter or pagination"
-// @Failure      500         {object}  errors.ErrorResponse  "Internal server error"
+// @Param        page          query  int     false  "Page number (default 1)"
+// @Param        limit         query  int     false  "Items per page (default 100)"
+// @Param        status        query  string  false  "Filter by status"                         Enums(Airing,Completed,Upcoming)
+// @Param        genre         query  string  false  "Filter by exact genre name (single)"
+// @Param        genres        query  string  false  "Filter by multiple genres, comma-separated (AND logic)"
+// @Param        tag           query  string  false  "Filter by exact tag name (single)"
+// @Param        tags          query  string  false  "Filter by multiple tags, comma-separated (AND logic)"
+// @Param        rating_min    query  number  false  "Minimum rating (0–10)"
+// @Param        rating_max    query  number  false  "Maximum rating (0–10)"
+// @Param        episodes_min  query  int     false  "Minimum episode count"
+// @Param        episodes_max  query  int     false  "Maximum episode count"
+// @Param        year_from     query  int     false  "Start-date year lower bound (inclusive)"
+// @Param        year_to       query  int     false  "Start-date year upper bound (inclusive)"
+// @Param        sort_by       query  string  false  "Sort field"                               Enums(title,rating,episodes,created_at,start_date)
+// @Param        order         query  string  false  "Sort direction"                           Enums(asc,desc)
+// @Success      200           {object}  object{data=[]models.AnimeResponse,total=integer,page=integer,limit=integer}
+// @Failure      400           {object}  errors.ErrorResponse  "Invalid filter or pagination"
+// @Failure      500           {object}  errors.ErrorResponse  "Internal server error"
 // @Router       /animes [get]
 func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -205,11 +212,30 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 		SortBy:    q.Get("sort_by"),
 		SortOrder: q.Get("order"),
 	}
+	// Multi-value: genres and tags are comma-separated lists.
+	if v := q.Get("genres"); v != "" {
+		filter.Genres = splitCSV(v)
+	}
+	if v := q.Get("tags"); v != "" {
+		filter.Tags = splitCSV(v)
+	}
 	if v := q.Get("rating_min"); v != "" {
 		filter.RatingMin, _ = strconv.ParseFloat(v, 64)
 	}
 	if v := q.Get("rating_max"); v != "" {
 		filter.RatingMax, _ = strconv.ParseFloat(v, 64)
+	}
+	if v := q.Get("episodes_min"); v != "" {
+		filter.EpisodesMin, _ = strconv.Atoi(v)
+	}
+	if v := q.Get("episodes_max"); v != "" {
+		filter.EpisodesMax, _ = strconv.Atoi(v)
+	}
+	if v := q.Get("year_from"); v != "" {
+		filter.YearFrom, _ = strconv.Atoi(v)
+	}
+	if v := q.Get("year_to"); v != "" {
+		filter.YearTo, _ = strconv.Atoi(v)
 	}
 	if err := filter.Validate(); err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid filter parameters", err.Error(), nil)
@@ -566,6 +592,18 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
 		return
 	}
+}
+
+// splitCSV splits a comma-separated string into a trimmed, non-empty slice.
+// Used to parse multi-value query params like ?genres=Action,Adventure.
+func splitCSV(s string) []string {
+	var result []string
+	for _, part := range strings.Split(s, ",") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 // RegisterAnimeRoutes registers all anime-related routes

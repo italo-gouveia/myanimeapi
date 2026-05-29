@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.23 AS builder
+FROM golang:1.22 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -39,9 +39,6 @@ RUN chmod +x /app/main
 
 # Copy the Swagger documentation
 COPY --from=builder /app/cmd/docs ./cmd/docs
-
-# Copy the .env file
-COPY .env .
 
 # Change ownership of the application files to the non-root user
 RUN chown -R appuser:appgroup /app

@@ -489,9 +489,15 @@ type AnimeList {
 input AnimeFilterInput {
   status: String
   genre: String
+  genres: [String!]
   tag: String
+  tags: [String!]
   ratingMin: Float
   ratingMax: Float
+  episodesMin: Int
+  episodesMax: Int
+  yearFrom: Int
+  yearTo: Int
   sortBy: String
   sortOrder: String
 }
@@ -3097,7 +3103,7 @@ func (ec *executionContext) unmarshalInputAnimeFilterInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"status", "genre", "tag", "ratingMin", "ratingMax", "sortBy", "sortOrder"}
+	fieldsInOrder := [...]string{"status", "genre", "genres", "tag", "tags", "ratingMin", "ratingMax", "episodesMin", "episodesMax", "yearFrom", "yearTo", "sortBy", "sortOrder"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3118,6 +3124,13 @@ func (ec *executionContext) unmarshalInputAnimeFilterInput(ctx context.Context, 
 				return it, err
 			}
 			it.Genre = data
+		case "genres":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genres"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Genres = data
 		case "tag":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -3125,6 +3138,13 @@ func (ec *executionContext) unmarshalInputAnimeFilterInput(ctx context.Context, 
 				return it, err
 			}
 			it.Tag = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
 		case "ratingMin":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ratingMin"))
 			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
@@ -3139,6 +3159,34 @@ func (ec *executionContext) unmarshalInputAnimeFilterInput(ctx context.Context, 
 				return it, err
 			}
 			it.RatingMax = data
+		case "episodesMin":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("episodesMin"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EpisodesMin = data
+		case "episodesMax":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("episodesMax"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EpisodesMax = data
+		case "yearFrom":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("yearFrom"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.YearFrom = data
+		case "yearTo":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("yearTo"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.YearTo = data
 		case "sortBy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -4432,6 +4480,42 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

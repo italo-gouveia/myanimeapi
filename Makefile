@@ -1,12 +1,13 @@
 # MyAnimeAPI Makefile
 # Useful commands for development and testing
 
-.PHONY: help build run test test-unit test-integration test-e2e test-coverage test-mocks clean docker-build docker-run
+.PHONY: help build run test test-race test-unit test-integration test-e2e test-coverage test-mocks clean docker-build docker-up docker-down docker-logs docker-test docker-run swagger lint migrate-up migrate-down seed
 
 # Variables
 BINARY_NAME=myanimeapi
-BUILD_DIR=build
+BUILD_DIR=bin
 MAIN_PATH=cmd/main.go
+GO=go
 
 # Default command
 .DEFAULT_GOAL := help
@@ -20,7 +21,7 @@ help: ## Shows this help message
 build: ## Compiles the project
 	@echo "Compiling MyAnimeAPI..."
 	@mkdir -p $(BUILD_DIR)
-	go build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	$(GO) build -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd
 	@echo "Build completed: $(BUILD_DIR)/$(BINARY_NAME)"
 
 # Run
@@ -31,7 +32,11 @@ run: ## Runs the project
 # Tests
 test: ## Runs all tests
 	@echo "Running all tests..."
-	go test -v ./tests/...
+	$(GO) test ./... -count=1 -timeout 60s
+
+test-race: ## Runs all tests with race detector
+	@echo "Running all tests with race detector..."
+	$(GO) test ./... -race -count=1 -timeout 60s
 
 test-unit: ## Runs only unit tests
 	@echo "Running unit tests..."
@@ -81,16 +86,28 @@ test-specific: ## Runs specific test (use TEST_NAME=test_name)
 # Cleanup
 clean: ## Cleans build and test files
 	@echo "Cleaning files..."
-	rm -rf $(BUILD_DIR)
+	rm -rf bin/
 	rm -f coverage.out coverage.html
-	go clean -testcache
+	$(GO) clean -testcache
 	@echo "Cleanup completed!"
 
 # Docker
 docker-build: ## Builds Docker image
 	@echo "Building Docker image..."
-	docker build -t $(BINARY_NAME) .
-	@echo "Docker image built: $(BINARY_NAME)"
+	docker build -t $(BINARY_NAME):latest .
+	@echo "Docker image built: $(BINARY_NAME):latest"
+
+docker-up: ## Starts all services with docker compose
+	docker compose up -d
+
+docker-down: ## Stops all services
+	docker compose down
+
+docker-logs: ## Tails api service logs
+	docker compose logs -f api
+
+docker-test: ## Runs tests in docker compose test environment
+	docker compose -f docker-compose.test.yml up --abort-on-container-exit
 
 docker-run: ## Runs Docker container
 	@echo "Running Docker container..."
@@ -117,19 +134,20 @@ fmt: ## Formats the code
 	go vet ./...
 
 # Migrations
-migrate-up: ## Runs database migrations (via the application itself at startup)
-	@echo "Migrations are embedded and run automatically at application startup."
-	@echo "To inspect migration files: ls internal/database/migrations/"
+migrate-up: ## Runs database migrations up
+	$(GO) run ./cmd/migrate up
+
+migrate-down: ## Rolls back the last database migration
+	$(GO) run ./cmd/migrate down
+
+seed: ## Seeds the database with initial data
+	$(GO) run ./cmd/seed
 
 # Swagger
 swagger: ## Generates Swagger documentation
 	@echo "Generating Swagger documentation..."
-	@if command -v swag > /dev/null; then \
-		swag init -g cmd/main.go --dir ./cmd,./api/adapters/http,./api/models,./internal/errors -o cmd/docs; \
-		echo "Swagger documentation generated!"; \
-	else \
-		echo "swag not found. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \
-	fi
+	swag init --dir ./cmd,./api/adapters/http,./api/models,./internal/errors --output ./cmd/docs
+	@echo "Swagger documentation generated!"
 
 # Development
 dev: ## Runs in development mode with hot reload

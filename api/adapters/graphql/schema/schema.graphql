@@ -43,9 +43,15 @@ type AnimeList {
 input AnimeFilterInput {
   status: String
   genre: String
+  genres: [String!]
   tag: String
+  tags: [String!]
   ratingMin: Float
   ratingMax: Float
+  episodesMin: Int
+  episodesMax: Int
+  yearFrom: Int
+  yearTo: Int
   sortBy: String
   sortOrder: String
 }
