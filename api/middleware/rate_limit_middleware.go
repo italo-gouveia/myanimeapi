@@ -5,6 +5,8 @@ package middleware
 
 import (
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,6 +14,21 @@ import (
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 )
+
+// defaultPerMinuteLimit is the per-IP request budget for non-auth paths,
+// resolved at package load from RATE_LIMIT_MAX_REQUESTS (default 50).
+// Bumped via env var when running Locust against the local stack so
+// load-test traffic from a single container IP does not get 429'd.
+var defaultPerMinuteLimit = resolvePerMinuteLimit()
+
+func resolvePerMinuteLimit() int {
+	if v := os.Getenv("RATE_LIMIT_MAX_REQUESTS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 50
+}
 
 // RateLimiter is a struct that holds rate-limiting data for clients.
 // It tracks the number of requests made by each client within a specified time window.
@@ -96,6 +113,13 @@ func (rl *RateLimiter) StrictRateLimitMiddleware(maxRequests int, window time.Du
 // This will enforce rate limits for requests to "/path".
 func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Prometheus scrape endpoint is explicitly excluded from rate limiting
+		// (see routes.go — /metrics must remain reachable to the scraper).
+		if r.URL.Path == "/metrics" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		log := logger.Get()
 		ip := clientIP(r)
 
@@ -113,7 +137,7 @@ func (rl *RateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 			limit = 5
 			window = time.Minute
 		default:
-			limit = 50
+			limit = defaultPerMinuteLimit
 			window = time.Minute
 		}
 
