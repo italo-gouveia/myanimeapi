@@ -8,6 +8,8 @@ import (
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
 // AnimeRepositoryImpl implements the AnimeRepository interface
@@ -254,65 +256,72 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 	// Conditions are applied twice — once for COUNT and once for SELECT — so
 	// the total always reflects exactly the same result set as the returned page.
 
-	// --- COUNT ---
-	cq := r.db.WithContext(ctx).Model(&models.Anime{})
-	if filter.Title != "" {
-		cq = cq.Where("animes.title LIKE ?", "%"+filter.Title+"%")
-	}
-	if filter.Status != "" {
-		cq = cq.Where("animes.status = ?", filter.Status)
-	}
-	if filter.RatingMin > 0 {
-		cq = cq.Where("animes.rating >= ?", filter.RatingMin)
-	}
-	if filter.RatingMax > 0 {
-		cq = cq.Where("animes.rating <= ?", filter.RatingMax)
-	}
-	if filter.Genre != "" {
-		cq = cq.Where(
-			"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
-			filter.Genre,
-		)
-	}
-	if filter.Tag != "" {
-		cq = cq.Where(
-			"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
-			filter.Tag,
-		)
+	// applyAdvancedFilters adds all WHERE clauses to a *gorm.DB query based on the filter.
+	applyAdvancedFilters := func(q *gorm.DB) *gorm.DB {
+		if filter.Title != "" {
+			q = q.Where("animes.title LIKE ?", "%"+filter.Title+"%")
+		}
+		if filter.Status != "" {
+			q = q.Where("animes.status = ?", filter.Status)
+		}
+		if filter.RatingMin > 0 {
+			q = q.Where("animes.rating >= ?", filter.RatingMin)
+		}
+		if filter.RatingMax > 0 {
+			q = q.Where("animes.rating <= ?", filter.RatingMax)
+		}
+		if filter.EpisodesMin > 0 {
+			q = q.Where("animes.episodes >= ?", filter.EpisodesMin)
+		}
+		if filter.EpisodesMax > 0 {
+			q = q.Where("animes.episodes <= ?", filter.EpisodesMax)
+		}
+		if filter.YearFrom > 0 {
+			q = q.Where("strftime('%Y', animes.start_date) >= ?", fmt.Sprintf("%d", filter.YearFrom))
+		}
+		if filter.YearTo > 0 {
+			q = q.Where("strftime('%Y', animes.start_date) <= ?", fmt.Sprintf("%d", filter.YearTo))
+		}
+		// Single genre (legacy).
+		if filter.Genre != "" {
+			q = q.Where(
+				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
+				filter.Genre,
+			)
+		}
+		// Multiple genres: anime must belong to ALL of them (AND semantics — one subquery per genre).
+		for _, genre := range filter.Genres {
+			q = q.Where(
+				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
+				genre,
+			)
+		}
+		// Single tag (legacy).
+		if filter.Tag != "" {
+			q = q.Where(
+				"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
+				filter.Tag,
+			)
+		}
+		// Multiple tags: anime must have ALL of them (AND semantics).
+		for _, tag := range filter.Tags {
+			q = q.Where(
+				"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
+				tag,
+			)
+		}
+		return q
 	}
 
+	// --- COUNT ---
 	var total int64
-	if err := cq.Count(&total).Error; err != nil {
+	if err := applyAdvancedFilters(r.db.WithContext(ctx).Model(&models.Anime{})).Count(&total).Error; err != nil {
 		r.logger.WithField("error", err.Error()).Error("Failed to count animes with filters")
 		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// --- FETCH ---
-	fq := r.db.WithContext(ctx).Model(&models.Anime{})
-	if filter.Title != "" {
-		fq = fq.Where("animes.title LIKE ?", "%"+filter.Title+"%")
-	}
-	if filter.Status != "" {
-		fq = fq.Where("animes.status = ?", filter.Status)
-	}
-	if filter.RatingMin > 0 {
-		fq = fq.Where("animes.rating >= ?", filter.RatingMin)
-	}
-	if filter.RatingMax > 0 {
-		fq = fq.Where("animes.rating <= ?", filter.RatingMax)
-	}
-	if filter.Genre != "" {
-		fq = fq.Where(
-			"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
-			filter.Genre,
-		)
-	}
-	if filter.Tag != "" {
-		fq = fq.Where(
-			"animes.id IN (SELECT ats.anime_id FROM anime_tags ats JOIN tags tg ON ats.tag_id = tg.id WHERE tg.name = ?)",
-			filter.Tag,
-		)
-	}
+	fq := applyAdvancedFilters(r.db.WithContext(ctx).Model(&models.Anime{}))
 
 	var animes []models.Anime
 	offset := (page - 1) * limit

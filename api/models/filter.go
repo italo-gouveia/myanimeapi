@@ -33,14 +33,26 @@ type AnimeFilter struct {
 	Title string
 	// Status filters by exact status: "Airing", "Completed", or "Upcoming".
 	Status string
-	// Genre filters to animes that belong to a genre with this exact name.
+	// Genre filters to animes that belong to a genre with this exact name (single, legacy).
 	Genre string
-	// Tag filters to animes that have a tag with this exact name.
+	// Genres filters to animes that have ALL of the named genres (AND semantics).
+	Genres []string
+	// Tag filters to animes that have a tag with this exact name (single, legacy).
 	Tag string
+	// Tags filters to animes that have ALL of the named tags (AND semantics).
+	Tags []string
 	// RatingMin includes only animes with rating >= RatingMin. 0 = no lower bound.
 	RatingMin float64
 	// RatingMax includes only animes with rating <= RatingMax. 0 = no upper bound.
 	RatingMax float64
+	// EpisodesMin includes only animes with episodes >= EpisodesMin. 0 = no lower bound.
+	EpisodesMin int
+	// EpisodesMax includes only animes with episodes <= EpisodesMax. 0 = no upper bound.
+	EpisodesMax int
+	// YearFrom includes only animes whose start_date year >= YearFrom. 0 = no lower bound.
+	YearFrom int
+	// YearTo includes only animes whose start_date year <= YearTo. 0 = no upper bound.
+	YearTo int
 	// SortBy is the field to sort by. Must be a key in AllowedSortFields.
 	SortBy string
 	// SortOrder is "asc" (default) or "desc".
@@ -75,6 +87,24 @@ func (f AnimeFilter) Validate() error {
 	if f.RatingMin > 0 && f.RatingMax > 0 && f.RatingMin > f.RatingMax {
 		return fmt.Errorf("rating_min cannot be greater than rating_max")
 	}
+	if f.EpisodesMin < 0 {
+		return fmt.Errorf("episodes_min must be >= 0")
+	}
+	if f.EpisodesMax < 0 {
+		return fmt.Errorf("episodes_max must be >= 0")
+	}
+	if f.EpisodesMin > 0 && f.EpisodesMax > 0 && f.EpisodesMin > f.EpisodesMax {
+		return fmt.Errorf("episodes_min cannot be greater than episodes_max")
+	}
+	if f.YearFrom < 0 {
+		return fmt.Errorf("year_from must be >= 0")
+	}
+	if f.YearTo < 0 {
+		return fmt.Errorf("year_to must be >= 0")
+	}
+	if f.YearFrom > 0 && f.YearTo > 0 && f.YearFrom > f.YearTo {
+		return fmt.Errorf("year_from cannot be greater than year_to")
+	}
 	return nil
 }
 
@@ -96,6 +126,13 @@ func (f AnimeFilter) OrderClause() string {
 // fields. Two equal AnimeFilter values always produce the same suffix, making
 // it safe to embed in cache keys.
 func (f AnimeFilter) CacheKeySuffix() string {
-	return fmt.Sprintf("st=%s:g=%s:t=%s:rmin=%.2f:rmax=%.2f:sort=%s:%s:ti=%s",
-		f.Status, f.Genre, f.Tag, f.RatingMin, f.RatingMax, f.SortBy, f.SortOrder, f.Title)
+	return fmt.Sprintf(
+		"st=%s:g=%s:gs=%s:t=%s:ts=%s:rmin=%.2f:rmax=%.2f:emin=%d:emax=%d:yf=%d:yt=%d:sort=%s:%s:ti=%s",
+		f.Status, f.Genre, strings.Join(f.Genres, ","),
+		f.Tag, strings.Join(f.Tags, ","),
+		f.RatingMin, f.RatingMax,
+		f.EpisodesMin, f.EpisodesMax,
+		f.YearFrom, f.YearTo,
+		f.SortBy, f.SortOrder, f.Title,
+	)
 }

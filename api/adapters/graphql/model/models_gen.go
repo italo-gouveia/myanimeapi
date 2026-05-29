@@ -20,13 +20,19 @@ type Anime struct {
 }
 
 type AnimeFilterInput struct {
-	Status    *string  `json:"status,omitempty"`
-	Genre     *string  `json:"genre,omitempty"`
-	Tag       *string  `json:"tag,omitempty"`
-	RatingMin *float64 `json:"ratingMin,omitempty"`
-	RatingMax *float64 `json:"ratingMax,omitempty"`
-	SortBy    *string  `json:"sortBy,omitempty"`
-	SortOrder *string  `json:"sortOrder,omitempty"`
+	Status      *string  `json:"status,omitempty"`
+	Genre       *string  `json:"genre,omitempty"`
+	Genres      []string `json:"genres,omitempty"`
+	Tag         *string  `json:"tag,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	RatingMin   *float64 `json:"ratingMin,omitempty"`
+	RatingMax   *float64 `json:"ratingMax,omitempty"`
+	EpisodesMin *int     `json:"episodesMin,omitempty"`
+	EpisodesMax *int     `json:"episodesMax,omitempty"`
+	YearFrom    *int     `json:"yearFrom,omitempty"`
+	YearTo      *int     `json:"yearTo,omitempty"`
+	SortBy      *string  `json:"sortBy,omitempty"`
+	SortOrder   *string  `json:"sortOrder,omitempty"`
 }
 
 type AnimeList struct {
