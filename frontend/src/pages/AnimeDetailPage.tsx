@@ -1,6 +1,9 @@
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAnime } from '../lib/api/animes'
+import { listFavorites, addFavorite, removeFavorite } from '../lib/api/favorites'
+import { useAuth } from '../lib/auth/AuthProvider'
+import { Button } from '../components/Button'
 
 function formatYear(date: string): string | null {
   const year = new Date(date).getUTCFullYear()
@@ -10,11 +13,31 @@ function formatYear(date: string): string | null {
 export function AnimeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const animeId = id ? Number.parseInt(id, 10) : NaN
+  const { isAuthenticated } = useAuth()
+  const queryClient = useQueryClient()
 
   const { data: anime, isLoading, isError, error } = useQuery({
     queryKey: ['anime', animeId],
     queryFn: () => getAnime(animeId),
     enabled: Number.isFinite(animeId),
+  })
+
+  const { data: favorites } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: listFavorites,
+    enabled: isAuthenticated,
+  })
+
+  const isFavorited = favorites?.some((f) => f.anime_id === animeId) ?? false
+
+  const addMutation = useMutation({
+    mutationFn: () => addFavorite(animeId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: () => removeFavorite(animeId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
   })
 
   if (!Number.isFinite(animeId)) {
@@ -52,9 +75,25 @@ export function AnimeDetailPage() {
         <Link to="/" className="text-sm text-brand-700 underline w-fit">
           ← Catalog
         </Link>
-        <h1 className="text-3xl font-bold" data-testid="anime-detail-title">
-          {anime.title}
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-3xl font-bold" data-testid="anime-detail-title">
+            {anime.title}
+          </h1>
+          {isAuthenticated && (
+            <Button
+              variant={isFavorited ? 'secondary' : 'primary'}
+              className="shrink-0"
+              disabled={addMutation.isPending || removeMutation.isPending}
+              onClick={() =>
+                isFavorited ? removeMutation.mutate() : addMutation.mutate()
+              }
+              data-testid="favorite-toggle"
+              aria-pressed={isFavorited}
+            >
+              {isFavorited ? '★ Saved' : '☆ Save'}
+            </Button>
+          )}
+        </div>
         <div className="flex items-center gap-3 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1 font-semibold text-brand-700">
             ★ {anime.rating.toFixed(1)}
