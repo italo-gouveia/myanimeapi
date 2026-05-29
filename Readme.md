@@ -1,12 +1,32 @@
 # MyAnimeAPI
 
-MyAnimeAPI is a multi-protocol API for managing anime, users, reviews, and authentication. It exposes both a **REST** interface and a **GraphQL** interface, built on a hexagonal architecture so new adapters (gRPC, WebSocket, etc.) can be added without touching business logic. The backend is written in Go, uses Gorilla Mux for REST routing, gqlgen for GraphQL, GORM for database interactions, and PostgreSQL as the database.
+MyAnimeAPI is a full-stack anime management platform exposing a **REST API**, a **GraphQL API**, and a **React SPA** frontend — all containerised and ready to run with a single `docker compose up`. The backend is built in Go with a hexagonal architecture (Gorilla Mux · gqlgen · GORM · PostgreSQL · Redis). The frontend is a Vite + React 18 + TypeScript + Tailwind SPA with JWT auth, TanStack Query, and full favorites/profile pages.
+
+---
+
+## 🚀 Service Entry Points
+
+> Run `docker compose up --build` then open any URL below in your browser.
+
+| Service | Local URL | Docker URL | Description |
+|---------|-----------|------------|-------------|
+| **Frontend** | `http://localhost:5173` (dev) | `http://localhost:5173` | Vite + React SPA (nginx in Docker) |
+| **REST API** | `http://localhost:8080/v1` | `http://localhost:8080/v1` | Go REST API |
+| **Swagger UI** | `http://localhost:8080/swagger/index.html` | `http://localhost:8080/swagger/index.html` | Interactive REST docs |
+| **GraphQL API** | `http://localhost:8080/v1/graphql` | `http://localhost:8080/v1/graphql` | GraphQL endpoint (POST) |
+| **GraphQL Playground** | `http://localhost:8080/v1/graphql/playground` | `http://localhost:8080/v1/graphql/playground` | Interactive GraphQL explorer |
+| **Prometheus** | — | `http://localhost:9090` | Metrics scraper UI |
+| **Grafana** | — | `http://localhost:3000` | Dashboards (admin / admin) |
+| **Locust** | — | `http://localhost:8089` | Load test UI (`--profile load-test`) |
+| **Health check** | `http://localhost:8080/v1/health` | `http://localhost:8080/v1/health` | API liveness probe |
+| **Metrics endpoint** | `http://localhost:8080/metrics` | `http://localhost:8080/metrics` | Prometheus scrape target |
 
 ---
 
 ## Table of Contents
 
 - [MyAnimeAPI](#myanimeapi)
+  - [🚀 Service Entry Points](#-service-entry-points)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Technologies Used](#technologies-used)
@@ -58,52 +78,70 @@ MyAnimeAPI is a multi-protocol API for managing anime, users, reviews, and authe
 
 ## Features
 
-- **Anime Management**: Create, read, update, and delete anime entries with support for genres and tags
-- **User Management**: Register, authenticate, and manage users with enhanced security
-- **Review Management**: Add, update, and delete reviews for anime with media attachments
-- **Genre Management**: Manage anime genres with CRUD operations and bulk operations
-- **Tag Management**: Manage anime tags with CRUD operations and bulk operations
-- **Authentication**: JWT-based authentication with enhanced security features
-- **Pagination**: Improved pagination with cursor-based navigation
-- **Rate Limiting**: Enhanced rate limiting with different limits for auth and non-auth endpoints
-- **Swagger Documentation**: Auto-generated API documentation with detailed examples
-- **Favorite Anime**: Add and manage favorite anime entries with bulk operations
-- **Error Handling**: Structured error responses with detailed information and context
-- **Health Monitoring**: Comprehensive health check endpoint with dependency status
-- **Security**: Regular security scanning with OWASP Dependency-Check, Semgrep, and Gitleaks
-- **Dependency Management**: Proper dependency injection and service initialization
-- **Media Storage**: Support for both local and S3 storage of media files
-- **Bulk Operations**: Enhanced bulk operations for genres and tags with validation
-- **Request Validation**: Comprehensive request validation and sanitization
-- **Logging**: Structured logging with request ID tracking
-- **Metrics**: Prometheus metrics for monitoring and alerting
+### Backend
+- **Anime Management** — CRUD with genres, tags, and advanced search (multi-genre AND, episode range, year range)
+- **User Management** — register, authenticate, manage profiles with JWT
+- **Review Management** — CRUD with media attachments
+- **Favorites** — add/remove anime favorites per user
+- **GraphQL API** — parallel REST interface with the same business logic
+- **Gzip Compression** — automatic response compression via middleware
+- **Prometheus Metrics** — `/metrics` scrape endpoint with per-route histograms
+- **Rate Limiting** — per-IP request throttling with Redis
+- **Swagger Docs** — auto-generated at `/swagger/index.html`
+- **Advanced Search** — filter by genre/tag AND-semantics, episode count range, year range
+- **Hexagonal Architecture** — business logic decoupled from REST/GraphQL adapters
+- **Health Monitoring** — `/v1/health` reports DB, cache, and storage status
+
+### Frontend (React SPA)
+- **Catalog** — paginated anime list with debounced full-text search
+- **Anime Detail** — synopsis, rating, genres/tags badges, reviews list
+- **Favorites** — authenticated users can save/remove anime; hover-reveal remove button
+- **Profile** — displays avatar (initials fallback), email, bio, member since, sign-out
+- **Auth** — JWT stored in localStorage; axios interceptor adds `Authorization` header automatically
+- **Protected Routes** — `/favorites` and `/profile` redirect to login when unauthenticated
+- **Observability stack** — Grafana dashboards + Prometheus alerts wired out of the box
 
 ## Technologies Used
 
-- **Go**: Backend programming language (v1.23+)
-- **Gorilla Mux**: HTTP router and dispatcher
-- **gqlgen**: Code-first GraphQL server (`github.com/99designs/gqlgen`)
-- **GORM**: ORM for database interactions
-- **PostgreSQL**: Relational database (v15)
-- **golang-migrate**: SQL-based schema migrations (embedded in binary)
-- **JWT**: JSON Web Tokens for authentication
-- **Swagger**: REST API documentation (swaggo)
-- **Docker**: Containerization for easy deployment and development
-- **Validator**: Input validation
-- **AWS SDK**: For S3 storage integration (optional)
-- **Bluemonday**: HTML sanitization
-- **GolangCI-Lint**: Code quality and style checking
-- **SonarCloud**: Code quality and security analysis
-- **Semantic Release**: Automated version management
+### Backend
+- **Go 1.25** — backend language
+- **Gorilla Mux** — HTTP router
+- **gqlgen** — code-first GraphQL server
+- **GORM** — ORM for PostgreSQL (production) and SQLite (tests)
+- **PostgreSQL 15** — relational database
+- **Redis 7** — rate-limit counters and response cache
+- **golang-migrate** — embedded SQL schema migrations
+- **JWT** (`golang-jwt`) — stateless authentication
+- **Swagger / swaggo** — auto-generated REST docs at `/swagger/index.html`
+- **Prometheus client** — `/metrics` scrape endpoint + middleware histograms
+- **Gzip middleware** — transparent response compression via `sync.Pool`
+
+### Frontend
+- **React 18** + **TypeScript** — component model
+- **Vite 5** — bundler / dev server with HMR
+- **Tailwind CSS 3** — utility-first styling
+- **React Router v6** — client-side routing with protected routes
+- **TanStack Query v5** — server state, caching, mutations
+- **Axios** — HTTP client with JWT interceptor
+- **React Hook Form** + **Zod** — form management and schema validation
+
+### Observability & Infrastructure
+- **Prometheus** + **Grafana** — metrics collection and dashboards
+- **nginx 1.27** — static-file server + API reverse proxy for the production frontend container
+- **Docker Compose** — multi-service local stack
+- **GitHub Actions** — CI pipeline (lint · test · build · push to GHCR · deploy)
+- **GolangCI-Lint** — Go code quality
+- **SonarCloud** — code quality and security analysis
 
 ## Getting Started
 
 ### Prerequisites
 
-- Go 1.22 or higher
-- PostgreSQL
-- Docker (optional)
-- AWS Account (for S3 storage, optional)
+- **Go 1.25+** (backend)
+- **Node.js 20+** + npm (frontend dev only — not needed for Docker)
+- **Docker Desktop** (recommended — runs the full stack in one command)
+- PostgreSQL 15 (or use the Docker Compose service)
+- AWS Account (for S3 media storage, optional)
 
 ### Installation
 
@@ -131,17 +169,52 @@ The API will be available at `http://localhost:8080/v1`.
 
 ### Docker Setup
 
-Build and run the Docker containers:
+Copy the sample env file and fill in your secrets:
 
 ```bash
-docker-compose up --build
+cp .env.example .env   # edit DB_USER, DB_PASSWORD, JWT_SECRET, etc.
 ```
 
-This will start both the PostgreSQL database and the Go API server.
+#### Full stack (API + Frontend + Postgres + Redis + Prometheus + Grafana)
 
-**Access the API:**  
-The API will be available at `http://localhost:8080/v1`.
-The Swagger documentation will be available at `http://localhost:8080/swagger/index.html`.
+```bash
+docker compose up --build
+```
+
+| Container | Port | Notes |
+|-----------|------|-------|
+| `myanimeapi-frontend` | `5173 → 80` | React SPA served by nginx, proxies `/v1` → API |
+| `myanimeapi-api` | `8080` | Go REST + GraphQL backend |
+| `myanimeapi-db` | `5432` | PostgreSQL 15 |
+| `myanimeapi-redis` | `6379` | Redis 7 cache |
+| `myanimeapi-prometheus` | `9090` | Prometheus metrics |
+| `myanimeapi-grafana` | `3000` | Grafana dashboards (admin / admin) |
+
+#### Load-test profile (adds Locust)
+
+```bash
+docker compose --profile load-test up --build
+```
+
+#### Development (Go hot-reload with Air + node vite dev server)
+
+```bash
+# Terminal 1 — backend
+docker compose -f docker-compose.dev.yml up
+
+# Terminal 2 — frontend (with HMR)
+cd frontend && npm install && npm run dev
+```
+
+#### Run API image standalone
+
+```bash
+docker build -t myanimeapi-api:local -f Dockerfile .
+docker build -t myanimeapi-frontend:local -f Dockerfile.frontend .
+```
+
+> The Dockerfile now uses **Go 1.25** to match `go.mod`.  
+> The frontend image is a two-stage build: Node 20 compiles the Vite app; nginx 1.27 serves the static bundle and reverse-proxies `/v1/*` to the API container.
 
 ## Project Structure
 
@@ -151,7 +224,7 @@ The project follows a **hexagonal architecture** (Ports & Adapters), where busin
 myanimeapi/
 ├── api/
 │   ├── adapters/
-│   │   ├── http/         # REST input adapter (package httphandler)
+│   │   ├── http/           # REST input adapter
 │   │   │   ├── anime_handlers.go
 │   │   │   ├── auth_handler.go
 │   │   │   ├── favorite_handler.go
@@ -159,47 +232,58 @@ myanimeapi/
 │   │   │   ├── review_handlers.go
 │   │   │   ├── tag_handler.go
 │   │   │   └── user_handler.go
-│   │   └── graphql/      # GraphQL input adapter (package graphql)
+│   │   └── graphql/        # GraphQL input adapter
 │   │       ├── schema/schema.graphql
 │   │       ├── generated/generated.go
 │   │       ├── model/models_gen.go
 │   │       ├── resolver.go
 │   │       └── schema.resolvers.go
-│   ├── models/           # Shared domain models and DTOs
-│   ├── services/         # Application layer / use cases (input ports)
-│   ├── repositories/     # Data access interfaces + implementations (output ports)
-│   ├── middleware/       # HTTP middleware (auth, logging, rate limiting)
-│   ├── auth/             # JWT helpers and password hashing
-│   ├── utils/            # Shared utilities
-│   ├── database/         # Admin user seeding
-│   ├── mocks/            # Generated mocks for testing
-│   └── routes/           # Composition root — wires all adapters + services
+│   ├── models/             # Shared domain models and DTOs
+│   ├── services/           # Application layer / use cases
+│   ├── repositories/       # Data access interfaces + implementations
+│   ├── middleware/         # Auth · gzip · metrics · rate-limit middleware
+│   ├── auth/               # JWT helpers and password hashing
+│   ├── mocks/              # Generated mocks for testing
+│   └── routes/             # Composition root
 ├── cmd/
-│   ├── main.go           # Application entry point
-│   └── docs/             # Generated Swagger documentation
+│   ├── main.go             # Application entry point
+│   └── docs/               # Generated Swagger docs (swag init)
 ├── internal/
-│   ├── config/           # Configuration loading
-│   ├── database/         # golang-migrate runner (embedded SQL migrations)
-│   │   └── migrations/   # SQL migration files (*.up.sql / *.down.sql)
-│   ├── db/               # GORM abstraction interface
-│   ├── errors/           # Custom application error types
-│   ├── logger/           # Structured logging (logrus)
-│   └── utils/            # Internal utilities
+│   ├── config/             # Configuration loading (.env)
+│   ├── database/           # golang-migrate runner + embedded SQL migrations
+│   ├── db/                 # GORM abstraction interface
+│   ├── errors/             # Custom error types
+│   └── logger/             # Structured logging (logrus)
 ├── tests/
-│   ├── e2e/              # End-to-end tests (real DB required)
-│   ├── integration/      # Integration tests (mock services or real DB)
-│   ├── smoke/            # Smoke tests against running server
-│   ├── fixtures/         # Shared test data factories
-│   ├── suites/           # Reusable test suite base types
-│   └── config/           # Test-specific configuration
-│   (unit tests live co-located with source: api/adapters/http/*_test.go etc.)
-├── scripts/
-│   └── hooks/pre-push    # Git pre-push validation (lint + tests)
-├── frontend/             # Next.js frontend (developed separately)
-├── docker-compose.yml    # Production stack (PostgreSQL 15 + API)
-├── docker-compose.test.yml # Test stack (PostgreSQL 15 on :5433 + Redis + MinIO)
-├── gqlgen.yml            # gqlgen code generation config
-└── assets/               # Architecture diagrams
+│   ├── e2e/                # End-to-end tests (real DB)
+│   ├── integration/        # Integration tests
+│   ├── smoke/              # Smoke tests (running server required)
+│   └── fixtures/           # Test data factories
+├── frontend/               # React 18 + Vite + TypeScript SPA
+│   ├── src/
+│   │   ├── components/     # Button, Input, AnimeCard, Layout, Navbar
+│   │   ├── pages/          # HomePage, AnimeDetailPage, FavoritesPage, ProfilePage
+│   │   │                   # LoginPage, RegisterPage, NotFoundPage
+│   │   ├── routes/         # AppRoutes, ProtectedRoute
+│   │   └── lib/
+│   │       ├── api/        # axios client, types, animes/favorites/users API helpers
+│   │       └── auth/       # AuthProvider (JWT localStorage context)
+│   ├── nginx.conf          # nginx site config for production container
+│   ├── vite.config.ts      # Vite config (dev proxy → localhost:8080)
+│   └── package.json
+├── prometheus/
+│   ├── prometheus.yml      # Scrape config (api:8080/metrics)
+│   └── alerts.yml          # Alerting rules
+├── grafana/provisioning/   # Auto-provisioned datasource + dashboards
+├── scripts/hooks/pre-push  # Git hook (lint + tests)
+├── Dockerfile              # Multi-stage Go 1.25 → alpine API image
+├── Dockerfile.frontend     # Multi-stage Node 20 → nginx 1.27 SPA image
+├── docker-compose.yml      # Full dev stack (API + Frontend + DB + Redis + observability)
+├── docker-compose.dev.yml  # Hot-reload dev stack (source volume mount)
+├── docker-compose.prod.yml # Production stack (pull GHCR image)
+├── docker-compose.test.yml # Test stack (PostgreSQL :5433 + Redis + MinIO)
+├── gqlgen.yml              # gqlgen code generation config
+└── assets/                 # Architecture diagrams
 ```
 
 ## API Endpoints
