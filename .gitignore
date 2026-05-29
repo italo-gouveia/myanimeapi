@@ -39,3 +39,6 @@ _learning_roadmaps/
 # Local learning notes and crash dumps
 _learning/
 *.stackdump
+# Frontend build artifacts
+frontend/dist/
+frontend/src/lib/api/
