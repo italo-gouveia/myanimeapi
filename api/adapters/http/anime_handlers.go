@@ -608,11 +608,13 @@ func splitCSV(s string) []string {
 
 // RegisterAnimeRoutes registers all anime-related routes
 func (h *AnimeHandler) RegisterAnimeRoutes(router *mux.Router) {
-	// Public routes (no authentication required)
+	// Public routes (no authentication required).
+	// NOTE: literal segments (/search, /genre/{x}) MUST be registered before the
+	// wildcard /{id} so Gorilla Mux does not swallow them as id values.
 	router.HandleFunc("/animes", h.GetAllAnimesHandler).Methods("GET")
-	router.HandleFunc("/animes/{id}", h.GetAnimeHandler).Methods("GET")
 	router.HandleFunc("/animes/search", h.GetAnimesByTitleHandler).Methods("GET")
 	router.HandleFunc("/animes/genre/{genre}", h.GetAnimesByGenreHandler).Methods("GET")
+	router.HandleFunc("/animes/{id}", h.GetAnimeHandler).Methods("GET")
 
 	// Create a subrouter for protected routes (requires authentication)
 	protectedRouter := router.PathPrefix("/animes").Subrouter()
