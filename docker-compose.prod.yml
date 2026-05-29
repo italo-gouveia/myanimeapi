@@ -1,0 +1,109 @@
+# Production compose — pulls the API image from GHCR instead of building locally.
+# Used by .github/workflows/deploy.yml after a successful build+push.
+#
+# Required env on the host (read from .env alongside this compose, or from the
+# shell — the deploy workflow exports IMAGE_REF before running `up`):
+#   IMAGE_REF                 — full GHCR image ref, e.g. ghcr.io/owner/repo:latest
+#   GRAFANA_ADMIN_PASSWORD    — admin password for Grafana
+#   DB_USER, DB_PASSWORD, DB_NAME — Postgres credentials
+#
+# Optional env (sensible defaults applied if unset):
+#   API_PORT, PROMETHEUS_PORT, GRAFANA_PORT
+#   GRAFANA_ADMIN_USER (default: admin)
+#
+# Application config (JWT secret, AWS, ALLOWED_ORIGINS, etc.) lives in the
+# same .env on the host — never committed. See docs/DEPLOY.md.
+
+version: '3.8'
+
+services:
+  api:
+    image: ${IMAGE_REF:?IMAGE_REF must be set (e.g. ghcr.io/owner/repo:latest)}
+    container_name: myanimeapi-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  db:
+    image: postgres:15-alpine
+    container_name: myanimeapi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: myanimeapi-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: myanimeapi-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: myanimeapi-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  db_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
