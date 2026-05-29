@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.18.0...v1.19.0) (2026-05-29)
+
+
+### Features
+
+* advanced search filters and deployment scripts ([#61](https://github.com/italo-gouveia/myanimeapi/issues/61), [#52](https://github.com/italo-gouveia/myanimeapi/issues/52)) ([0fa89d0](https://github.com/italo-gouveia/myanimeapi/commit/0fa89d03ee4049c623139729ebffe523ddea6ec6))
+
 # [1.18.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.17.1...v1.18.0) (2026-05-22)
 
 
