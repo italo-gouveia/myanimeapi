@@ -75,6 +75,20 @@ export function AnimeDetailPage() {
         <Link to="/" className="text-sm text-brand-700 underline w-fit">
           ← Catalog
         </Link>
+
+        {/* Hero layout: cover + metadata side-by-side on wider screens */}
+        <div className="flex flex-col sm:flex-row gap-6">
+          {anime.cover_url && (
+            <div className="shrink-0 w-full sm:w-40 md:w-52">
+              <img
+                src={anime.cover_url}
+                alt={`${anime.title} cover`}
+                className="w-full rounded-lg shadow-md object-cover aspect-[3/4]"
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 min-w-0">
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold" data-testid="anime-detail-title">
             {anime.title}
@@ -109,6 +123,8 @@ export function AnimeDetailPage() {
             </>
           )}
         </div>
+          </div>{/* end metadata column */}
+        </div>{/* end hero flex row */}
       </header>
 
       {anime.description && (

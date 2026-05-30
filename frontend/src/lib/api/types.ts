@@ -51,6 +51,8 @@ export interface Anime {
   status: string
   start_date: string
   end_date: string
+  cover_url?: string
+  mal_id?: number
   created_at: string
   updated_at: string
   reviews?: Review[]
