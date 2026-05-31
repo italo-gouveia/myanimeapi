@@ -12,7 +12,7 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export function Layout() {
-  const { isAuthenticated, username, clearSession } = useAuth()
+  const { isAuthenticated, isAdmin, username, clearSession } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -39,6 +39,11 @@ export function Layout() {
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
                 </NavLink>
+                {isAdmin && (
+                  <NavLink to="/admin" className={navLinkClass}>
+                    Admin
+                  </NavLink>
+                )}
               </>
             )}
             {isAuthenticated ? (

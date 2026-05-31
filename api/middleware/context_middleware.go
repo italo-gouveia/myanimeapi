@@ -5,6 +5,9 @@ package middleware
 
 import (
 	"context"
+	"net/http"
+
+	"myanimeapi/internal/errors"
 )
 
 // contextKey is a custom type for context keys to avoid key collisions.
@@ -16,6 +19,9 @@ const (
 
 	// IsAdminContextKey is the context key for storing and retrieving the admin status.
 	IsAdminContextKey contextKey = "is_admin"
+
+	// RoleContextKey is the context key for storing and retrieving the user role.
+	RoleContextKey contextKey = "role"
 
 	// RequestIDContextKey is the context key for storing and retrieving the request ID.
 	RequestIDContextKey contextKey = "request_id"
@@ -55,4 +61,28 @@ func GetRequestIDFromContext(ctx context.Context) string {
 // It returns the payload as an interface{} if it exists in the context; otherwise, it returns nil.
 func GetValidatedPayloadFromContext(ctx context.Context) interface{} {
 	return ctx.Value(ValidatedPayloadKey)
+}
+
+// RequireRole returns a middleware that allows access only to users with one of the given roles.
+// Admins (is_admin=true) always pass regardless of role parameter.
+func RequireRole(roles ...string) func(http.Handler) http.Handler {
+	allowed := make(map[string]bool, len(roles))
+	for _, r := range roles {
+		allowed[r] = true
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			isAdmin, _ := r.Context().Value(IsAdminContextKey).(bool)
+			if isAdmin {
+				next.ServeHTTP(w, r)
+				return
+			}
+			role, _ := r.Context().Value(RoleContextKey).(string)
+			if !allowed[role] {
+				errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Forbidden", "Insufficient role", nil)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

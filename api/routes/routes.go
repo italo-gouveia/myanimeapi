@@ -202,6 +202,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	etlHandler.RegisterETLRoutes(v1Router)
 	log.Info("ETL routes registered")
 
+	// Register admin routes
+	adminHandler := httphandler.NewAdminHandler(dbWrapper)
+	adminHandler.RegisterAdminRoutes(v1Router)
+	log.Info("Admin routes registered")
+
 	// Register GraphQL adapter (second input port — same services, different protocol)
 	gqlResolver := &graphqladapter.Resolver{
 		AnimeService: animeService,

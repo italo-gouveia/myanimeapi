@@ -120,7 +120,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := middleware.GenerateToken(fmt.Sprintf("%d", user.ID), user.IsAdmin)
+	token, err := middleware.GenerateToken(fmt.Sprintf("%d", user.ID), user.IsAdmin, user.Role)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to generate token")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to generate token", "An internal server error occurred while generating the authentication token.", logFields)

@@ -30,6 +30,7 @@ type User struct {
 	Bio         string   `json:"bio" gorm:"type:text;default:null" example:"Anime enthusiast"`                                    // User's biography
 	SocialLinks JSON     `json:"social_links" gorm:"type:jsonb;default:null"`                                                     // User's social media links
 	IsAdmin     bool     `json:"is_admin" gorm:"default:false" example:"false"`                                                   // Indicates if the user has admin privileges
+	Role        string   `json:"role" gorm:"default:user" example:"user"`                                                         // RBAC role: user | reviewer | admin
 	Reviews     []Review `json:"reviews,omitempty" gorm:"foreignKey:UserID"`                                                      // User's reviews
 	Favorites   []Anime  `json:"favorites,omitempty" gorm:"many2many:user_favorites;"`                                            // User's favorite anime
 	Genres      []Genre  `json:"genres,omitempty" gorm:"many2many:user_genres;"`                                                  // User's preferred genres

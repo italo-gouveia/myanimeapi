@@ -9,6 +9,20 @@ interface AuthContextValue extends AuthState {
   setSession: (token: string, username: string) => void
   clearSession: () => void
   isAuthenticated: boolean
+  isAdmin: boolean
+  role: string
+}
+
+/** Decode JWT payload without a library (read-only — no signature verification). */
+function decodeJWT(token: string): { is_admin?: boolean; role?: string } {
+  try {
+    const payload = token.split('.')[1]
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    return JSON.parse(atob(padded)) as { is_admin?: boolean; role?: string }
+  } catch {
+    return {}
+  }
 }
 
 const STORAGE_KEY = 'myanimeapi.session'
@@ -48,11 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: null, username: null })
   }
 
+  const claims = state.token ? decodeJWT(state.token) : {}
+
   const value: AuthContextValue = {
     ...state,
     setSession,
     clearSession,
     isAuthenticated: Boolean(state.token),
+    isAdmin: Boolean(claims.is_admin),
+    role: claims.role ?? 'user',
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
