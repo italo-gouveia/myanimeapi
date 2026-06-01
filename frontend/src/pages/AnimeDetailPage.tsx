@@ -10,6 +10,7 @@ import {
 } from '../lib/api/watchlist'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { Button } from '../components/Button'
+import { ToastContainer, useToast } from '../components/Toast'
 import type { Review } from '../lib/api/types'
 
 function formatYear(date: string): string | null {
@@ -205,6 +206,7 @@ export function AnimeDetailPage() {
   const queryClient                 = useQueryClient()
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
   const [showForm, setShowForm]               = useState(false)
+  const { toasts, push: pushToast, remove: removeToast } = useToast()
 
   const { data: anime, isLoading, isError, error } = useQuery({
     queryKey: ['anime', animeId],
@@ -235,7 +237,11 @@ export function AnimeDetailPage() {
       if (status) await upsertWatchlistEntry(animeId, status)
       else await removeWatchlistEntry(animeId)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+    onSuccess: (_, status) => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+      if (status) pushToast(`Added to ${WATCHLIST_STATUS_LABELS[status]}`)
+      else pushToast('Removed from watchlist', 'info')
+    },
   })
 
   const deleteMutation = useMutation({
@@ -275,6 +281,8 @@ export function AnimeDetailPage() {
   const totalReviews = (anime.reviews ?? []).length
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onDone={removeToast} />
     <article className="flex flex-col gap-6" data-testid="anime-detail">
       {/* ── Header ── */}
       <header className="flex flex-col gap-2">
@@ -441,5 +449,6 @@ export function AnimeDetailPage() {
         )}
       </section>
     </article>
+    </>
   )
 }

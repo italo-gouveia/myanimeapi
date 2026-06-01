@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { ToastContainer, useToast } from '../components/Toast'
 import {
   getWatchlist,
   removeWatchlistEntry,
@@ -19,23 +20,31 @@ const SECTION_ICONS: Record<WatchlistStatus, string> = {
   dropped:       '🗑',
 }
 
-function WatchlistCard({ entry }: { entry: WatchlistEntry }) {
+function WatchlistCard({ entry, onToast }: { entry: WatchlistEntry; onToast: (msg: string) => void }) {
   const queryClient = useQueryClient()
 
   const moveMutation = useMutation({
     mutationFn: (status: WatchlistStatus) => upsertWatchlistEntry(entry.anime_id, status),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+    onSuccess: (_, status) => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+      onToast(`Moved to ${WATCHLIST_STATUS_LABELS[status]}`)
+    },
   })
 
   const removeMutation = useMutation({
     mutationFn: () => removeWatchlistEntry(entry.anime_id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+      onToast('Removed from watchlist')
+    },
   })
 
   const anime = entry.anime
 
+  const isBusy = moveMutation.isPending || removeMutation.isPending
+
   return (
-    <div className="group flex gap-3 bg-white border border-slate-200 rounded-xl p-3 hover:border-brand-300 transition-colors">
+    <div className={`group flex gap-3 bg-white border border-slate-200 rounded-xl p-3 hover:border-brand-300 transition-all duration-200 animate-fade-in ${isBusy ? 'opacity-60 scale-[0.99]' : ''}`}>
       {/* Cover */}
       {anime?.cover_url ? (
         <img
@@ -99,10 +108,13 @@ export function WatchlistPage() {
     queryKey: ['watchlist'],
     queryFn: getWatchlist,
   })
+  const { toasts, push: pushToast, remove: removeToast } = useToast()
 
   const total = data?.entries.length ?? 0
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onDone={removeToast} />
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-3xl font-bold">Watchlist</h1>
@@ -138,7 +150,7 @@ export function WatchlistPage() {
                 <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {entries.map((entry) => (
                     <li key={entry.id}>
-                      <WatchlistCard entry={entry} />
+                      <WatchlistCard entry={entry} onToast={(msg) => pushToast(msg)} />
                     </li>
                   ))}
                 </ul>
@@ -148,5 +160,6 @@ export function WatchlistPage() {
         </div>
       )}
     </div>
+    </>
   )
 }
