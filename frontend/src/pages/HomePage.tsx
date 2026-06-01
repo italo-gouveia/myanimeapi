@@ -7,7 +7,6 @@ import { getWatchlist } from '../lib/api/watchlist'
 import { AnimeCard } from '../components/AnimeCard'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
-import { ToastContainer, useToast } from '../components/Toast'
 import { useAuth } from '../lib/auth/AuthProvider'
 
 const PAGE_SIZE = 12
@@ -131,7 +130,6 @@ export function HomePage() {
   const [genres, setGenres]       = useState<string[]>([])
   const [page, setPage]           = useState(1)
   const { isAuthenticated }       = useAuth()
-  const { toasts, push: pushToast, remove: removeToast } = useToast()
 
   const debouncedSearch = useDebouncedValue(search.trim())
   const sort = SORT_OPTIONS[sortIdx]
@@ -204,8 +202,6 @@ export function HomePage() {
   }
 
   return (
-    <>
-    <ToastContainer toasts={toasts} onDone={removeToast} />
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold">Catalog</h1>
@@ -340,7 +336,6 @@ export function HomePage() {
                 isAuthenticated={isAuthenticated}
                 isFavorited={favoritedIds.has(anime.id)}
                 watchlistStatus={(watchlistMap.get(anime.id) ?? null) as import('../lib/api/watchlist').WatchlistStatus | null}
-                onAction={(msg) => pushToast(msg)}
               />
             </li>
           ))}
@@ -361,6 +356,5 @@ export function HomePage() {
         </div>
       )}
     </div>
-    </>
   )
 }

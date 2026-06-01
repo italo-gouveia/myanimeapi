@@ -37,7 +37,7 @@ func (s *UserHandlerSuite) SetupTest() {
 	s.userSvc = new(mocks.MockUserServiceInterface)
 	s.genreSvc = new(mocks.MockGenreServiceInterface)
 	s.passwordSvc = new(mocks.MockPasswordResetServiceInterface)
-	s.handler = NewUserHandler(s.userSvc, s.genreSvc, s.passwordSvc)
+	s.handler = NewUserHandler(s.userSvc, s.genreSvc, s.passwordSvc, nil)
 }
 
 func (s *UserHandlerSuite) TearDownTest() {

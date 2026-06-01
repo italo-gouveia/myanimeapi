@@ -163,7 +163,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 
 	// Initialize handlers
 	animeHandler := httphandler.NewAnimeHandler(animeService)
-	userHandler := httphandler.NewUserHandler(userService, genreService, passwordResetService)
+	userHandler := httphandler.NewUserHandler(userService, genreService, passwordResetService, dbWrapper)
 	reviewHandler := httphandler.NewReviewHandler(reviewService, storageSvc)
 	authHandler := httphandler.NewAuthHandler(authService, log)
 	favoriteHandler := httphandler.NewFavoriteHandler(favoriteService)

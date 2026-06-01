@@ -162,6 +162,89 @@ func (h *AdminHandler) UpdateRoleHandler(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(map[string]string{"role": req.Role})
 }
 
+// TopFavoritedRow holds a single row from the top-favorited analytics query.
+type TopFavoritedRow struct {
+	AnimeID uint   `json:"anime_id"`
+	Title   string `json:"title"`
+	Count   int64  `json:"count"`
+}
+
+// TopReviewedRow holds a single row from the top-reviewed analytics query.
+type TopReviewedRow struct {
+	AnimeID   uint    `json:"anime_id"`
+	Title     string  `json:"title"`
+	Count     int64   `json:"count"`
+	AvgRating float64 `json:"avg_rating"`
+}
+
+// DailyCountRow holds a date and a count for time-series analytics.
+type DailyCountRow struct {
+	Date  string `json:"date"`
+	Count int64  `json:"count"`
+}
+
+// AnalyticsHandler returns aggregated analytics data for the admin panel.
+// @Summary Admin analytics
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Router /admin/analytics [get]
+func (h *AdminHandler) AnalyticsHandler(w http.ResponseWriter, r *http.Request) {
+	gdb := h.db.WithContext(r.Context())
+
+	var topFavorited []TopFavoritedRow
+	gdb.Raw(`SELECT favorites.anime_id, animes.title, COUNT(*) as count
+		FROM favorites
+		JOIN animes ON animes.id = favorites.anime_id
+		GROUP BY favorites.anime_id, animes.title
+		ORDER BY count DESC
+		LIMIT 5`).Scan(&topFavorited)
+
+	var topReviewed []TopReviewedRow
+	gdb.Raw(`SELECT reviews.anime_id, animes.title, COUNT(*) as count, ROUND(AVG(reviews.rating)::numeric, 1) as avg_rating
+		FROM reviews
+		JOIN animes ON animes.id = reviews.anime_id
+		GROUP BY reviews.anime_id, animes.title
+		ORDER BY count DESC
+		LIMIT 5`).Scan(&topReviewed)
+
+	var recentReviewsPerDay []DailyCountRow
+	gdb.Raw(`SELECT DATE(created_at) as date, COUNT(*) as count
+		FROM reviews
+		WHERE created_at >= NOW() - INTERVAL '7 days'
+		GROUP BY DATE(created_at)
+		ORDER BY date DESC`).Scan(&recentReviewsPerDay)
+
+	var recentSignupsPerDay []DailyCountRow
+	gdb.Raw(`SELECT DATE(created_at) as date, COUNT(*) as count
+		FROM users
+		WHERE created_at >= NOW() - INTERVAL '7 days'
+		GROUP BY DATE(created_at)
+		ORDER BY date DESC`).Scan(&recentSignupsPerDay)
+
+	// Ensure nil slices are marshalled as empty arrays
+	if topFavorited == nil {
+		topFavorited = []TopFavoritedRow{}
+	}
+	if topReviewed == nil {
+		topReviewed = []TopReviewedRow{}
+	}
+	if recentReviewsPerDay == nil {
+		recentReviewsPerDay = []DailyCountRow{}
+	}
+	if recentSignupsPerDay == nil {
+		recentSignupsPerDay = []DailyCountRow{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"top_favorited":          topFavorited,
+		"top_reviewed":           topReviewed,
+		"recent_reviews_per_day": recentReviewsPerDay,
+		"recent_signups_per_day": recentSignupsPerDay,
+	})
+}
+
 // RegisterAdminRoutes wires admin endpoints (all admin-only).
 func (h *AdminHandler) RegisterAdminRoutes(router *mux.Router) {
 	adminRouter := router.PathPrefix("/admin").Subrouter()
@@ -170,4 +253,5 @@ func (h *AdminHandler) RegisterAdminRoutes(router *mux.Router) {
 	adminRouter.Handle("/stats", middleware.RequireAdmin(http.HandlerFunc(h.StatsHandler))).Methods("GET")
 	adminRouter.Handle("/users", middleware.RequireAdmin(http.HandlerFunc(h.UsersHandler))).Methods("GET")
 	adminRouter.Handle("/users/{id}/role", middleware.RequireAdmin(http.HandlerFunc(h.UpdateRoleHandler))).Methods("PUT")
+	adminRouter.Handle("/analytics", middleware.RequireAdmin(http.HandlerFunc(h.AnalyticsHandler))).Methods("GET")
 }

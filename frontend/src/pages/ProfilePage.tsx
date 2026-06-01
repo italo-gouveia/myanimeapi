@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getProfile } from '../lib/api/users'
+import { exportUserData, type ExportFormat } from '../lib/api/export'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { Button } from '../components/Button'
 
@@ -38,9 +40,16 @@ export function ProfilePage() {
     queryFn: getProfile,
   })
 
+  const [exporting, setExporting] = useState(false)
+
   function handleLogout() {
     clearSession()
     navigate('/', { replace: true })
+  }
+
+  async function handleExport(format: ExportFormat) {
+    setExporting(true)
+    try { await exportUserData(format) } finally { setExporting(false) }
   }
 
   return (
@@ -118,13 +127,32 @@ export function ProfilePage() {
             </dd>
           </dl>
 
+          {/* Export data */}
+          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Export your data</p>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                disabled={exporting}
+                onClick={() => handleExport('json')}
+                data-testid="export-json"
+              >
+                {exporting ? 'Exporting…' : '↓ JSON'}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={exporting}
+                onClick={() => handleExport('csv')}
+                data-testid="export-csv"
+              >
+                {exporting ? 'Exporting…' : '↓ CSV'}
+              </Button>
+            </div>
+          </div>
+
           {/* Logout */}
           <div className="pt-2 border-t border-slate-100">
-            <Button
-              variant="secondary"
-              onClick={handleLogout}
-              data-testid="profile-logout"
-            >
+            <Button variant="secondary" onClick={handleLogout} data-testid="profile-logout">
               Sign out
             </Button>
           </div>

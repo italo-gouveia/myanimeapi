@@ -22,6 +22,9 @@ export function AdminLayout() {
           <NavLink to="/admin" end className={sideNavClass}>
             <span>📊</span> Dashboard
           </NavLink>
+          <NavLink to="/admin/analytics" className={sideNavClass}>
+            <span>📈</span> Analytics
+          </NavLink>
           <NavLink to="/admin/etl" className={sideNavClass}>
             <span>🔄</span> ETL Sync
           </NavLink>

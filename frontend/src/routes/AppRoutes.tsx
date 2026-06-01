@@ -10,6 +10,7 @@ import { ProfilePage } from '../pages/ProfilePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { AdminLayout } from '../pages/admin/AdminLayout'
 import { AdminDashboard } from '../pages/admin/AdminDashboard'
+import { AdminAnalyticsPage } from '../pages/admin/AdminAnalyticsPage'
 import { AdminETLPage } from '../pages/admin/AdminETLPage'
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -34,6 +35,7 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute requireAdmin />}>
           <Route path="admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="etl" element={<AdminETLPage />} />
             <Route path="users" element={<AdminUsersPage />} />
           </Route>
