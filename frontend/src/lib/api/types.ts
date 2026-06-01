@@ -36,6 +36,7 @@ export interface Review {
   rating: number
   userId?: number
   user_id?: number
+  username?: string
   animeId?: number
   anime_id?: number
   created_at: string

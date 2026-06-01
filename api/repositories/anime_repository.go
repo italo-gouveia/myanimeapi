@@ -33,7 +33,10 @@ func (r *AnimeRepositoryImpl) GetByID(ctx context.Context, id uint) (interface{}
 	}).Info("Retrieving anime by ID")
 
 	var anime models.Anime
-	if err := r.db.WithContext(ctx).Preload("Reviews").First(&anime, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Preload("Reviews", func(db *gorm.DB) *gorm.DB { return db.Preload("User") }).
+		Preload("Genres").Preload("Tags").
+		First(&anime, id).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),

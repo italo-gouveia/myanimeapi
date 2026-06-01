@@ -107,7 +107,7 @@ type AnimeResponse struct {
 	MALId       *int      `json:"mal_id,omitempty" example:"20"`                                       // MyAnimeList ID
 	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was added
 	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was last updated
-	Reviews     []Review  `json:"reviews,omitempty"`                                                   // Associated reviews
+	Reviews     []AnimeReviewEntry `json:"reviews,omitempty"`                                          // Associated reviews (includes username)
 	Genres      []Genre   `json:"genres,omitempty"`                                                    // Associated genres
 	Tags        []Tag     `json:"tags,omitempty"`                                                      // Associated tags
 }
@@ -171,10 +171,49 @@ type AnimeTagsRequest struct {
 	TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
 }
 
+// AnimeReviewEntry is the review shape embedded in AnimeResponse.
+// It includes the reviewer's username (populated via User preload).
+type AnimeReviewEntry struct {
+	ID        uint      `json:"id"`
+	UserID    uint      `json:"userId"`
+	Username  string    `json:"username,omitempty"`
+	Content   string    `json:"content"`
+	Rating    int       `json:"rating"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // ToResponse converts an Anime model to an AnimeResponse.
-// This method is used to serialize anime data for API responses.
 func (a Anime) ToResponse() AnimeResponse {
-	return AnimeResponse(a)
+	reviews := make([]AnimeReviewEntry, 0, len(a.Reviews))
+	for _, r := range a.Reviews {
+		reviews = append(reviews, AnimeReviewEntry{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Username:  r.User.Username, // populated when Reviews.User is preloaded
+			Content:   r.Content,
+			Rating:    r.Rating,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
+		})
+	}
+	return AnimeResponse{
+		ID:          a.ID,
+		Title:       a.Title,
+		Description: a.Description,
+		Rating:      a.Rating,
+		Episodes:    a.Episodes,
+		Status:      a.Status,
+		StartDate:   a.StartDate,
+		EndDate:     a.EndDate,
+		CoverURL:    a.CoverURL,
+		MALId:       a.MALId,
+		CreatedAt:   a.CreatedAt,
+		UpdatedAt:   a.UpdatedAt,
+		Reviews:     reviews,
+		Genres:      a.Genres,
+		Tags:        a.Tags,
+	}
 }
 
 // AnimeListResponse represents a paginated list of anime responses.
