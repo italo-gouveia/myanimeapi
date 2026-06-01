@@ -106,12 +106,10 @@ export function AnimeCard({
             <span className="absolute top-2 left-2 text-red-400 text-lg leading-none drop-shadow">♥</span>
           )}
 
-          {/* Watchlist status badge */}
-          {watchlistStatus && (
-            <span className="absolute bottom-2 left-2 text-[10px] font-semibold bg-black/60 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-              {WATCHLIST_STATUS_LABELS[watchlistStatus]}
-            </span>
-          )}
+          {/* Anime status badge (Airing / Completed / Upcoming) */}
+          <span className="absolute bottom-2 left-2 text-[10px] font-semibold bg-black/60 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
+            {anime.status}
+          </span>
         </div>
 
         <div className="p-3 flex flex-col gap-1">
