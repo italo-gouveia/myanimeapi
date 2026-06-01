@@ -239,8 +239,18 @@ export function AnimeDetailPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (reviewId: number) => deleteReview(reviewId),
+    mutationFn: async (reviewId: number) => {
+      try {
+        await deleteReview(reviewId)
+      } catch (err: unknown) {
+        // 404 = already gone — treat as success (idempotent)
+        if ((err as { response?: { status?: number } })?.response?.status === 404) return
+        throw err
+      }
+    },
+    // Always refresh the anime detail so stale cards disappear
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['anime', animeId] }),
+    onError:   () => queryClient.invalidateQueries({ queryKey: ['anime', animeId] }),
   })
 
   if (!Number.isFinite(animeId)) return <p className="text-red-600" role="alert">Invalid anime id.</p>
