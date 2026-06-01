@@ -2,9 +2,13 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { listAnimes, searchAnimes, type ListAnimesParams } from '../lib/api/animes'
 import { listGenres } from '../lib/api/genres'
+import { listFavorites } from '../lib/api/favorites'
+import { getWatchlist } from '../lib/api/watchlist'
 import { AnimeCard } from '../components/AnimeCard'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
+import { ToastContainer, useToast } from '../components/Toast'
+import { useAuth } from '../lib/auth/AuthProvider'
 
 const PAGE_SIZE = 12
 
@@ -126,6 +130,8 @@ export function HomePage() {
   const [statuses, setStatuses]   = useState<string[]>([])
   const [genres, setGenres]       = useState<string[]>([])
   const [page, setPage]           = useState(1)
+  const { isAuthenticated }       = useAuth()
+  const { toasts, push: pushToast, remove: removeToast } = useToast()
 
   const debouncedSearch = useDebouncedValue(search.trim())
   const sort = SORT_OPTIONS[sortIdx]
@@ -162,6 +168,31 @@ export function HomePage() {
     staleTime: Infinity,
   })
 
+  const { data: favorites } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: listFavorites,
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+  })
+
+  const { data: watchlist } = useQuery({
+    queryKey: ['watchlist'],
+    queryFn: getWatchlist,
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+  })
+
+  const favoritedIds = useMemo(
+    () => new Set((favorites ?? []).map((f) => f.anime_id)),
+    [favorites],
+  )
+
+  const watchlistMap = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const e of watchlist?.entries ?? []) m.set(e.anime_id, e.status)
+    return m
+  }, [watchlist])
+
   const totalPages    = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
   const activeFilters = statuses.length + genres.length
 
@@ -173,6 +204,8 @@ export function HomePage() {
   }
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onDone={removeToast} />
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold">Catalog</h1>
@@ -302,7 +335,13 @@ export function HomePage() {
         >
           {data.data.map((anime) => (
             <li key={anime.id}>
-              <AnimeCard anime={anime} />
+              <AnimeCard
+                anime={anime}
+                isAuthenticated={isAuthenticated}
+                isFavorited={favoritedIds.has(anime.id)}
+                watchlistStatus={(watchlistMap.get(anime.id) ?? null) as import('../lib/api/watchlist').WatchlistStatus | null}
+                onAction={(msg) => pushToast(msg)}
+              />
             </li>
           ))}
         </ul>
@@ -322,5 +361,6 @@ export function HomePage() {
         </div>
       )}
     </div>
+    </>
   )
 }

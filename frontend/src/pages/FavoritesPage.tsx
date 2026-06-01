@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { listFavorites, removeFavorite } from '../lib/api/favorites'
 import { Button } from '../components/Button'
+import { ToastContainer, useToast } from '../components/Toast'
 
 export function FavoritesPage() {
   const queryClient = useQueryClient()
+  const { toasts, push: pushToast, remove: removeToast } = useToast()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['favorites'],
@@ -15,10 +17,13 @@ export function FavoritesPage() {
     mutationFn: (animeId: number) => removeFavorite(animeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      pushToast('Removed from favorites', 'info')
     },
   })
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onDone={removeToast} />
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold">Favorites</h1>
@@ -103,5 +108,6 @@ export function FavoritesPage() {
         </ul>
       )}
     </div>
+    </>
   )
 }
