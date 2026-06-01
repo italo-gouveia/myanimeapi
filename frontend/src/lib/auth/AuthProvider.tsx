@@ -11,10 +11,11 @@ interface AuthContextValue extends AuthState {
   isAuthenticated: boolean
   isAdmin: boolean
   role: string
+  userId: number | null
 }
 
 /** Decode JWT payload without a library (read-only — no signature verification). */
-function decodeJWT(token: string): { is_admin?: boolean; role?: string } {
+function decodeJWT(token: string): { is_admin?: boolean; role?: string; user_id?: string } {
   try {
     const payload = token.split('.')[1]
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: Boolean(state.token),
     isAdmin: Boolean(claims.is_admin),
     role: claims.role ?? 'user',
+    userId: claims.user_id ? Number(claims.user_id) : null,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

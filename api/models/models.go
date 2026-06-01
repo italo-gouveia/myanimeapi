@@ -201,7 +201,7 @@ type UserResponse struct {
 //	  ]
 //	}
 type ReviewCreateRequest struct {
-	UserID           uint              `json:"userId" validate:"required" example:"1"`                               // ID of the user creating the review (required)
+	// UserID is intentionally omitted — it is extracted from the JWT token in the handler.
 	AnimeID          uint              `json:"animeId" validate:"required" example:"1"`                              // ID of the anime being reviewed (required)
 	Content          string            `json:"content" validate:"required,max=500" example:"This anime is amazing!"` // Content of the review (required, max 500 characters)
 	Rating           int               `json:"rating" validate:"required,gte=0,lte=10" example:"9"`                  // Rating given in the review (0-10, required)

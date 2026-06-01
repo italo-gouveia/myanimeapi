@@ -110,14 +110,9 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 // CreateReviewHandler creates a new review in the database.
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse multipart form
-	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
-		h.logger.WithField("err", err).Warning("Failed to parse multipart form")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Failed to parse form data", "The request form data could not be parsed.", map[string]interface{}{
-			"error": err.Error(),
-		})
-		return
-	}
+	// ParseMultipartForm only when the client sends files — JSON-only requests
+	// will fail this call gracefully; we continue without multipart in that case.
+	_ = r.ParseMultipartForm(100 << 20)
 
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
