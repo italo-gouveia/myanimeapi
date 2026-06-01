@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"myanimeapi/api/adapters/cache"
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
 	"myanimeapi/internal/errors"
@@ -36,17 +37,19 @@ type ReviewService struct {
 	userRepo   repositories.UserRepository
 	animeRepo  repositories.AnimeRepository
 	storageSvc StorageServiceInterface
+	cache      cache.CacheInterface
 	logger     *logger.Logger
 }
 
 // NewReviewService creates a new ReviewService instance
 // It returns a ReviewServiceInterface implementation.
-func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository, storageSvc StorageServiceInterface) ReviewServiceInterface {
+func NewReviewService(reviewRepo repositories.ReviewRepository, userRepo repositories.UserRepository, animeRepo repositories.AnimeRepository, storageSvc StorageServiceInterface, cacheImpl cache.CacheInterface) ReviewServiceInterface {
 	return &ReviewService{
 		reviewRepo: reviewRepo,
 		userRepo:   userRepo,
 		animeRepo:  animeRepo,
 		storageSvc: storageSvc,
+		cache:      cacheImpl,
 		logger:     logger.New(),
 	}
 }
@@ -217,6 +220,9 @@ func (s *ReviewService) CreateReview(ctx context.Context, review *models.Review)
 			err)
 	}
 
+	// Invalidate anime detail cache so the new review appears immediately
+	_ = s.cache.Delete(ctx, cache.KeyAnime(review.AnimeID))
+
 	s.logger.WithFields(map[string]interface{}{
 		"review_id": review.ID,
 		"user_id":   review.UserID,
@@ -292,6 +298,9 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 			err)
 	}
 
+	// Invalidate anime detail cache
+	_ = s.cache.Delete(ctx, cache.KeyAnime(review.AnimeID))
+
 	s.logger.WithField("review_id", review.ID).Info("Successfully updated review")
 	return nil
 }
@@ -348,6 +357,9 @@ func (s *ReviewService) DeleteReview(ctx context.Context, id uint) error {
 			},
 			err)
 	}
+
+	// Invalidate anime detail cache
+	_ = s.cache.Delete(ctx, cache.KeyAnime(reviewModel.AnimeID))
 
 	s.logger.WithField("review_id", id).Info("Successfully deleted review")
 	return nil

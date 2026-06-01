@@ -147,7 +147,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Initialize services
 	animeService := services.NewAnimeService(animeRepo, genreRepo, tagRepo, reviewRepo, cacheImpl)
 	userService := services.NewUserService(userRepo)
-	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc)
+	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc, cacheImpl)
 	authService := services.NewAuthService(authRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
 	watchlistService := services.NewWatchlistService(watchlistRepo)
