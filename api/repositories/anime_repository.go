@@ -292,11 +292,11 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 				filter.Genre,
 			)
 		}
-		// Multiple genres: anime must belong to ALL of them (AND semantics — one subquery per genre).
-		for _, genre := range filter.Genres {
+		// Multiple genres: anime belongs to ANY of them (OR semantics — single IN subquery).
+		if len(filter.Genres) > 0 {
 			q = q.Where(
-				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
-				genre,
+				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name IN ?)",
+				filter.Genres,
 			)
 		}
 		// Single tag (legacy).

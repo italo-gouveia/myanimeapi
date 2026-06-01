@@ -37,7 +37,7 @@ type AnimeFilter struct {
 	Statuses []string
 	// Genre filters to animes that belong to a genre with this exact name (single, legacy).
 	Genre string
-	// Genres filters to animes that have ALL of the named genres (AND semantics).
+	// Genres filters to animes that have ANY of the named genres (OR semantics).
 	Genres []string
 	// Tag filters to animes that have a tag with this exact name (single, legacy).
 	Tag string
