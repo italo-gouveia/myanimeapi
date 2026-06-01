@@ -17,8 +17,18 @@
 version: '3.8'
 
 services:
+  frontend:
+    image: ${FRONTEND_IMAGE_REF:?FRONTEND_IMAGE_REF must be set}
+    container_name: myanimeapi-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
   api:
-    image: ${IMAGE_REF:?IMAGE_REF must be set (e.g. ghcr.io/owner/repo:latest)}
+    image: ${API_IMAGE_REF:?API_IMAGE_REF must be set (e.g. ghcr.io/owner/repo-api:latest)}
     container_name: myanimeapi-api
     restart: unless-stopped
     ports:

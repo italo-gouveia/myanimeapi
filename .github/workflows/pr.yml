@@ -430,7 +430,7 @@ jobs:
       - name: Install swag
         run: go install github.com/swaggo/swag/cmd/swag@latest
       - name: Generate swagger
-        run: swag init --dir ./cmd,./api/adapters/http,./api/models,./internal/errors --output ./cmd/docs
+        run: swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
       - name: Check for drift
         run: |
           if [[ -n "$(git status --porcelain cmd/docs)" ]]; then
