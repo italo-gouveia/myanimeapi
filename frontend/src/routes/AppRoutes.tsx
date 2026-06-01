@@ -5,6 +5,7 @@ import { AnimeDetailPage } from '../pages/AnimeDetailPage'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { FavoritesPage } from '../pages/FavoritesPage'
+import { WatchlistPage } from '../pages/WatchlistPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { AdminLayout } from '../pages/admin/AdminLayout'
@@ -25,6 +26,7 @@ export function AppRoutes() {
         {/* Authenticated routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="favorites" element={<FavoritesPage />} />
+          <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 

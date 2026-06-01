@@ -120,6 +120,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	userRepo := repositories.NewUserRepository(dbWrapper)
 	reviewRepo := repositories.NewReviewRepository(dbWrapper)
 	favoriteRepo := repositories.NewFavoriteRepository(dbWrapper)
+	watchlistRepo := repositories.NewWatchlistRepository(dbWrapper)
 	authRepo := repositories.NewAuthRepository(dbWrapper)
 	genreRepo := repositories.NewGenreRepository(dbWrapper)
 	tagRepo := repositories.NewTagRepository(dbWrapper)
@@ -149,6 +150,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc)
 	authService := services.NewAuthService(authRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
+	watchlistService := services.NewWatchlistService(watchlistRepo)
 	genreService := services.NewGenreService(genreRepo, cacheImpl)
 	tagService := services.NewTagService(tagRepo, cacheImpl)
 	emailService, err := services.NewEmailService()
@@ -188,6 +190,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Register favorite routes
 	favoriteHandler.RegisterFavoriteRoutes(v1Router)
 	log.Info("Favorite routes registered")
+
+	// Register watchlist routes
+	watchlistHandler := httphandler.NewWatchlistHandler(watchlistService)
+	watchlistHandler.RegisterWatchlistRoutes(v1Router)
+	log.Info("Watchlist routes registered")
 
 	// Register genre routes
 	genreHandler.RegisterGenreRoutes(v1Router)

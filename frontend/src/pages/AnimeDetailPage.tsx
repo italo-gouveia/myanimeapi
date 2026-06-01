@@ -4,6 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAnime } from '../lib/api/animes'
 import { listFavorites, addFavorite, removeFavorite } from '../lib/api/favorites'
 import { createReview, updateReview, deleteReview } from '../lib/api/reviews'
+import {
+  getWatchlist, upsertWatchlistEntry, removeWatchlistEntry,
+  WATCHLIST_STATUS_LABELS, WATCHLIST_STATUSES, type WatchlistStatus,
+} from '../lib/api/watchlist'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { Button } from '../components/Button'
 
@@ -141,6 +145,22 @@ export function AnimeDetailPage() {
     enabled: isAuthenticated,
   })
 
+  const { data: watchlist } = useQuery({
+    queryKey: ['watchlist'],
+    queryFn: getWatchlist,
+    enabled: isAuthenticated,
+  })
+
+  const myWatchlistEntry = watchlist?.entries.find((e) => e.anime_id === animeId)
+
+  const watchlistMutation = useMutation<void, Error, WatchlistStatus | null>({
+    mutationFn: async (status) => {
+      if (status) await upsertWatchlistEntry(animeId, status)
+      else await removeWatchlistEntry(animeId)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+  })
+
   const isFavorited = favorites?.some((f) => f.anime_id === animeId) ?? false
 
   const addMutation = useMutation({
@@ -205,16 +225,36 @@ export function AnimeDetailPage() {
                 {anime.title}
               </h1>
               {isAuthenticated && (
-                <Button
-                  variant={isFavorited ? 'secondary' : 'primary'}
-                  className="shrink-0"
-                  disabled={addMutation.isPending || removeMutation.isPending}
-                  onClick={() => isFavorited ? removeMutation.mutate() : addMutation.mutate()}
-                  data-testid="favorite-toggle"
-                  aria-pressed={isFavorited}
-                >
-                  {isFavorited ? '★ Saved' : '☆ Save'}
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Watchlist dropdown */}
+                  <select
+                    value={myWatchlistEntry?.status ?? ''}
+                    disabled={watchlistMutation.isPending}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      watchlistMutation.mutate(val ? (val as WatchlistStatus) : null)
+                    }}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
+                    aria-label="Add to watchlist"
+                    data-testid="watchlist-select"
+                  >
+                    <option value="">+ Watchlist</option>
+                    {WATCHLIST_STATUSES.map((s) => (
+                      <option key={s} value={s}>{WATCHLIST_STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+
+                  {/* Favorite */}
+                  <Button
+                    variant={isFavorited ? 'secondary' : 'primary'}
+                    disabled={addMutation.isPending || removeMutation.isPending}
+                    onClick={() => isFavorited ? removeMutation.mutate() : addMutation.mutate()}
+                    data-testid="favorite-toggle"
+                    aria-pressed={isFavorited}
+                  >
+                    {isFavorited ? '★ Saved' : '☆ Save'}
+                  </Button>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-600">

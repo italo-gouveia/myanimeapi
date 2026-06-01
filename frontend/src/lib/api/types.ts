@@ -60,6 +60,9 @@ export interface Anime {
   tags?: Tag[]
 }
 
+// AnimeResponse is the lean shape returned in nested contexts (watchlist, etc.)
+export type AnimeResponse = Omit<Anime, 'reviews'>
+
 export interface PagedResponse<T> {
   data: T[]
   total: number

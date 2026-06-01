@@ -36,6 +36,9 @@ export function Layout() {
                 <NavLink to="/favorites" className={navLinkClass}>
                   Favorites
                 </NavLink>
+                <NavLink to="/watchlist" className={navLinkClass}>
+                  Watchlist
+                </NavLink>
                 <NavLink to="/profile" className={navLinkClass}>
                   Profile
                 </NavLink>
