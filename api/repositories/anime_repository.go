@@ -167,7 +167,7 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	var total int64
 
 	// Count total records
-	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("title LIKE ?", "%"+title+"%").Count(&total).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("title ILIKE ?", "%"+title+"%").Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to count animes")
@@ -178,7 +178,7 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	offset := (page - 1) * limit
 
 	// Retrieve animes with pagination
-	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title LIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title ILIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve animes")
@@ -259,7 +259,7 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 	// applyAdvancedFilters adds all WHERE clauses to a *gorm.DB query based on the filter.
 	applyAdvancedFilters := func(q *gorm.DB) *gorm.DB {
 		if filter.Title != "" {
-			q = q.Where("animes.title LIKE ?", "%"+filter.Title+"%")
+			q = q.Where("animes.title ILIKE ?", "%"+filter.Title+"%")
 		}
 		if filter.Status != "" {
 			q = q.Where("animes.status = ?", filter.Status)
