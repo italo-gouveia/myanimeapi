@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { listAnimes, searchAnimes, type ListAnimesParams } from '../lib/api/animes'
 import { listGenres } from '../lib/api/genres'
@@ -9,20 +9,15 @@ import { Input } from '../components/Input'
 const PAGE_SIZE = 12
 
 const SORT_OPTIONS: { label: string; value: ListAnimesParams['sort_by']; order: 'asc' | 'desc' }[] = [
-  { label: 'Newest first',   value: 'created_at',  order: 'desc' },
-  { label: 'Highest rated',  value: 'rating',      order: 'desc' },
-  { label: 'Most episodes',  value: 'episodes',    order: 'desc' },
-  { label: 'Title A → Z',   value: 'title',       order: 'asc'  },
-  { label: 'Title Z → A',   value: 'title',       order: 'desc' },
-  { label: 'Oldest first',   value: 'created_at',  order: 'asc'  },
+  { label: 'Newest first',  value: 'created_at', order: 'desc' },
+  { label: 'Highest rated', value: 'rating',     order: 'desc' },
+  { label: 'Most episodes', value: 'episodes',   order: 'desc' },
+  { label: 'Title A → Z',  value: 'title',      order: 'asc'  },
+  { label: 'Title Z → A',  value: 'title',      order: 'desc' },
+  { label: 'Oldest first',  value: 'created_at', order: 'asc'  },
 ]
 
-const STATUS_OPTIONS = [
-  { label: 'All statuses', value: '' },
-  { label: 'Airing',       value: 'Airing' },
-  { label: 'Completed',    value: 'Completed' },
-  { label: 'Upcoming',     value: 'Upcoming' },
-]
+const ALL_STATUSES = ['Airing', 'Completed', 'Upcoming'] as const
 
 function useDebouncedValue<T>(value: T, delay = 350): T {
   const [debounced, setDebounced] = useState(value)
@@ -33,6 +28,94 @@ function useDebouncedValue<T>(value: T, delay = 350): T {
   return debounced
 }
 
+function toggle<T>(arr: T[], item: T): T[] {
+  return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
+}
+
+// ── Genre dropdown with checkboxes ──────────────────────────────────────────
+interface GenreDropdownProps {
+  genres: { id: number; name: string }[]
+  selected: string[]
+  onChange: (selected: string[]) => void
+}
+
+function GenreDropdown({ genres, selected, onChange }: GenreDropdownProps) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close on outside click
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={
+          'flex items-center gap-1.5 h-9 px-3 rounded-lg border text-sm font-medium transition-colors ' +
+          (selected.length > 0
+            ? 'border-brand-500 bg-brand-50 text-brand-700'
+            : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400')
+        }
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-testid="catalog-genre-btn"
+      >
+        Genres
+        {selected.length > 0 && (
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[11px] font-bold">
+            {selected.length}
+          </span>
+        )}
+        <span className="text-slate-400">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-20 mt-1 w-52 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg py-1"
+          role="listbox"
+          aria-multiselectable="true"
+        >
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="w-full text-left px-3 py-1.5 text-xs text-brand-600 font-medium hover:bg-slate-50"
+            >
+              ✕ Clear genres
+            </button>
+          )}
+          {genres.map((g) => {
+            const checked = selected.includes(g.name)
+            return (
+              <label
+                key={g.id}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-brand-600 w-3.5 h-3.5"
+                  checked={checked}
+                  onChange={() => onChange(toggle(selected, g.name))}
+                  aria-label={g.name}
+                />
+                {g.name}
+              </label>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 const selectClass =
   'h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 ' +
   'focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors'
@@ -40,45 +123,53 @@ const selectClass =
 export function HomePage() {
   const [search, setSearch]       = useState('')
   const [sortIdx, setSortIdx]     = useState(0)
-  const [status, setStatus]       = useState('')
-  const [genre, setGenre]         = useState('')
+  const [statuses, setStatuses]   = useState<string[]>([])
+  const [genres, setGenres]       = useState<string[]>([])
   const [page, setPage]           = useState(1)
 
   const debouncedSearch = useDebouncedValue(search.trim())
   const sort = SORT_OPTIONS[sortIdx]
 
-  // Reset to page 1 when any filter changes.
-  useEffect(() => { setPage(1) }, [debouncedSearch, sortIdx, status, genre])
+  useEffect(() => { setPage(1) }, [debouncedSearch, sortIdx, statuses, genres])
 
   const queryKey = useMemo(
-    () => ['animes', { search: debouncedSearch, sortIdx, status, genre, page }] as const,
-    [debouncedSearch, sortIdx, status, genre, page],
+    () => ['animes', { search: debouncedSearch, sortIdx, statuses, genres, page }] as const,
+    [debouncedSearch, sortIdx, statuses, genres, page],
   )
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey,
     queryFn: () =>
       debouncedSearch
-        ? searchAnimes(debouncedSearch, { page, limit: PAGE_SIZE, sort_by: sort.value, order: sort.order })
-        : listAnimes({ page, limit: PAGE_SIZE, sort_by: sort.value, order: sort.order, status: status || undefined, genre: genre || undefined }),
+        ? searchAnimes(debouncedSearch, {
+            page, limit: PAGE_SIZE,
+            sort_by: sort.value, order: sort.order,
+            genres: genres.length ? genres : undefined,
+            statuses: statuses.length ? statuses : undefined,
+          })
+        : listAnimes({
+            page, limit: PAGE_SIZE,
+            sort_by: sort.value, order: sort.order,
+            statuses: statuses.length ? statuses : undefined,
+            genres: genres.length ? genres : undefined,
+          }),
     placeholderData: keepPreviousData,
   })
 
-  // Genres for the dropdown — loaded once, cached.
-  const { data: genres } = useQuery({
+  const { data: genreList } = useQuery({
     queryKey: ['genres'],
     queryFn: listGenres,
     staleTime: Infinity,
   })
 
-  const totalPages  = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
-  const activeFilters = [status, genre].filter(Boolean).length
+  const totalPages    = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+  const activeFilters = statuses.length + genres.length
 
   const clearFilters = () => {
     setSearch('')
     setSortIdx(0)
-    setStatus('')
-    setGenre('')
+    setStatuses([])
+    setGenres([])
   }
 
   return (
@@ -90,84 +181,111 @@ export function HomePage() {
         </p>
       </header>
 
-      {/* Search + filters row */}
-      <div className="flex flex-col gap-3">
-        <Input
-          label="Search by title"
-          placeholder="e.g. Naruto, Attack on Titan…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          data-testid="catalog-search"
-        />
+      {/* Search */}
+      <Input
+        label="Search by title"
+        placeholder="e.g. Naruto, Attack on Titan…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        data-testid="catalog-search"
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Sort */}
-          <select
-            value={sortIdx}
-            onChange={(e) => setSortIdx(Number(e.target.value))}
-            className={selectClass}
-            aria-label="Sort by"
-            data-testid="catalog-sort"
-          >
-            {SORT_OPTIONS.map((opt, i) => (
-              <option key={i} value={i}>{opt.label}</option>
-            ))}
-          </select>
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Sort */}
+        <select
+          value={sortIdx}
+          onChange={(e) => setSortIdx(Number(e.target.value))}
+          className={selectClass}
+          aria-label="Sort by"
+          data-testid="catalog-sort"
+        >
+          {SORT_OPTIONS.map((opt, i) => (
+            <option key={i} value={i}>{opt.label}</option>
+          ))}
+        </select>
 
-          {/* Status */}
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className={selectClass}
-            aria-label="Filter by status"
-            data-testid="catalog-status"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-
-          {/* Genre */}
-          <select
-            value={genre}
-            onChange={(e) => setGenre(e.target.value)}
-            className={selectClass}
-            aria-label="Filter by genre"
-            data-testid="catalog-genre"
-          >
-            <option value="">All genres</option>
-            {genres?.map((g) => (
-              <option key={g.id} value={g.name}>{g.name}</option>
-            ))}
-          </select>
-
-          {/* Clear filters badge */}
-          {(activeFilters > 0 || search) && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
-              data-testid="catalog-clear"
-            >
-              ✕ Clear
-              {activeFilters > 0 && (
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand-600 text-white text-[10px]">
-                  {activeFilters}
-                </span>
-              )}
-            </button>
-          )}
+        {/* Status chips — multi-select, OR logic */}
+        <div className="flex items-center gap-1.5" role="group" aria-label="Filter by status">
+          {ALL_STATUSES.map((s) => {
+            const active = statuses.includes(s)
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatuses((prev) => toggle(prev, s))}
+                className={
+                  'h-9 px-3 rounded-lg border text-sm font-medium transition-colors ' +
+                  (active
+                    ? 'border-brand-500 bg-brand-600 text-white'
+                    : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:bg-slate-50')
+                }
+                aria-pressed={active}
+                data-testid={`catalog-status-${s.toLowerCase()}`}
+              >
+                {s}
+              </button>
+            )
+          })}
         </div>
+
+        {/* Genre multi-select dropdown */}
+        {genreList && (
+          <GenreDropdown
+            genres={genreList}
+            selected={genres}
+            onChange={setGenres}
+          />
+        )}
+
+        {/* Clear all */}
+        {(activeFilters > 0 || search) && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="flex items-center gap-1 h-9 px-3 rounded-lg bg-slate-100 text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+            data-testid="catalog-clear"
+          >
+            ✕ Clear
+            {activeFilters > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400 text-white text-[11px] font-bold">
+                {activeFilters}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
-      {isLoading && <p className="text-slate-500">Loading…</p>}
+      {/* Active filter chips summary */}
+      {(statuses.length > 0 || genres.length > 0) && (
+        <div className="flex flex-wrap gap-1.5 -mt-2">
+          {statuses.map((s) => (
+            <span
+              key={s}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 text-xs font-medium"
+            >
+              {s}
+              <button type="button" onClick={() => setStatuses((p) => p.filter((x) => x !== s))} aria-label={`Remove ${s}`}>✕</button>
+            </span>
+          ))}
+          {genres.map((g) => (
+            <span
+              key={g}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium"
+            >
+              {g}
+              <button type="button" onClick={() => setGenres((p) => p.filter((x) => x !== g))} aria-label={`Remove ${g}`}>✕</button>
+            </span>
+          ))}
+        </div>
+      )}
 
+      {isLoading && <p className="text-slate-500">Loading…</p>}
       {isError && (
         <p className="text-red-600" role="alert">
           Could not load the catalog. {(error as Error).message}
         </p>
       )}
-
       {data && data.data.length === 0 && !isLoading && (
         <p className="text-slate-500" data-testid="catalog-empty">
           {debouncedSearch
@@ -192,23 +310,13 @@ export function HomePage() {
 
       {data && data.total > PAGE_SIZE && (
         <div className="flex items-center justify-between gap-3 pt-2">
-          <Button
-            variant="secondary"
-            disabled={page <= 1 || isFetching}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            data-testid="catalog-prev"
-          >
+          <Button variant="secondary" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => Math.max(1, p - 1))} data-testid="catalog-prev">
             ← Previous
           </Button>
           <span className="text-sm text-slate-600" data-testid="catalog-page-label">
             Page {page} of {totalPages}
           </span>
-          <Button
-            variant="secondary"
-            disabled={page >= totalPages || isFetching}
-            onClick={() => setPage((p) => p + 1)}
-            data-testid="catalog-next"
-          >
+          <Button variant="secondary" disabled={page >= totalPages || isFetching} onClick={() => setPage((p) => p + 1)} data-testid="catalog-next">
             Next →
           </Button>
         </div>

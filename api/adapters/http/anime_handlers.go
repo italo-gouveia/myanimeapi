@@ -212,7 +212,10 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 		SortBy:    q.Get("sort_by"),
 		SortOrder: q.Get("order"),
 	}
-	// Multi-value: genres and tags are comma-separated lists.
+	// Multi-value: statuses, genres and tags are comma-separated lists.
+	if v := q.Get("statuses"); v != "" {
+		filter.Statuses = splitCSV(v)
+	}
 	if v := q.Get("genres"); v != "" {
 		filter.Genres = splitCSV(v)
 	}

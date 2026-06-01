@@ -31,8 +31,10 @@ var AllowedStatuses = map[string]struct{}{
 type AnimeFilter struct {
 	// Title performs a case-insensitive LIKE search on animes.title.
 	Title string
-	// Status filters by exact status: "Airing", "Completed", or "Upcoming".
+	// Status filters by exact status: "Airing", "Completed", or "Upcoming" (single, legacy).
 	Status string
+	// Statuses filters to animes whose status is in the given list (OR semantics).
+	Statuses []string
 	// Genre filters to animes that belong to a genre with this exact name (single, legacy).
 	Genre string
 	// Genres filters to animes that have ALL of the named genres (AND semantics).
@@ -64,6 +66,11 @@ func (f AnimeFilter) Validate() error {
 	if f.Status != "" {
 		if _, ok := AllowedStatuses[f.Status]; !ok {
 			return fmt.Errorf("invalid status %q: allowed values are Airing, Completed, Upcoming", f.Status)
+		}
+	}
+	for _, s := range f.Statuses {
+		if _, ok := AllowedStatuses[s]; !ok {
+			return fmt.Errorf("invalid status %q in statuses: allowed values are Airing, Completed, Upcoming", s)
 		}
 	}
 	if f.SortBy != "" {
@@ -127,8 +134,8 @@ func (f AnimeFilter) OrderClause() string {
 // it safe to embed in cache keys.
 func (f AnimeFilter) CacheKeySuffix() string {
 	return fmt.Sprintf(
-		"st=%s:g=%s:gs=%s:t=%s:ts=%s:rmin=%.2f:rmax=%.2f:emin=%d:emax=%d:yf=%d:yt=%d:sort=%s:%s:ti=%s",
-		f.Status, f.Genre, strings.Join(f.Genres, ","),
+		"st=%s:sts=%s:g=%s:gs=%s:t=%s:ts=%s:rmin=%.2f:rmax=%.2f:emin=%d:emax=%d:yf=%d:yt=%d:sort=%s:%s:ti=%s",
+		f.Status, strings.Join(f.Statuses, ","), f.Genre, strings.Join(f.Genres, ","),
 		f.Tag, strings.Join(f.Tags, ","),
 		f.RatingMin, f.RatingMax,
 		f.EpisodesMin, f.EpisodesMax,

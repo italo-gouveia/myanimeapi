@@ -264,6 +264,9 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 		if filter.Status != "" {
 			q = q.Where("animes.status = ?", filter.Status)
 		}
+		if len(filter.Statuses) > 0 {
+			q = q.Where("animes.status IN ?", filter.Statuses)
+		}
 		if filter.RatingMin > 0 {
 			q = q.Where("animes.rating >= ?", filter.RatingMin)
 		}
