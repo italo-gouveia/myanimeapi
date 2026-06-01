@@ -74,6 +74,13 @@ function ReviewForm({
     },
   })
 
+  const errorMsg = (() => {
+    if (!mutation.isError) return null
+    const status = (mutation.error as { response?: { status?: number } })?.response?.status
+    if (status === 409) return 'You already have a review for this anime. Refresh the page to edit it.'
+    return 'Failed to submit. Please try again.'
+  })()
+
   const charLeft = 500 - content.length
 
   return (
@@ -102,10 +109,8 @@ function ReviewForm({
         </p>
       </div>
 
-      {mutation.isError && (
-        <p className="text-sm text-red-600" role="alert">
-          Failed to submit. Please try again.
-        </p>
+      {errorMsg && (
+        <p className="text-sm text-red-600" role="alert">{errorMsg}</p>
       )}
 
       <div className="flex items-center gap-2">
