@@ -44,7 +44,7 @@ func newTagRouter(svc *mocks.MockTagServiceInterface) *mux.Router {
 func generateAdminToken(t *testing.T) string {
 	t.Helper()
 	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
-	token, err := middleware.GenerateToken("1", true)
+	token, err := middleware.GenerateToken("1", true, "admin")
 	require.NoError(t, err)
 	return token
 }

@@ -23,7 +23,7 @@ func TestAnimeAPI_E2E(t *testing.T) {
 	if os.Getenv("JWT_SECRET_KEY") == "" {
 		_ = os.Setenv("JWT_SECRET_KEY", "test-secret")
 	}
-	token, err := middleware.GenerateToken("1", true)
+	token, err := middleware.GenerateToken("1", true, "admin")
 	require.NoError(t, err)
 	authHeader := "Bearer " + token
 

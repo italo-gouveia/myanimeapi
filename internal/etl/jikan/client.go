@@ -97,7 +97,7 @@ func (c *Client) GetTopAnime(ctx context.Context, page int) (*TopAnimeResponse, 
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

@@ -111,13 +111,13 @@ func setupAnimeTestRouter(handler *httphandler.AnimeHandler) *mux.Router {
 
 func generateAnimeTestToken() string {
 	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
-	token, _ := middleware.GenerateToken("1", true)
+	token, _ := middleware.GenerateToken("1", true, "admin")
 	return token
 }
 
 func generateNonAdminTestToken() string {
 	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
-	token, _ := middleware.GenerateToken("2", false) // isAdmin = false
+	token, _ := middleware.GenerateToken("2", false, "user") // isAdmin = false
 	return token
 }
 
