@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.22 AS builder
+FROM golang:1.25 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Generate Swagger documentation (source dir updated after hexagonal refactor)
-RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./internal/errors --output ./cmd/docs
+RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
 
 # Build the Go binary (statically linked)
 RUN CGO_ENABLED=0 go build -o main ./cmd

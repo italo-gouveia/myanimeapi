@@ -21,6 +21,7 @@ import (
 type CustomClaims struct {
 	UserID  string `json:"user_id"`
 	IsAdmin bool   `json:"is_admin"`
+	Role    string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -122,6 +123,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		ctx := context.WithValue(r.Context(), UserContextKey, uint(userID))
 		ctx = context.WithValue(ctx, IsAdminContextKey, claims.IsAdmin)
+		ctx = context.WithValue(ctx, RoleContextKey, claims.Role)
 
 		// Log successful authentication
 		log.WithFields(map[string]interface{}{
@@ -130,6 +132,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			"remote_addr": r.RemoteAddr,
 			"user_id":     userID,
 			"is_admin":    claims.IsAdmin,
+			"role":        claims.Role,
 		}).Info("User authenticated successfully")
 
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -198,10 +201,11 @@ func jwtExpiry() time.Duration {
 }
 
 // GenerateToken generates a JWT token with custom claims
-func GenerateToken(userID string, isAdmin bool) (string, error) {
+func GenerateToken(userID string, isAdmin bool, role string) (string, error) {
 	claims := &CustomClaims{
 		UserID:  userID,
 		IsAdmin: isAdmin,
+		Role:    role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtExpiry())),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -211,4 +215,11 @@ func GenerateToken(userID string, isAdmin bool) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+}
+
+// GetRoleFromContext extracts the role from the request context.
+// It should be used in handlers after the AuthMiddleware.
+func GetRoleFromContext(r *http.Request) string {
+	role, _ := r.Context().Value(RoleContextKey).(string)
+	return role
 }

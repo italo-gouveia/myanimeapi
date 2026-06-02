@@ -182,7 +182,7 @@ func (s *AuthService) AuthenticateUser(ctx context.Context, credentials *models.
 	userIDStr := strconv.FormatUint(uint64(user.ID), 10)
 
 	// Generate JWT token
-	token, err := middleware.GenerateToken(userIDStr, user.IsAdmin)
+	token, err := middleware.GenerateToken(userIDStr, user.IsAdmin, user.Role)
 	if err != nil {
 		s.logger.WithFields(map[string]interface{}{
 			"username": credentials.Username,

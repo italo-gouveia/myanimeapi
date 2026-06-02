@@ -22,21 +22,23 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
+          cache: true
 
       - name: Install security tools
         run: |
-          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Run gosec security scan
-        run: gosec -fmt=json -out=gosec-report.json ./...
+        run: gosec -fmt=json -out=gosec-report.json ./... || true
         continue-on-error: true
 
       - name: Run golangci-lint security checks
-        run: golangci-lint run --enable=gosec,gosimple,ineffassign,staticcheck ./...
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
+          golangci-lint run --enable=gosec,gosimple,ineffassign,staticcheck ./...
         continue-on-error: true
 
       - name: Security Review with AI

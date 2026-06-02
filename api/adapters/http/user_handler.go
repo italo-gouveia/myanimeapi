@@ -1,6 +1,7 @@
 package httphandler
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/api/services"
+	"myanimeapi/internal/db"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 
@@ -28,14 +30,16 @@ type UserHandler struct {
 	userService      services.UserServiceInterface
 	genreService     services.GenreServiceInterface
 	passwordResetSvc services.PasswordResetServiceInterface
+	db               db.DBInterface
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-func NewUserHandler(userService services.UserServiceInterface, genreService services.GenreServiceInterface, passwordResetSvc services.PasswordResetServiceInterface) *UserHandler {
+func NewUserHandler(userService services.UserServiceInterface, genreService services.GenreServiceInterface, passwordResetSvc services.PasswordResetServiceInterface, database db.DBInterface) *UserHandler {
 	return &UserHandler{
 		userService:      userService,
 		genreService:     genreService,
 		passwordResetSvc: passwordResetSvc,
+		db:               database,
 	}
 }
 
@@ -120,7 +124,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := middleware.GenerateToken(fmt.Sprintf("%d", user.ID), user.IsAdmin)
+	token, err := middleware.GenerateToken(fmt.Sprintf("%d", user.ID), user.IsAdmin, user.Role)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to generate token")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to generate token", "An internal server error occurred while generating the authentication token.", logFields)
@@ -480,6 +484,7 @@ func (h *UserHandler) RegisterUserRoutes(router *mux.Router, rateLimiter Passwor
 	protected.HandleFunc("/change-password", h.ChangePassword).Methods(http.MethodPost)
 	protected.HandleFunc("/deactivate", h.DeactivateAccount).Methods(http.MethodPost)
 	protected.HandleFunc("/delete", h.DeleteAccount).Methods(http.MethodDelete)
+	protected.HandleFunc("/export", h.ExportUserDataHandler).Methods(http.MethodGet)
 }
 
 // DeleteAccount handles account deletion for authenticated users.
@@ -526,4 +531,119 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Account deleted successfully")
+}
+
+// ExportUserDataHandler exports the authenticated user's favorites, watchlist, and reviews.
+// Supports ?format=json (default) and ?format=csv.
+func (h *UserHandler) ExportUserDataHandler(w http.ResponseWriter, r *http.Request) {
+	log := logger.Get()
+	logFields := map[string]interface{}{
+		"method":     r.Method,
+		"path":       r.URL.Path,
+		"request_id": r.Context().Value(middleware.RequestIDContextKey),
+	}
+
+	userID := middleware.GetUserFromContext(r.Context())
+	if userID == 0 {
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		return
+	}
+
+	gdb := h.db.WithContext(r.Context())
+
+	var favorites []models.Favorite
+	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&favorites).Error; err != nil {
+		log.WithFields(logFields).WithField("error", err).Error("Failed to query favorites")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve favorites", "", logFields)
+		return
+	}
+
+	var watchlist []models.WatchlistEntry
+	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&watchlist).Error; err != nil {
+		log.WithFields(logFields).WithField("error", err).Error("Failed to query watchlist")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve watchlist", "", logFields)
+		return
+	}
+
+	var reviews []models.Review
+	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&reviews).Error; err != nil {
+		log.WithFields(logFields).WithField("error", err).Error("Failed to query reviews")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve reviews", "", logFields)
+		return
+	}
+
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
+	}
+
+	switch format {
+	case "csv":
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", `attachment; filename="myanimeapi-export.csv"`)
+
+		cw := csv.NewWriter(w)
+
+		// Favorites section
+		_ = cw.Write([]string{"FAVORITES"})
+		_ = cw.Write([]string{"anime_id", "title", "rating", "status", "episodes"})
+		for _, f := range favorites {
+			_ = cw.Write([]string{
+				strconv.FormatUint(uint64(f.AnimeID), 10),
+				f.Anime.Title,
+				fmt.Sprintf("%.1f", f.Anime.Rating),
+				f.Anime.Status,
+				strconv.Itoa(f.Anime.Episodes),
+			})
+		}
+		_ = cw.Write([]string{})
+
+		// Watchlist section
+		_ = cw.Write([]string{"WATCHLIST"})
+		_ = cw.Write([]string{"anime_id", "title", "status", "watchlist_status"})
+		for _, e := range watchlist {
+			_ = cw.Write([]string{
+				strconv.FormatUint(uint64(e.AnimeID), 10),
+				e.Anime.Title,
+				e.Anime.Status,
+				string(e.Status),
+			})
+		}
+		_ = cw.Write([]string{})
+
+		// Reviews section
+		_ = cw.Write([]string{"REVIEWS"})
+		_ = cw.Write([]string{"anime_id", "title", "rating", "content", "created_at"})
+		for _, rv := range reviews {
+			_ = cw.Write([]string{
+				strconv.FormatUint(uint64(rv.AnimeID), 10),
+				rv.Anime.Title,
+				strconv.Itoa(rv.Rating),
+				rv.Content,
+				rv.CreatedAt.UTC().Format(time.RFC3339),
+			})
+		}
+
+		cw.Flush()
+
+	default:
+		type exportPayload struct {
+			Favorites  []models.Favorite       `json:"favorites"`
+			Watchlist  []models.WatchlistEntry `json:"watchlist"`
+			Reviews    []models.Review         `json:"reviews"`
+			ExportedAt time.Time               `json:"exported_at"`
+		}
+		payload := exportPayload{
+			Favorites:  favorites,
+			Watchlist:  watchlist,
+			Reviews:    reviews,
+			ExportedAt: time.Now().UTC(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(payload); err != nil {
+			log.WithFields(logFields).WithField("error", err).Error("Failed to encode export response")
+		}
+	}
+
+	log.WithFields(logFields).WithField("user_id", userID).WithField("format", format).Info("User data exported successfully")
 }

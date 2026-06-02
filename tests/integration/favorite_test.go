@@ -64,7 +64,7 @@ func generateFavoriteTestToken() string {
 	_ = os.Setenv("JWT_SECRET_KEY", "test-secret-key")
 
 	// Generate token
-	token, _ := middleware.GenerateToken("1", true)
+	token, _ := middleware.GenerateToken("1", true, "admin")
 	return token
 }
 

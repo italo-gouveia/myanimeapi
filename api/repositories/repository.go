@@ -107,3 +107,20 @@ type FavoriteRepository interface {
 	// DeleteByUserAndAnime deletes a favorite by user ID and anime ID
 	DeleteByUserAndAnime(ctx context.Context, userID, animeID uint) error
 }
+
+// WatchlistRepository defines methods for watchlist database operations
+type WatchlistRepository interface {
+	Repository
+
+	// GetByUserID retrieves watchlist entries by user ID
+	GetByUserID(ctx context.Context, userID uint) ([]models.WatchlistEntry, error)
+
+	// GetByUserAndAnime retrieves a watchlist entry by user ID and anime ID
+	GetByUserAndAnime(ctx context.Context, userID, animeID uint) (*models.WatchlistEntry, error)
+
+	// UpsertByUserAndAnime creates or updates a watchlist entry for a user/anime pair
+	UpsertByUserAndAnime(ctx context.Context, userID, animeID uint, status models.WatchlistStatus) (*models.WatchlistEntry, error)
+
+	// DeleteByUserAndAnime deletes a watchlist entry by user ID and anime ID
+	DeleteByUserAndAnime(ctx context.Context, userID, animeID uint) error
+}

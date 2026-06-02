@@ -40,19 +40,21 @@ import "time"
 //	  ]
 //	}
 type Anime struct {
-	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`               // Unique identifier for the anime
-	Title       string    `json:"title" gorm:"not null;index:idx_animes_title" example:"Naruto"` // Title of the anime
-	Description string    `json:"description" example:"A story about ninjas."`                   // Description of the anime
-	Rating      float64   `json:"rating" example:"8.5"`                                          // Average rating of the anime
-	Episodes    int       `json:"episodes" example:"220"`                                        // Number of episodes
-	Status      string    `json:"status" gorm:"index:idx_animes_status" example:"Completed"`     // Current status of the anime
-	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`      // Date when the anime started airing
-	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`        // Date when the anime finished airing
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`      // Timestamp when the anime was added
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`      // Timestamp when the anime was last updated
-	Reviews     []Review  `json:"reviews,omitempty" gorm:"foreignKey:AnimeID"`    // Associated reviews
-	Genres      []Genre   `json:"genres,omitempty" gorm:"many2many:anime_genres"` // Associated genres
-	Tags        []Tag     `json:"tags,omitempty" gorm:"many2many:anime_tags"`     // Associated tags
+	ID          uint      `json:"id" gorm:"primaryKey" example:"1"`                                                    // Unique identifier for the anime
+	Title       string    `json:"title" gorm:"not null;index:idx_animes_title" example:"Naruto"`                       // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."`                                         // Description of the anime
+	Rating      float64   `json:"rating" example:"8.5"`                                                                // Average rating of the anime
+	Episodes    int       `json:"episodes" example:"220"`                                                              // Number of episodes
+	Status      string    `json:"status" gorm:"index:idx_animes_status" example:"Completed"`                          // Current status of the anime
+	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`                                           // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`                                             // Date when the anime finished airing
+	CoverURL    *string   `json:"cover_url,omitempty" gorm:"column:cover_url" example:"https://cdn.myanimelist.net/…"` // Cover image URL (populated by ETL)
+	MALId       *int      `json:"mal_id,omitempty" gorm:"column:mal_id;uniqueIndex:idx_animes_mal_id" example:"20"`    // MyAnimeList ID (used for ETL deduplication)
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                           // Timestamp when the anime was added
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                           // Timestamp when the anime was last updated
+	Reviews     []Review  `json:"reviews,omitempty" gorm:"foreignKey:AnimeID"`                                         // Associated reviews
+	Genres      []Genre   `json:"genres,omitempty" gorm:"many2many:anime_genres"`                                      // Associated genres
+	Tags        []Tag     `json:"tags,omitempty" gorm:"many2many:anime_tags"`                                          // Associated tags
 }
 
 // AnimeResponse represents the response format for an anime entry.
@@ -93,19 +95,21 @@ type Anime struct {
 //	  ]
 //	}
 type AnimeResponse struct {
-	ID          uint      `json:"id" example:"1"`                              // Unique identifier for the anime
-	Title       string    `json:"title" example:"Naruto"`                      // Title of the anime
-	Description string    `json:"description" example:"A story about ninjas."` // Description of the anime
-	Rating      float64   `json:"rating" example:"8.5"`                        // Average rating of the anime
-	Episodes    int       `json:"episodes" example:"220"`                      // Number of episodes
-	Status      string    `json:"status" example:"Completed"`                  // Current status of the anime
-	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`   // Date when the anime started airing
-	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`     // Date when the anime finished airing
-	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was added
-	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`   // Timestamp when the anime was last updated
-	Reviews     []Review  `json:"reviews,omitempty"`                           // Associated reviews
-	Genres      []Genre   `json:"genres,omitempty"`                            // Associated genres
-	Tags        []Tag     `json:"tags,omitempty"`                              // Associated tags
+	ID          uint      `json:"id" example:"1"`                                                      // Unique identifier for the anime
+	Title       string    `json:"title" example:"Naruto"`                                              // Title of the anime
+	Description string    `json:"description" example:"A story about ninjas."`                         // Description of the anime
+	Rating      float64   `json:"rating" example:"8.5"`                                                // Average rating of the anime
+	Episodes    int       `json:"episodes" example:"220"`                                              // Number of episodes
+	Status      string    `json:"status" example:"Completed"`                                          // Current status of the anime
+	StartDate   time.Time `json:"start_date" example:"2002-10-03T00:00:00Z"`                           // Date when the anime started airing
+	EndDate     time.Time `json:"end_date" example:"2007-02-08T00:00:00Z"`                             // Date when the anime finished airing
+	CoverURL    *string   `json:"cover_url,omitempty" example:"https://cdn.myanimelist.net/images/…"`  // Cover image URL
+	MALId       *int      `json:"mal_id,omitempty" example:"20"`                                       // MyAnimeList ID
+	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was added
+	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was last updated
+	Reviews     []AnimeReviewEntry `json:"reviews,omitempty"`                                          // Associated reviews (includes username)
+	Genres      []Genre   `json:"genres,omitempty"`                                                    // Associated genres
+	Tags        []Tag     `json:"tags,omitempty"`                                                      // Associated tags
 }
 
 // AnimeCreateRequest represents the request payload for creating a new anime.
@@ -167,10 +171,49 @@ type AnimeTagsRequest struct {
 	TagIDs []uint `json:"tag_ids" validate:"required,min=1"`
 }
 
+// AnimeReviewEntry is the review shape embedded in AnimeResponse.
+// It includes the reviewer's username (populated via User preload).
+type AnimeReviewEntry struct {
+	ID        uint      `json:"id"`
+	UserID    uint      `json:"userId"`
+	Username  string    `json:"username,omitempty"`
+	Content   string    `json:"content"`
+	Rating    int       `json:"rating"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // ToResponse converts an Anime model to an AnimeResponse.
-// This method is used to serialize anime data for API responses.
 func (a Anime) ToResponse() AnimeResponse {
-	return AnimeResponse(a)
+	reviews := make([]AnimeReviewEntry, 0, len(a.Reviews))
+	for _, r := range a.Reviews {
+		reviews = append(reviews, AnimeReviewEntry{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Username:  r.User.Username, // populated when Reviews.User is preloaded
+			Content:   r.Content,
+			Rating:    r.Rating,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
+		})
+	}
+	return AnimeResponse{
+		ID:          a.ID,
+		Title:       a.Title,
+		Description: a.Description,
+		Rating:      a.Rating,
+		Episodes:    a.Episodes,
+		Status:      a.Status,
+		StartDate:   a.StartDate,
+		EndDate:     a.EndDate,
+		CoverURL:    a.CoverURL,
+		MALId:       a.MALId,
+		CreatedAt:   a.CreatedAt,
+		UpdatedAt:   a.UpdatedAt,
+		Reviews:     reviews,
+		Genres:      a.Genres,
+		Tags:        a.Tags,
+	}
 }
 
 // AnimeListResponse represents a paginated list of anime responses.

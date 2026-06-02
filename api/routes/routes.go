@@ -120,6 +120,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	userRepo := repositories.NewUserRepository(dbWrapper)
 	reviewRepo := repositories.NewReviewRepository(dbWrapper)
 	favoriteRepo := repositories.NewFavoriteRepository(dbWrapper)
+	watchlistRepo := repositories.NewWatchlistRepository(dbWrapper)
 	authRepo := repositories.NewAuthRepository(dbWrapper)
 	genreRepo := repositories.NewGenreRepository(dbWrapper)
 	tagRepo := repositories.NewTagRepository(dbWrapper)
@@ -146,9 +147,10 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Initialize services
 	animeService := services.NewAnimeService(animeRepo, genreRepo, tagRepo, reviewRepo, cacheImpl)
 	userService := services.NewUserService(userRepo)
-	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc)
+	reviewService := services.NewReviewService(reviewRepo, userRepo, animeRepo, storageSvc, cacheImpl)
 	authService := services.NewAuthService(authRepo)
 	favoriteService := services.NewFavoriteService(favoriteRepo, userRepo, animeRepo)
+	watchlistService := services.NewWatchlistService(watchlistRepo)
 	genreService := services.NewGenreService(genreRepo, cacheImpl)
 	tagService := services.NewTagService(tagRepo, cacheImpl)
 	emailService, err := services.NewEmailService()
@@ -161,7 +163,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 
 	// Initialize handlers
 	animeHandler := httphandler.NewAnimeHandler(animeService)
-	userHandler := httphandler.NewUserHandler(userService, genreService, passwordResetService)
+	userHandler := httphandler.NewUserHandler(userService, genreService, passwordResetService, dbWrapper)
 	reviewHandler := httphandler.NewReviewHandler(reviewService, storageSvc)
 	authHandler := httphandler.NewAuthHandler(authService, log)
 	favoriteHandler := httphandler.NewFavoriteHandler(favoriteService)
@@ -189,6 +191,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	favoriteHandler.RegisterFavoriteRoutes(v1Router)
 	log.Info("Favorite routes registered")
 
+	// Register watchlist routes
+	watchlistHandler := httphandler.NewWatchlistHandler(watchlistService)
+	watchlistHandler.RegisterWatchlistRoutes(v1Router)
+	log.Info("Watchlist routes registered")
+
 	// Register genre routes
 	genreHandler.RegisterGenreRoutes(v1Router)
 	log.Info("Genre routes registered")
@@ -196,6 +203,16 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	// Register tag routes
 	tagHandler.RegisterTagRoutes(v1Router)
 	log.Info("Tag routes registered")
+
+	// Register ETL routes (admin-only data ingestion)
+	etlHandler := httphandler.NewETLHandler(services.NewETLService(dbWrapper))
+	etlHandler.RegisterETLRoutes(v1Router)
+	log.Info("ETL routes registered")
+
+	// Register admin routes
+	adminHandler := httphandler.NewAdminHandler(dbWrapper)
+	adminHandler.RegisterAdminRoutes(v1Router)
+	log.Info("Admin routes registered")
 
 	// Register GraphQL adapter (second input port — same services, different protocol)
 	gqlResolver := &graphqladapter.Resolver{

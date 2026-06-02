@@ -33,7 +33,10 @@ func (r *AnimeRepositoryImpl) GetByID(ctx context.Context, id uint) (interface{}
 	}).Info("Retrieving anime by ID")
 
 	var anime models.Anime
-	if err := r.db.WithContext(ctx).Preload("Reviews").First(&anime, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Preload("Reviews", func(db *gorm.DB) *gorm.DB { return db.Preload("User") }).
+		Preload("Genres").Preload("Tags").
+		First(&anime, id).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),
@@ -167,7 +170,7 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	var total int64
 
 	// Count total records
-	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("title LIKE ?", "%"+title+"%").Count(&total).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("title ILIKE ?", "%"+title+"%").Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to count animes")
@@ -178,7 +181,7 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	offset := (page - 1) * limit
 
 	// Retrieve animes with pagination
-	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title LIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title ILIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve animes")
@@ -259,10 +262,13 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 	// applyAdvancedFilters adds all WHERE clauses to a *gorm.DB query based on the filter.
 	applyAdvancedFilters := func(q *gorm.DB) *gorm.DB {
 		if filter.Title != "" {
-			q = q.Where("animes.title LIKE ?", "%"+filter.Title+"%")
+			q = q.Where("animes.title ILIKE ?", "%"+filter.Title+"%")
 		}
 		if filter.Status != "" {
 			q = q.Where("animes.status = ?", filter.Status)
+		}
+		if len(filter.Statuses) > 0 {
+			q = q.Where("animes.status IN ?", filter.Statuses)
 		}
 		if filter.RatingMin > 0 {
 			q = q.Where("animes.rating >= ?", filter.RatingMin)
@@ -289,11 +295,11 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 				filter.Genre,
 			)
 		}
-		// Multiple genres: anime must belong to ALL of them (AND semantics — one subquery per genre).
-		for _, genre := range filter.Genres {
+		// Multiple genres: anime belongs to ANY of them (OR semantics — single IN subquery).
+		if len(filter.Genres) > 0 {
 			q = q.Where(
-				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)",
-				genre,
+				"animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name IN ?)",
+				filter.Genres,
 			)
 		}
 		// Single tag (legacy).

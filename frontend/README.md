@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyAnimeAPI — Frontend
 
-## Getting Started
+Vite + React 18 + TypeScript + Tailwind SPA that consumes the Go API.
 
-First, run the development server:
+## Stack
+
+- **Vite 5** — build + dev server
+- **React 18** with React Router 6
+- **TanStack Query 5** for server state
+- **axios** with JWT interceptor for HTTP
+- **React Hook Form** + **Zod** for forms
+- **Tailwind 3** for styling
+- **Playwright** for end-to-end tests
+
+## Scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev        # vite dev server on :5173, proxies /v1 to API
+npm run build      # type-check + production build to dist/
+npm run preview    # serve dist/ on :4173 (used by CI for Playwright)
+npm run lint       # eslint
+npm run typecheck  # tsc --noEmit
+npm run test:e2e   # playwright tests against PLAYWRIGHT_BASE_URL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`VITE_API_URL` (default `http://localhost:8080`) — base URL the dev
+proxy and the axios client point at. In dev the proxy keeps requests
+same-origin so cookies/CORS behave; in production the built bundle reads
+from `import.meta.env.VITE_API_URL` directly.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Layout
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── components/    # presentational + small interactive bits
+├── lib/
+│   ├── api/       # one file per resource (auth, animes, favorites, ...)
+│   └── auth/      # AuthProvider context + helpers
+├── pages/         # one file per route
+└── routes/        # router + ProtectedRoute
+tests/e2e/         # Playwright specs
+```

@@ -95,6 +95,7 @@ func SetupDatabase(db *gorm.DB) error {
 		Password: hashedPassword,
 		IsAdmin:  true,
 		IsActive: true,
+		Role:     "admin",
 	}
 
 	if err := db.Create(&adminUser).Error; err != nil {

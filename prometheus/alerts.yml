@@ -1,0 +1,33 @@
+groups:
+  - name: myanimeapi
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(myanimeapi_http_requests_total{status=~"5.."}[5m])) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 5xx error rate above 5%"
+          description: "Current rate: {{ $value | humanize }} errors/s"
+
+      - alert: HighP95Latency
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(myanimeapi_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency above 1 s"
+          description: "Current p95: {{ $value | humanizeDuration }}"
+
+      - alert: APIDown
+        expr: up{job="myanimeapi"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "MyAnimeAPI is unreachable"
+          description: "Prometheus cannot scrape {{ $labels.instance }}"

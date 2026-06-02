@@ -1,0 +1,440 @@
+name: PR Check
+
+# Runs on every PR targeting main. All jobs must be green before merge —
+# this is the only path to land code on main (no direct pushes). Merging
+# the PR triggers deploy.yml on push to main.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  GO_VERSION: '1.25'
+  NODE_VERSION: '20'
+  GOLANGCI_LINT_VERSION: 'v1.64.8'
+
+jobs:
+  # ============================================================
+  # Backend
+  # ============================================================
+
+  lint-backend:
+    name: Lint (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
+
+  build-backend:
+    name: Build + vet (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          if [[ -n "$(git status --porcelain go.mod go.sum)" ]]; then
+            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' locally."
+            git diff go.mod go.sum
+            exit 1
+          fi
+
+  test-unit-backend:
+    name: Unit tests (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Run unit tests with race + coverage
+        # Unit tests live next to source code (api/, internal/, cmd/) — the
+        # tests/ tree is for integration + e2e and is excluded here.
+        run: |
+          PKGS=$(go list ./... | grep -v '/tests/')
+          go test -race -count=1 -timeout 120s \
+            -coverprofile=coverage-unit.out -coverpkg=./... \
+            $PKGS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage-unit.out
+          retention-days: 7
+
+  test-integration-backend:
+    name: Integration tests (backend)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: test
+      TEST_DB_NAME: test_db
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: test-jwt-secret-key-at-least-32-chars-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Run integration tests with race + coverage
+        run: |
+          go test -race -count=1 -timeout 180s \
+            -coverprofile=coverage-integration.out -coverpkg=./... \
+            ./tests/integration/...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration.out
+          retention-days: 7
+
+  test-e2e-backend:
+    name: E2E tests (backend)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: test
+      TEST_DB_NAME: test_db
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: test-jwt-secret-key-at-least-32-chars-long
+      ALLOWED_ORIGINS: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Run e2e tests
+        run: go test -race -count=1 -timeout 300s ./tests/e2e/...
+
+  # ============================================================
+  # Frontend
+  # ============================================================
+
+  lint-frontend:
+    name: Lint + typecheck (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+
+  build-frontend:
+    name: Build (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  test-e2e-frontend:
+    name: E2E tests (frontend, Playwright)
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # API runtime config
+      DB_TYPE: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: test
+      DB_NAME: test_db
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: test-jwt-secret-key-at-least-32-chars-long
+      ALLOWED_ORIGINS: http://localhost:4173
+      LOG_LEVEL: warn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build API binary
+        run: go build -o ./bin/api ./cmd
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Start API in background
+        run: |
+          ./bin/api > api.log 2>&1 &
+          echo $! > api.pid
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/v1/health > /dev/null; then
+              echo "API is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::API failed to start"
+          cat api.log
+          exit 1
+      - name: Start frontend preview in background
+        working-directory: frontend
+        run: |
+          npm run preview -- --port 4173 --host 0.0.0.0 > preview.log 2>&1 &
+          echo $! > preview.pid
+          for i in {1..30}; do
+            if curl -sf http://localhost:4173 > /dev/null; then
+              echo "Frontend is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Frontend preview failed to start"
+          cat preview.log
+          exit 1
+      - name: Run Playwright tests
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+          PLAYWRIGHT_API_URL: http://localhost:8080
+        run: npm run test:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+      - name: Stop background processes
+        if: always()
+        run: |
+          [ -f api.pid ] && kill "$(cat api.pid)" || true
+          [ -f frontend/preview.pid ] && kill "$(cat frontend/preview.pid)" || true
+
+  # ============================================================
+  # Quality gates
+  # ============================================================
+
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Semgrep
+        env:
+          HAS_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
+        if: env.HAS_TOKEN == 'true'
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MyAnimeAPI'
+          path: '.'
+          format: 'HTML'
+          args: >-
+            --failOnCVSS 7
+            --exclude "**/vendor/**,**/node_modules/**,**/test/**,**/tests/**,**/docs/**"
+
+  trivy:
+    name: Trivy image scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t myanimeapi:scan .
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myanimeapi:scan'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    needs: [test-unit-backend, test-integration-backend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download unit coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+      - name: Download integration coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+      - name: SonarCloud Scan
+        env:
+          HAS_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+        if: env.HAS_TOKEN == 'true'
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >-
+            -Dsonar.go.coverage.reportPaths=coverage-unit.out,coverage-integration.out
+
+  swagger-check:
+    name: Swagger up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+      - name: Generate swagger
+        run: swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
+      - name: Check for drift
+        run: |
+          if [[ -n "$(git status --porcelain cmd/docs)" ]]; then
+            echo "::error::Swagger docs are out of date. Run 'make swagger' locally and commit."
+            git diff cmd/docs
+            exit 1
+          fi

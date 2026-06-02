@@ -1,300 +1,38 @@
-name: CI/CD Pipeline
+name: Post-merge release
+
+# Runs after a PR merges to main. PR-time validation lives in pr.yml —
+# everything that gets here has already passed lint, tests, security,
+# trivy, sonar and the swagger drift check. This workflow is only
+# responsible for the versioning side-effect: semantic-release bumps the
+# version, updates CHANGELOG.md and creates the GitHub release.
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  pre-build-validation:
-    name: Pre-build Validation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Run go mod tidy
-        run: go mod tidy
-
-      - name: Check for uncommitted changes
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "::warning::Found uncommitted changes after running 'go mod tidy'"
-            git diff go.mod
-            echo "::warning::Please run 'go mod tidy' locally and commit the changes"
-            exit 0  # Don't fail the build, just warn
-          fi
-
-      - name: Validate go.mod and go.sum
-        run: |
-          go mod verify
-          go mod download
-
-      - name: Check for common issues
-        run: |
-          # Check for TODO comments
-          if grep -r "TODO:" . --include="*.go"; then
-            echo "::warning::Found TODO comments in code"
-          fi
-
-          # Check for FIXME comments
-          if grep -r "FIXME:" . --include="*.go"; then
-            echo "::warning::Found FIXME comments in code"
-          fi
-
-          # Check for debug prints
-          if grep -r "fmt.Print" . --include="*.go"; then
-            echo "::warning::Found debug print statements in code"
-          fi
-          
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Run golangci-lint
-        run: golangci-lint run ./...
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-1.22-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-1.22-
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Build
-        run: go build ./...
-
-      - name: Vet
-        run: go vet ./...
-
-      - name: Install golangci-lint v1.64
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b $(go env GOPATH)/bin v1.64.0
-
-      - name: Run golangci-lint
-        run: golangci-lint run ./...
-
-      - name: Run tests with race detector
-        run: go test ./... -race -count=1 -timeout 120s
-
-      - name: Generate coverage report
-        run: go test -coverprofile=coverage.out -coverpkg=./... ./...
-
-      - name: Debug workspace
-        run: ls -la
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.out
-
   release:
-    name: Release
+    name: Semantic release
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Allow pushing to the repository
-      issues: write    # Allow creating issues (for failed releases)
-      pull-requests: write  # Allow creating pull requests (if needed)
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full Git history
+          fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: Install Semantic Release
+      - name: Install semantic-release
         run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git
 
-      - name: Run Semantic Release
+      - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
-  
-  sonarcloud-analysis:
-    runs-on: ubuntu-latest
-    needs: [test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: .
-
-      - name: Debug downloaded files
-        run: ls -la
-
-      - name: Run SonarCloud Analysis
-        uses: SonarSource/sonarcloud-github-action@v5.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-          SONAR_GO_COVERAGE_REPORT_PATHS: coverage.out  # Specify the coverage report path
-
-  security:
-    name: Security Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'MyAnimeAPI'
-          path: '.'
-          format: 'ALL'
-          args: '--failOnCVSS 7 --exclude "**/vendor/**,**/node_modules/**,**/test/**,**/tests/**,**/docs/**"'
-
-      - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/security-audit
-          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-
-      # Commenting out Gitleaks and SARIF upload due to issues
-      # - name: Run Gitleaks
-      #   uses: zricethezav/gitleaks-action@v2
-      #   with:
-      #     config-path: .gitleaks.toml
-      #     report-format: sarif
-      #     report-path: ./gitleaks-report.sarif
-      #     exit-code: 1
-      #     verbose: true
-
-      # - name: Ensure SARIF file exists
-      #   run: |
-      #     if [ ! -f "./gitleaks-report.sarif" ]; then
-      #       echo "Creating empty SARIF file..."
-      #       echo '{
-      #         "version": "2.1.0",
-      #         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-      #         "runs": [
-      #           {
-      #             "tool": {
-      #               "driver": {
-      #                 "name": "Gitleaks",
-      #                 "version": "latest",
-      #                 "informationUri": "https://github.com/zricethezav/gitleaks"
-      #               }
-      #             },
-      #             "results": []
-      #           }
-      #         ]
-      #       }' > ./gitleaks-report.sarif
-      #     fi
-
-      # - name: Upload SARIF
-      #   uses: github/codeql-action/upload-sarif@v3
-      #   if: always()
-      #   with:
-      #     sarif_file: ./gitleaks-report.sarif
-      #     category: gitleaks
-      #     wait-for-processing: true
-
-  swagger:
-    name: Validate Swagger Docs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Install swag
-        run: go install github.com/swaggo/swag/cmd/swag@latest
-
-      - name: Generate Swagger docs
-        run: swag init -g cmd/main.go --dir ./cmd,./api/adapters/http,./api/models,./internal/errors --output ./cmd/docs
-
-      - name: Check for changes in Swagger docs
-        run: git diff --exit-code
-
-  docker:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: [lint, test, swagger]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          tags: myanimeapi:latest  # Build the image locally with this tag
-
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'myanimeapi:latest'  # Scan the locally built image
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/myanimeapi:latest  # Push the image to Docker Hub
