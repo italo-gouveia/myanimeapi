@@ -1,3 +1,22 @@
+# [1.19.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.18.0...v1.19.0) (2026-05-29)
+
+
+### Features
+
+* advanced search filters and deployment scripts ([#61](https://github.com/italo-gouveia/myanimeapi/issues/61), [#52](https://github.com/italo-gouveia/myanimeapi/issues/52)) ([0fa89d0](https://github.com/italo-gouveia/myanimeapi/commit/0fa89d03ee4049c623139729ebffe523ddea6ec6))
+
+# [1.18.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.17.1...v1.18.0) (2026-05-22)
+
+
+### Bug Fixes
+
+* **lint:** check gz.Close() error return values in compression tests ([40d3675](https://github.com/italo-gouveia/myanimeapi/commit/40d36759c8e8069fc99d23e52b3e2461ddf57350))
+
+
+### Features
+
+* add gzip compression middleware and Prometheus metrics ([#48](https://github.com/italo-gouveia/myanimeapi/issues/48), [#39](https://github.com/italo-gouveia/myanimeapi/issues/39)) ([ee45d22](https://github.com/italo-gouveia/myanimeapi/commit/ee45d221940fe952776025b45776734771641934))
+
 ## [1.17.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.17.0...v1.17.1) (2026-05-19)
 
 
