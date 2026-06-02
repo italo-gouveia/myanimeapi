@@ -1,3 +1,42 @@
+# [1.20.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.19.0...v1.20.0) (2026-06-02)
+
+
+### Bug Fixes
+
+* **cache:** invalidate anime cache on review create/update/delete ([1b61467](https://github.com/italo-gouveia/myanimeapi/commit/1b614676e0ea35c58ed98c3259c12f571c85fbbe))
+* **card:** show anime status badge on cover instead of watchlist status ([1b4ed90](https://github.com/italo-gouveia/myanimeapi/commit/1b4ed908107166e39b3f48003d35d608c5398650))
+* **ci:** correct gosec module path + update Go version in security-review ([d39d617](https://github.com/italo-gouveia/myanimeapi/commit/d39d6175b9bb5010be2b768a4a40175ee02e974f))
+* **docker:** add api/services to swag init dirs for SyncResult type ([b599980](https://github.com/italo-gouveia/myanimeapi/commit/b599980e380ee18b50a47635c1612da225ef16a0))
+* **filters:** change genres multi-select from AND to OR semantics ([aa3497f](https://github.com/italo-gouveia/myanimeapi/commit/aa3497fcab41a198869a7f8bcaac95c551f53d38))
+* **lint:** errcheck + GenerateToken role arg in tests ([6c38b0e](https://github.com/italo-gouveia/myanimeapi/commit/6c38b0e963104ace276f87cb07c7bda4ef6ce48b))
+* **reviews:** idempotent delete + always refresh cache on delete ([512d6f6](https://github.com/italo-gouveia/myanimeapi/commit/512d6f6bde8b13e6f63fa02f6947089b3581cbbb))
+* **reviews:** propagate AppError status codes + better 409 UX ([0c28350](https://github.com/italo-gouveia/myanimeapi/commit/0c2835049e1393f5b507235af4a0259a9a1fa9cb))
+* **reviews:** UpdateReviewHandler — don't fail on ParseMultipartForm for JSON requests ([c9b52ec](https://github.com/italo-gouveia/myanimeapi/commit/c9b52ec8e4c45d3c484de6071027dbbfd80abfe2))
+* **routes:** register /animes/search before /animes/{id} to prevent Gorilla Mux shadowing ([37790d2](https://github.com/italo-gouveia/myanimeapi/commit/37790d259cfa742a1e019a50006c1ce5f094cad8))
+* **search:** case-insensitive title search using ILIKE ([59e0205](https://github.com/italo-gouveia/myanimeapi/commit/59e020561305ee43f5c481855f56683e66145cbb))
+
+
+### Features
+
+* advanced search filters and deployment scripts ([#61](https://github.com/italo-gouveia/myanimeapi/issues/61), [#52](https://github.com/italo-gouveia/myanimeapi/issues/52)) ([e231235](https://github.com/italo-gouveia/myanimeapi/commit/e2312358acbbe7241bcb4b0f0c8a3a0fe6cd8d9c))
+* **deploy:** swap Render deploy for GHCR build+push + SSH deploy to VPS ([99430a9](https://github.com/italo-gouveia/myanimeapi/commit/99430a989a5d9023a62034f5e18a347a74d810d6))
+* **etl:** Jikan sync pipeline — covers, mal_id, admin endpoint, redesigned cards ([eb2d706](https://github.com/italo-gouveia/myanimeapi/commit/eb2d706934ae4ed5d19f40a36a3604eca06c6b60)), closes [#152](https://github.com/italo-gouveia/myanimeapi/issues/152)
+* **export+analytics+ux:** data export, admin analytics, card inline feedback ([df34f6c](https://github.com/italo-gouveia/myanimeapi/commit/df34f6c4e2b0f3c1c23cb86eca185df492457f67)), closes [#64](https://github.com/italo-gouveia/myanimeapi/issues/64) [#63](https://github.com/italo-gouveia/myanimeapi/issues/63)
+* **filters:** multi-select status (OR) + multi-genre checkboxes (AND) ([d028aae](https://github.com/italo-gouveia/myanimeapi/commit/d028aaedbb9a2549b9cc61fc92ac8279036655d5))
+* **frontend+ci:** advanced filters, CI frontend build, and prod compose fix ([4b9cdb6](https://github.com/italo-gouveia/myanimeapi/commit/4b9cdb6010dbeed4d0d43d3dcd424e874bb7d9bc))
+* **frontend:** API client + Login/Register with JWT session ([a7ae278](https://github.com/italo-gouveia/myanimeapi/commit/a7ae278a5f39cfe293952262908a6d2fc8989a11))
+* **frontend:** catalog (list + search + pagination) and anime detail ([9fab43c](https://github.com/italo-gouveia/myanimeapi/commit/9fab43c17830e4de8010731815bd1a3e60e126da))
+* **frontend:** complete FavoritesPage, ProfilePage, and anime detail favorite toggle ([d0e8231](https://github.com/italo-gouveia/myanimeapi/commit/d0e82319538fc4a5df16c845fa243bcd58f27679))
+* **frontend:** scaffold Vite + React 18 + TS + Tailwind SPA ([2d87cec](https://github.com/italo-gouveia/myanimeapi/commit/2d87cec887a7e75947e9f3cf0287dfcb3bc1d17b))
+* **infra+docs:** frontend Docker image, nginx config, and updated README entry points ([3536357](https://github.com/italo-gouveia/myanimeapi/commit/353635722662d6908b7e919f296f823019d86d9c))
+* **observability:** add prometheus + grafana + locust local stack ([e6b6a8a](https://github.com/italo-gouveia/myanimeapi/commit/e6b6a8aca8d7056af766bb54713816b3cbb3b6f7))
+* **rbac+admin:** RBAC roles, admin panel frontend, and ETL sync UI ([4ca6b9d](https://github.com/italo-gouveia/myanimeapi/commit/4ca6b9dde86642f91d5310e664fa73bec6d7fd6a))
+* **reviews:** review submission UI + backend fixes ([2b979d3](https://github.com/italo-gouveia/myanimeapi/commit/2b979d3ff68ee479e17cf29561c3546573788a0e))
+* **reviews:** social feed UX + username in review responses ([5871b29](https://github.com/italo-gouveia/myanimeapi/commit/5871b29950e532ef1eac498987e70043697d0127))
+* **ux:** quick-actions on catalog cards + toast on favorites ([6233fdb](https://github.com/italo-gouveia/myanimeapi/commit/6233fdbbc7d1eecfacc8e37dca7116f32a9dda96))
+* **ux:** toast notifications + animations for watchlist actions ([db499b9](https://github.com/italo-gouveia/myanimeapi/commit/db499b965dfdb74d5cbcdaf8fccd3cff32f6faa1))
+* **watchlist:** Plan to Watch / Watching / Completed / Dropped / On Hold ([3b61f5f](https://github.com/italo-gouveia/myanimeapi/commit/3b61f5f12c9bdc57b569d6d26bfd56edb1cbf690))
+
 # [1.19.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.18.0...v1.19.0) (2026-05-29)
 
 
