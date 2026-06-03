@@ -15,6 +15,7 @@ Usage (standalone, api running locally):
   locust -f load-test/locustfile.py --host http://localhost:8080
 """
 
+import os
 import random
 import uuid
 
@@ -104,6 +105,6 @@ class AnimeApiUser(HttpUser):
         payload = {
             "username": f"loaduser_{suffix}",
             "email": f"loaduser_{suffix}@example.com",
-            "password": "LoadTest!Pass123",
+            "password": os.environ.get("LOAD_TEST_PASSWORD", ""),
         }
         self.client.post("/v1/users/register", json=payload, name="/v1/users/register")
