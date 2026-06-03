@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"myanimeapi/api/adapters/cache"
 	"myanimeapi/api/models"
 	"myanimeapi/internal/db"
 	"myanimeapi/internal/etl/jikan"
@@ -35,14 +36,17 @@ type ETLService struct {
 	db     db.DBInterface
 	jikan  *jikan.Client
 	logger *logger.Logger
+	cache  cache.CacheInterface
 }
 
-// NewETLService creates an ETLService backed by the given database.
-func NewETLService(database db.DBInterface) ETLServiceInterface {
+// NewETLService creates an ETLService backed by the given database and cache.
+// Pass a cache.NoopCache when Redis is unavailable — invalidation becomes a no-op.
+func NewETLService(database db.DBInterface, cacheImpl cache.CacheInterface) ETLServiceInterface {
 	return &ETLService{
 		db:     database,
 		jikan:  jikan.NewClient(),
 		logger: logger.New(),
+		cache:  cacheImpl,
 	}
 }
 
@@ -113,7 +117,32 @@ func (s *ETLService) SyncFromJikan(ctx context.Context, pages int) (SyncResult, 
 		"errors":   result.Errors,
 	}).Info("ETL: sync complete")
 
+	// Invalidate all anime, genre, and tag caches so the next read reflects
+	// the freshly-synced data.  Errors are logged but do not fail the sync.
+	s.invalidateCache(ctx)
+
 	return result, nil
+}
+
+// invalidateCache drops every anime, genre, and tag entry from the cache.
+// Individual detail keys (anime:<id>) and paginated list keys (animes:*) are
+// both cleared because the ETL may have changed any record.
+func (s *ETLService) invalidateCache(ctx context.Context) {
+	patterns := []string{
+		cache.PatternAllAnimeDetails,
+		cache.PatternAllAnimes,
+		cache.PatternAllGenres,
+		cache.PatternAllTags,
+	}
+	for _, p := range patterns {
+		if err := s.cache.DeleteByPattern(ctx, p); err != nil {
+			s.logger.WithFields(map[string]interface{}{
+				"pattern": p,
+				"error":   err.Error(),
+			}).Warning("ETL: cache invalidation failed — stale data may persist until TTL expires")
+		}
+	}
+	s.logger.Info("ETL: cache invalidated")
 }
 
 // upsertAnime inserts a new anime or updates the existing one matched by mal_id.
