@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.0...v1.21.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* **ci:** upgrade sonarqube-scan-action v5.3.1 → v8.1.0 ([da26bdd](https://github.com/italo-gouveia/myanimeapi/commit/da26bddbbd2c042c1964768f4c7f649b02344b78))
+
 # [1.21.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.20.0...v1.21.0) (2026-06-03)
 
 
