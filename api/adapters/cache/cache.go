@@ -101,7 +101,8 @@ func KeyTagList(page, limit int) string {
 
 // Pattern constants used for bulk invalidation.
 const (
-	PatternAllAnimes = "animes:*"
-	PatternAllGenres = "genres:*"
-	PatternAllTags   = "tags:*"
+	PatternAllAnimeDetails = "anime:*"  // individual detail keys  (anime:<id>)
+	PatternAllAnimes       = "animes:*" // paginated list keys      (animes:p…)
+	PatternAllGenres       = "genres:*"
+	PatternAllTags         = "tags:*"
 )

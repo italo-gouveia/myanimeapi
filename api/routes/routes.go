@@ -205,7 +205,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	log.Info("Tag routes registered")
 
 	// Register ETL routes (admin-only data ingestion)
-	etlHandler := httphandler.NewETLHandler(services.NewETLService(dbWrapper))
+	etlHandler := httphandler.NewETLHandler(services.NewETLService(dbWrapper, cacheImpl))
 	etlHandler.RegisterETLRoutes(v1Router)
 	log.Info("ETL routes registered")
 
