@@ -1,3 +1,15 @@
+# [1.21.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.20.0...v1.21.0) (2026-06-03)
+
+
+### Bug Fixes
+
+* **deps:** upgrade vulnerable dependencies (Dependabot May 26–Jun 2) ([1960ac1](https://github.com/italo-gouveia/myanimeapi/commit/1960ac1f3dcdc422c8cbe30d7677fe063b14a189))
+
+
+### Features
+
+* **etl:** invalidate cache after Jikan sync ([985c9b6](https://github.com/italo-gouveia/myanimeapi/commit/985c9b641901550e799613e4a80319d56fc913d8))
+
 # [1.20.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.19.0...v1.20.0) (2026-06-02)
 
 
