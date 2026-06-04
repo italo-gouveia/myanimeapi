@@ -71,8 +71,8 @@ func (r *mutationResolver) CreateAnime(ctx context.Context, title string, descri
 
 // DeleteAnime is the resolver for the deleteAnime field.
 func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
+	uid, err := strconv.Atoi(id)
+	if err != nil || uid <= 0 {
 		return false, fmt.Errorf("invalid anime ID: %s", id)
 	}
 	if err := r.AnimeService.DeleteAnime(ctx, uint(uid)); err != nil {
@@ -83,8 +83,8 @@ func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, er
 
 // Anime is the resolver for the anime field.
 func (r *queryResolver) Anime(ctx context.Context, id string) (*model.Anime, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
+	uid, err := strconv.Atoi(id)
+	if err != nil || uid <= 0 {
 		return nil, fmt.Errorf("invalid anime ID: %s", id)
 	}
 	anime, err := r.AnimeService.GetAnimeByID(ctx, uint(uid))
@@ -185,8 +185,8 @@ func (r *queryResolver) AnimesByTitle(ctx context.Context, title string, page *i
 
 // Genre is the resolver for the genre field.
 func (r *queryResolver) Genre(ctx context.Context, id string) (*model.Genre, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
+	uid, err := strconv.Atoi(id)
+	if err != nil || uid <= 0 {
 		return nil, fmt.Errorf("invalid genre ID: %s", id)
 	}
 	genre, err := r.GenreService.GetGenreByID(ctx, uint(uid))
