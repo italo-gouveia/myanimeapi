@@ -1,3 +1,11 @@
+## [1.21.4](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.3...v1.21.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* **deps:** upgrade react-router 6.30.3 → 6.30.4 (GHSA-2j2x-hqr9-3h42) ([ae527a8](https://github.com/italo-gouveia/myanimeapi/commit/ae527a89d869ddfb0c69bcb5baeef4794dddec5d))
+* **frontend:** resolve 6 SonarQube Reliability issues in TSX components ([453b6a3](https://github.com/italo-gouveia/myanimeapi/commit/453b6a35e0d51b9dbad4f882060a70ab63d7ad8c))
+
 ## [1.21.3](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.2...v1.21.3) (2026-06-04)
 
 
