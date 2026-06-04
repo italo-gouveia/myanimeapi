@@ -1,0 +1,32 @@
+# Version control
+.git
+.gitignore
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# Frontend build artefacts and dependencies
+frontend/node_modules
+frontend/dist
+frontend/coverage
+
+# Test and coverage files
+**/*_test.go
+coverage*.out
+tests/
+
+# CI / tooling
+.github/
+.claude/
+
+# Documentation and non-runtime files
+*.md
+docs/
+load-test/
+
+# IDE and OS files
+.idea/
+.vscode/
+*.DS_Store
