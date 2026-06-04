@@ -80,7 +80,7 @@ func TestAnimeFilter_OrderClause_DefaultDirectionIsAsc(t *testing.T) {
 
 func TestAnimeFilter_CacheKeySuffix_Empty(t *testing.T) {
 	suffix := models.AnimeFilter{}.CacheKeySuffix()
-	assert.True(t, strings.HasPrefix(suffix, "st=:g=:t=:"), "suffix=%s", suffix)
+	assert.True(t, strings.HasPrefix(suffix, "st=:sts=:g=:gs=:t=:ts=:"), "suffix=%s", suffix)
 }
 
 func TestAnimeFilter_CacheKeySuffix_Deterministic(t *testing.T) {
