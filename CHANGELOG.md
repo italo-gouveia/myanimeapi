@@ -1,3 +1,15 @@
+# [1.22.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.9...v1.22.0) (2026-06-04)
+
+
+### Bug Fixes
+
+* **docker+sonar:** pin Dockerfile versions + exclude config from coverage ([6a95ad8](https://github.com/italo-gouveia/myanimeapi/commit/6a95ad85f75159abd3b136ec869a0b01ec3cf264))
+
+
+### Features
+
+* **frontend:** add Vitest + coverage + 26 unit tests for Sonar ([28b1dda](https://github.com/italo-gouveia/myanimeapi/commit/28b1dda521970a1f4f047dbedd2edd811b6f0fdc))
+
 ## [1.21.9](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.8...v1.21.9) (2026-06-04)
 
 
