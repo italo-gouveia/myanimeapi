@@ -32,7 +32,7 @@ export function AdminETLPage() {
       <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-5 max-w-sm">
         <div className="flex flex-col gap-1">
           <label htmlFor="pages-input" className="text-sm font-medium text-slate-700">
-            Pages to sync
+            Pages to sync{' '}
             <span className="ml-1 text-xs font-normal text-slate-400">(1 page = 25 anime)</span>
           </label>
           <input

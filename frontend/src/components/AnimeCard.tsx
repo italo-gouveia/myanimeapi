@@ -126,7 +126,10 @@ export function AnimeCard({
       {isAuthenticated && (
         <div
           className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50"
+          role="button"
+          tabIndex={0}
           onClick={stopProp}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') stopProp(e as unknown as React.MouseEvent) }}
         >
           {/* Favorite toggle with inline flash */}
           <button
@@ -152,7 +155,13 @@ export function AnimeCard({
           </button>
 
           {/* Watchlist dropdown with inline flash */}
-          <div className="flex-1 relative" onClick={stopProp}>
+          <div
+            className="flex-1 relative"
+            role="button"
+            tabIndex={0}
+            onClick={stopProp}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') stopProp(e as unknown as React.MouseEvent) }}
+          >
             {watchFlash.flash ? (
               <div className="w-full text-xs font-medium text-center py-1 rounded-md bg-green-500 text-white transition-all duration-200 scale-105">
                 {watchFlash.flash}

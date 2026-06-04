@@ -201,7 +201,7 @@ function ReviewCard({ review, isOwn, onEdit, onDelete, isDeleting }: ReviewCardP
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function AnimeDetailPage() {
   const { id }                      = useParams<{ id: string }>()
-  const animeId                     = id ? Number.parseInt(id, 10) : NaN
+  const animeId                     = id ? Number.parseInt(id, 10) : Number.NaN
   const { isAuthenticated, userId } = useAuth()
   const queryClient                 = useQueryClient()
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
