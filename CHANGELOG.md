@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.1...v1.21.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci+security:** fix Sonar scan conditional + open redirect + hard-coded credential ([7e76001](https://github.com/italo-gouveia/myanimeapi/commit/7e76001148e8fef868ca45ada757b1cfec20aacd))
+
 ## [1.21.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.0...v1.21.1) (2026-06-03)
 
 
