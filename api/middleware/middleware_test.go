@@ -509,3 +509,55 @@ func TestRequireAdmin(t *testing.T) {
 		assert.Equal(t, errors.ErrForbidden, errResp.Error.Code, "Error code should match")
 	})
 }
+
+// TestSafeRedirectHost verifies that safeRedirectHost sanitises the Host header
+// to prevent open-redirect attacks (gosecurity:S5146).
+func TestSafeRedirectHost(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		urlHost  string
+		expected string
+	}{
+		{"valid hostname", "example.com", "", "example.com"},
+		{"valid hostname with port", "example.com:8080", "", "example.com:8080"},
+		{"localhost", "localhost", "", "localhost"},
+		{"localhost with port", "localhost:3000", "", "localhost:3000"},
+		{"IP address", "192.168.1.1", "", "192.168.1.1"},
+		{"IP with port", "192.168.1.1:8080", "", "192.168.1.1:8080"},
+		{"empty host falls back to URL.Host", "", "fallback.com", "fallback.com"},
+		{"scheme injection blocked", "evil.com://attacker.com", "", "localhost"},
+		{"path injection blocked", "evil.com/redirect?url=", "", "localhost"},
+		{"newline injection blocked", "evil.com\nX-Header: injected", "", "localhost"},
+		{"null byte blocked", "evil.com\x00", "", "localhost"},
+		{"both empty returns localhost", "", "", "localhost"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			req.Host = tt.host
+			if tt.urlHost != "" {
+				req.URL.Host = tt.urlHost
+			}
+			got := safeRedirectHost(req)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+// TestHTTPSMiddleware_HostInjectionBlocked verifies that a crafted Host header
+// cannot redirect users to an external domain.
+func TestHTTPSMiddleware_HostInjectionBlocked(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/path?q=1", nil)
+	req.Host = "evil.com://attacker.com"
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	HTTPSMiddleware(handler).ServeHTTP(rr, req)
+
+	location := rr.Header().Get("Location")
+	assert.Equal(t, http.StatusPermanentRedirect, rr.Code)
+	assert.True(t, strings.HasPrefix(location, "https://localhost/"),
+		"injected host must be replaced by localhost, got: %s", location)
+}

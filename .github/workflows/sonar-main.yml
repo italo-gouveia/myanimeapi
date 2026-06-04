@@ -96,7 +96,7 @@ jobs:
 
       - name: Run frontend unit tests with coverage
         working-directory: frontend
-        run: npm ci && npm run test:coverage
+        run: npm ci --ignore-scripts && npm run test:coverage
 
       - name: SonarCloud Scan
         if: env.HAS_SONAR_TOKEN == 'true'
