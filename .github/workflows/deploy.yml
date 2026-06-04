@@ -90,6 +90,8 @@ jobs:
     name: Deploy to VPS via SSH
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     # Gate: only deploys when the repo variable DEPLOY_ENABLED is "true".
     # Until the VPS exists, leave it unset and the job will be skipped while
     # the build-and-push job still publishes images to GHCR.
