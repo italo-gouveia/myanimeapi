@@ -1,3 +1,11 @@
+## [1.22.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.1...v1.22.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **security+tests:** close remaining 2 Sonar issues + cover safeRedirectHost ([6dc0a55](https://github.com/italo-gouveia/myanimeapi/commit/6dc0a55c5ce1071c4771cea2f3bd07820705c463))
+* **security:** resolve all 17 Security Hotspots (S7637 + S6470 + S6471) ([759b42f](https://github.com/italo-gouveia/myanimeapi/commit/759b42fc91f057a31689c73e211a0a26d850f946))
+
 ## [1.22.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.0...v1.22.1) (2026-06-04)
 
 
