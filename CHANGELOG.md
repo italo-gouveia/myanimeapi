@@ -1,3 +1,10 @@
+## [1.21.9](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.8...v1.21.9) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** exclude api/repositories from unit tests in sonar-main.yml ([d2242d2](https://github.com/italo-gouveia/myanimeapi/commit/d2242d299451f4b29af41c4a4e5a4e21ce64e974))
+
 ## [1.21.8](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.7...v1.21.8) (2026-06-04)
 
 
