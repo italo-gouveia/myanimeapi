@@ -1,3 +1,10 @@
+## [1.21.5](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.4...v1.21.5) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** correct sonar-main.yml — inline options strings + quoted name ([760b812](https://github.com/italo-gouveia/myanimeapi/commit/760b81293f8da8de5ec91642214aa9b83258cd54))
+
 ## [1.21.4](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.3...v1.21.4) (2026-06-04)
 
 
