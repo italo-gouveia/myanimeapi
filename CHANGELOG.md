@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.0...v1.22.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **security:** resolve all 18 SonarCloud Security vulnerabilities ([e6ac3be](https://github.com/italo-gouveia/myanimeapi/commit/e6ac3be3807134529e8feea9b16aebe716d6a32e))
+
 # [1.22.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.9...v1.22.0) (2026-06-04)
 
 
