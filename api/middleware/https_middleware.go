@@ -34,11 +34,11 @@ func HTTPSMiddleware(next http.Handler) http.Handler {
 				host = r.URL.Host
 			}
 
-			// Construct the HTTPS URL
-			httpsURL := "https://" + host + r.URL.Path
-			if r.URL.RawQuery != "" {
-				httpsURL += "?" + r.URL.RawQuery
-			}
+			// Construct the HTTPS URL using RequestURI to safely include path and query.
+			// r.URL.RequestURI() returns only the path and query string (no scheme or host),
+			// preventing open redirect attacks where a crafted Host header could point to
+			// an external domain.
+			httpsURL := "https://" + host + r.URL.RequestURI()
 
 			// Log the redirect
 			log.WithFields(logFields).Info("Redirecting HTTP request to HTTPS")

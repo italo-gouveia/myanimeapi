@@ -107,7 +107,7 @@ func TestHTTPSMiddleware(t *testing.T) {
 
 		// Check the status code and location header
 		assert.Equal(t, http.StatusPermanentRedirect, rr.Code, "Status code should be 308")
-		assert.Equal(t, "https://example.com", rr.Header().Get("Location"), "Location header should point to HTTPS")
+		assert.Equal(t, "https://example.com/", rr.Header().Get("Location"), "Location header should point to HTTPS")
 	})
 
 	t.Run("HTTPS Request", func(t *testing.T) {
