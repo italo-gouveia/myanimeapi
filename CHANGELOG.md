@@ -1,3 +1,10 @@
+## [1.22.3](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.2...v1.22.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **sonar:** exclude frontend config files from source scan + coverage ([e4733e6](https://github.com/italo-gouveia/myanimeapi/commit/e4733e625a32f7cf992a6efce17e76387cd6be51))
+
 ## [1.22.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.1...v1.22.2) (2026-06-04)
 
 
