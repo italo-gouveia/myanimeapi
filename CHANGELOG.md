@@ -1,3 +1,11 @@
+## [1.21.6](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.5...v1.21.6) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** move SONAR_TOKEN check to job-level env (secrets not allowed in step if: for push) ([862af95](https://github.com/italo-gouveia/myanimeapi/commit/862af953d657deda99d9ae728884b34cf6180fb6))
+* **frontend:** replace role=button divs with native stopPropagation (SonarCloud) ([0c84145](https://github.com/italo-gouveia/myanimeapi/commit/0c8414500edeb7ad99c3dbf3baae98f6dddb3176))
+
 ## [1.21.5](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.4...v1.21.5) (2026-06-04)
 
 
