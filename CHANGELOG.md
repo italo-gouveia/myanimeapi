@@ -1,3 +1,10 @@
+## [1.21.7](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.6...v1.21.7) (2026-06-04)
+
+
+### Bug Fixes
+
+* **security:** use parseID helper + CodeQL config for gqlgen-managed file ([0bfb7e4](https://github.com/italo-gouveia/myanimeapi/commit/0bfb7e40acb72d826051378c4310f6db0cfd0438))
+
 ## [1.21.6](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.5...v1.21.6) (2026-06-04)
 
 
