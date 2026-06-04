@@ -30,7 +30,7 @@ jobs:
           node-version: '20'
 
       - name: Install semantic-release
-        run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+        run: npm install -g --ignore-scripts semantic-release@24 @semantic-release/changelog@6 @semantic-release/git@10
 
       - name: Run semantic-release
         env:

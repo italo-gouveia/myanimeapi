@@ -30,12 +30,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
       - name: Run golangci-lint
-        run: golangci-lint run ./...
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
 
   build-backend:
     name: Build + vet (backend)
@@ -215,7 +213,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - name: Install deps
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Lint
         run: npm run lint
       - name: Type check
@@ -235,7 +233,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - name: Install deps
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Build
         run: npm run build
       - uses: actions/upload-artifact@v4
@@ -297,7 +295,7 @@ jobs:
         run: go build -o ./bin/api ./cmd
       - name: Install frontend deps
         working-directory: frontend
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Install Playwright browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium
@@ -396,7 +394,7 @@ jobs:
       - name: Build image
         run: docker build -t myanimeapi:scan .
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.30.0
         with:
           image-ref: 'myanimeapi:scan'
           format: 'table'

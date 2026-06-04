@@ -8,11 +8,28 @@ package middleware
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 )
+
+// validHostPattern matches valid hostname:port combinations to prevent open redirect attacks.
+var validHostPattern = regexp.MustCompile(`^[a-zA-Z0-9.\-]+(:\d{1,5})?$`)
+
+// safeRedirectHost returns a validated host from the request, falling back to "localhost"
+// if the host contains characters that could enable an open redirect attack.
+func safeRedirectHost(r *http.Request) string {
+	host := r.Host
+	if host == "" {
+		host = r.URL.Host
+	}
+	if !validHostPattern.MatchString(host) {
+		return "localhost"
+	}
+	return host
+}
 
 // HTTPSMiddleware ensures that all requests are handled securely over HTTPS.
 // It redirects HTTP requests to HTTPS and sets security headers.
@@ -28,16 +45,12 @@ func HTTPSMiddleware(next http.Handler) http.Handler {
 
 		// Check if the request is already HTTPS
 		if r.TLS == nil {
-			// Get the host from the request
-			host := r.Host
-			if host == "" {
-				host = r.URL.Host
-			}
+			// Get the host from the request, validated against a strict pattern to
+			// prevent open redirect attacks via a crafted Host header (gosecurity:S5146).
+			host := safeRedirectHost(r)
 
 			// Construct the HTTPS URL using RequestURI to safely include path and query.
-			// r.URL.RequestURI() returns only the path and query string (no scheme or host),
-			// preventing open redirect attacks where a crafted Host header could point to
-			// an external domain.
+			// r.URL.RequestURI() returns only the path and query string (no scheme or host).
 			httpsURL := "https://" + host + r.URL.RequestURI()
 
 			// Log the redirect

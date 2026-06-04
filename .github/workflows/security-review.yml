@@ -36,13 +36,14 @@ jobs:
         continue-on-error: true
 
       - name: Run golangci-lint security checks
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
-          golangci-lint run --enable=gosec,gosimple,ineffassign,staticcheck ./...
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.8
+          args: --enable=gosec,gosimple,ineffassign,staticcheck ./...
         continue-on-error: true
 
       - name: Security Review with AI
-        uses: Codium-ai/pr-agent@main
+        uses: Codium-ai/pr-agent@v0.26
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
