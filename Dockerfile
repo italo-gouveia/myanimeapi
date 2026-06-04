@@ -13,8 +13,8 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
-# Install swag CLI for generating Swagger documentation
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+# Install swag CLI — pinned to the same version declared in go.mod (S8545)
+RUN go install github.com/swaggo/swag/cmd/swag@v1.16.6
 
 # Generate Swagger documentation (source dir updated after hexagonal refactor)
 RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
@@ -22,8 +22,8 @@ RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./inte
 # Build the Go binary (statically linked)
 RUN CGO_ENABLED=0 go build -o main ./cmd
 
-# Stage 2: Run the Go binary
-FROM alpine:latest
+# Stage 2: Run the Go binary — pinned to avoid unpredictable updates (S8545)
+FROM alpine:3.21
 
 # Create a non-root user and group
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
