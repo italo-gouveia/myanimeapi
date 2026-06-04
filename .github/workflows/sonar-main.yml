@@ -60,7 +60,10 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          PKGS=$(go list ./... | grep -v '/tests/')
+          # Exclude packages that require a real database (covered by integration tests).
+          # api/repositories tests use PostgreSQL-specific features (ILIKE) and live
+          # in the same package as the source; the integration test step covers them.
+          PKGS=$(go list ./... | grep -v '/tests/' | grep -v '/api/repositories')
           go test -race -count=1 -timeout 120s \
             -coverprofile=coverage-unit.out -coverpkg=./... \
             $PKGS
