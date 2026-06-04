@@ -1,3 +1,10 @@
+## [1.21.3](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.2...v1.21.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **security:** resolve CodeQL High integer-conversion + Medium workflow-permissions ([b2c0fb7](https://github.com/italo-gouveia/myanimeapi/commit/b2c0fb712370a971e366ac96288e963e5370fc75)), closes [#2](https://github.com/italo-gouveia/myanimeapi/issues/2) [#1](https://github.com/italo-gouveia/myanimeapi/issues/1)
+
 ## [1.21.2](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.1...v1.21.2) (2026-06-04)
 
 
