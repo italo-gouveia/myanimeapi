@@ -42,6 +42,9 @@ jobs:
       TEST_DB_NAME: test_db
       REDIS_URL: redis://localhost:6379
       JWT_SECRET_KEY: test-jwt-secret-key-at-least-32-chars-long
+      # Evaluated at job level so it's available in step if: conditions.
+      # (secrets context is not allowed in step-level if: for push/workflow_dispatch)
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,7 +72,7 @@ jobs:
             ./tests/integration/...
 
       - name: SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: env.HAS_SONAR_TOKEN == 'true'
         uses: SonarSource/sonarqube-scan-action@v8.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
