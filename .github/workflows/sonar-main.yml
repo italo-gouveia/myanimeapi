@@ -1,0 +1,87 @@
+name: SonarCloud (main)
+
+# Analyses the main branch after every merge and can be triggered manually.
+# PR-time analysis lives in pr.yml; this workflow keeps the SonarCloud
+# dashboard in sync with what is actually on main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.25'
+
+jobs:
+  sonarcloud-main:
+    name: SonarCloud analysis
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: test
+      TEST_DB_NAME: test_db
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: test-jwt-secret-key-at-least-32-chars-long
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history required by SonarCloud
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run unit tests with coverage
+        run: |
+          PKGS=$(go list ./... | grep -v '/tests/')
+          go test -race -count=1 -timeout 120s \
+            -coverprofile=coverage-unit.out -coverpkg=./... \
+            $PKGS
+
+      - name: Run integration tests with coverage
+        run: |
+          go test -race -count=1 -timeout 180s \
+            -coverprofile=coverage-integration.out -coverpkg=./... \
+            ./tests/integration/...
+
+      - name: SonarCloud Scan
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v8.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >-
+            -Dsonar.go.coverage.reportPaths=coverage-unit.out,coverage-integration.out
