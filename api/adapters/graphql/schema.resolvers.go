@@ -71,11 +71,11 @@ func (r *mutationResolver) CreateAnime(ctx context.Context, title string, descri
 
 // DeleteAnime is the resolver for the deleteAnime field.
 func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, error) {
-	uid, err := strconv.Atoi(id)
-	if err != nil || uid <= 0 {
+	uid, err := parseID(id)
+	if err != nil {
 		return false, fmt.Errorf("invalid anime ID: %s", id)
 	}
-	if err := r.AnimeService.DeleteAnime(ctx, uint(uid)); err != nil {
+	if err := r.AnimeService.DeleteAnime(ctx, uid); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -83,11 +83,11 @@ func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, er
 
 // Anime is the resolver for the anime field.
 func (r *queryResolver) Anime(ctx context.Context, id string) (*model.Anime, error) {
-	uid, err := strconv.Atoi(id)
-	if err != nil || uid <= 0 {
+	uid, err := parseID(id)
+	if err != nil {
 		return nil, fmt.Errorf("invalid anime ID: %s", id)
 	}
-	anime, err := r.AnimeService.GetAnimeByID(ctx, uint(uid))
+	anime, err := r.AnimeService.GetAnimeByID(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +185,11 @@ func (r *queryResolver) AnimesByTitle(ctx context.Context, title string, page *i
 
 // Genre is the resolver for the genre field.
 func (r *queryResolver) Genre(ctx context.Context, id string) (*model.Genre, error) {
-	uid, err := strconv.Atoi(id)
-	if err != nil || uid <= 0 {
+	uid, err := parseID(id)
+	if err != nil {
 		return nil, fmt.Errorf("invalid genre ID: %s", id)
 	}
-	genre, err := r.GenreService.GetGenreByID(ctx, uint(uid))
+	genre, err := r.GenreService.GetGenreByID(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -218,3 +218,16 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// parseID converts a GraphQL ID string to a uint suitable for database lookups.
+// Using strconv.Atoi (returns int, same word size as uint on every platform) avoids
+// the CodeQL go/incorrect-integer-conversion warning that arises from casting a
+// uint64 (ParseUint result) down to uint on 32-bit systems.
+// This helper lives at the end of the file so gqlgen preserves it on regeneration.
+func parseID(s string) (uint, error) {
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("invalid ID: %s", s)
+	}
+	return uint(n), nil
+}

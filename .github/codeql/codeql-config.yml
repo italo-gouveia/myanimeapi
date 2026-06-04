@@ -1,0 +1,8 @@
+name: "myanimeapi CodeQL configuration"
+
+# Exclude fully auto-generated code from CodeQL analysis.
+# schema.resolvers.go is partially managed by gqlgen — resolver bodies are
+# user-written and use the parseID() helper (safe strconv.Atoi conversion).
+# The generated/ directory contains only tool-output and should not be scanned.
+paths-ignore:
+  - "api/adapters/graphql/generated/**"
