@@ -75,8 +75,6 @@ export function AnimeCard({
     },
   })
 
-  const stopProp = (e: React.MouseEvent) => e.preventDefault()
-
   return (
     <div
       className="group flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-md hover:border-brand-300 transition-shadow"
@@ -126,15 +124,11 @@ export function AnimeCard({
       {isAuthenticated && (
         <div
           className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50"
-          role="button"
-          tabIndex={0}
-          onClick={stopProp}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') stopProp(e as unknown as React.MouseEvent) }}
         >
           {/* Favorite toggle with inline flash */}
           <button
             type="button"
-            onClick={() => favMutation.mutate()}
+            onClick={(e) => { e.stopPropagation(); favMutation.mutate() }}
             disabled={favMutation.isPending}
             className={`
               relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md
@@ -155,13 +149,7 @@ export function AnimeCard({
           </button>
 
           {/* Watchlist dropdown with inline flash */}
-          <div
-            className="flex-1 relative"
-            role="button"
-            tabIndex={0}
-            onClick={stopProp}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') stopProp(e as unknown as React.MouseEvent) }}
-          >
+          <div className="flex-1 relative">
             {watchFlash.flash ? (
               <div className="w-full text-xs font-medium text-center py-1 rounded-md bg-green-500 text-white transition-all duration-200 scale-105">
                 {watchFlash.flash}
@@ -170,6 +158,7 @@ export function AnimeCard({
               <select
                 value={watchlistStatus ?? ''}
                 disabled={watchlistMutation.isPending}
+                onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   const val = e.target.value
                   watchlistMutation.mutate(val ? (val as WatchlistStatus) : null)
