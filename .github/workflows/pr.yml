@@ -73,13 +73,20 @@ jobs:
       - name: Download modules
         run: go mod download
       - name: Run unit tests with race + coverage
-        # Unit tests live next to source code (api/, internal/, cmd/) — the
-        # tests/ tree is for integration + e2e and is excluded here.
+        # Measure coverage of production packages only (exclude generated, mocks,
+        # swagger docs and DB-bound repository tests — those run in integration).
         run: |
-          PKGS=$(go list ./... | grep -v '/tests/')
+          PROD=$(go list ./... \
+            | grep -v '/tests/' \
+            | grep -v '/api/repositories' \
+            | grep -v '/generated' \
+            | grep -v '/mocks' \
+            | grep -v '/cmd/docs')
+          COVERPKGS=$(echo "$PROD" | tr '\n' ',' | sed 's/,$//')
           go test -race -count=1 -timeout 120s \
-            -coverprofile=coverage-unit.out -coverpkg=./... \
-            $PKGS
+            -coverprofile=coverage-unit.out \
+            -coverpkg="$COVERPKGS" \
+            $PROD
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-unit
@@ -129,8 +136,15 @@ jobs:
         run: go mod download
       - name: Run integration tests with race + coverage
         run: |
+          PROD=$(go list ./... \
+            | grep -v '/tests/' \
+            | grep -v '/generated' \
+            | grep -v '/mocks' \
+            | grep -v '/cmd/docs')
+          COVERPKGS=$(echo "$PROD" | tr '\n' ',' | sed 's/,$//')
           go test -race -count=1 -timeout 180s \
-            -coverprofile=coverage-integration.out -coverpkg=./... \
+            -coverprofile=coverage-integration.out \
+            -coverpkg="$COVERPKGS" \
             ./tests/integration/...
       - uses: actions/upload-artifact@v4
         with:

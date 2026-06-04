@@ -60,18 +60,32 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          # Exclude packages that require a real database (covered by integration tests).
-          # api/repositories tests use PostgreSQL-specific features (ILIKE) and live
-          # in the same package as the source; the integration test step covers them.
-          PKGS=$(go list ./... | grep -v '/tests/' | grep -v '/api/repositories')
+          # Production packages only — exclude generated, mocks, test helpers and
+          # DB-bound repository tests (those are covered by the integration step).
+          PROD=$(go list ./... \
+            | grep -v '/tests/' \
+            | grep -v '/api/repositories' \
+            | grep -v '/generated' \
+            | grep -v '/mocks' \
+            | grep -v '/cmd/docs')
+          COVERPKGS=$(echo "$PROD" | tr '\n' ',' | sed 's/,$//')
+          TESTPKGS=$(echo "$PROD" | grep -v '/api/repositories')
           go test -race -count=1 -timeout 120s \
-            -coverprofile=coverage-unit.out -coverpkg=./... \
-            $PKGS
+            -coverprofile=coverage-unit.out \
+            -coverpkg="$COVERPKGS" \
+            $TESTPKGS
 
       - name: Run integration tests with coverage
         run: |
+          PROD=$(go list ./... \
+            | grep -v '/tests/' \
+            | grep -v '/generated' \
+            | grep -v '/mocks' \
+            | grep -v '/cmd/docs')
+          COVERPKGS=$(echo "$PROD" | tr '\n' ',' | sed 's/,$//')
           go test -race -count=1 -timeout 180s \
-            -coverprofile=coverage-integration.out -coverpkg=./... \
+            -coverprofile=coverage-integration.out \
+            -coverpkg="$COVERPKGS" \
             ./tests/integration/...
 
       - name: SonarCloud Scan
