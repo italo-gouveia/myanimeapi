@@ -1,3 +1,10 @@
+## [1.21.8](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.7...v1.21.8) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** pin sonarqube-scan-action to full commit SHA (SonarCloud S7637) ([2e4e26f](https://github.com/italo-gouveia/myanimeapi/commit/2e4e26f0d8e4b5c28d8cd27fcc2c17e3600e1776))
+
 ## [1.21.7](https://github.com/italo-gouveia/myanimeapi/compare/v1.21.6...v1.21.7) (2026-06-04)
 
 
