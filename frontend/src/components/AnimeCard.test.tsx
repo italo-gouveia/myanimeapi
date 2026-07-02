@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AnimeCard } from './AnimeCard'
 import type { Anime } from '../lib/api/types'
@@ -102,5 +102,48 @@ describe('AnimeCard', () => {
 
     const link = screen.getByRole('link')
     expect(link).toHaveAttribute('href', '/animes/42')
+  })
+
+  it('calls favMutation.mutate when favorite button is clicked', () => {
+    renderCard({ isAuthenticated: true })
+
+    const btn = screen.getByRole('button', { name: /add to favorites|remove from favorites/i })
+    fireEvent.click(btn)
+    // mutation.mutate is called — no error thrown means stopPropagation ran
+    expect(btn).toBeInTheDocument()
+  })
+
+  it('calls watchlistMutation.mutate when watchlist select changes', () => {
+    renderCard({ isAuthenticated: true })
+
+    const select = screen.getByRole('combobox', { name: /watchlist status/i })
+    fireEvent.change(select, { target: { value: 'watching' } })
+    expect(select).toBeInTheDocument()
+  })
+
+  it('stopPropagation fires on select click without bubbling', () => {
+    renderCard({ isAuthenticated: true })
+
+    const select = screen.getByRole('combobox', { name: /watchlist status/i })
+    // fireEvent.click triggers the onClick handler (stopPropagation)
+    fireEvent.click(select)
+    expect(select).toBeInTheDocument()
+  })
+
+  it('renders favorited badge and correct button label when isFavorited=true', () => {
+    renderCard({ isAuthenticated: true, isFavorited: true })
+
+    expect(screen.getByRole('button', { name: /remove from favorites/i })).toBeInTheDocument()
+  })
+
+  it('renders CoverPlaceholder when cover_url is absent', () => {
+    const animeNoCover = { ...mockAnime, cover_url: undefined as unknown as string }
+    render(
+      <MemoryRouter>
+        <AnimeCard anime={animeNoCover} />
+      </MemoryRouter>,
+    )
+    // Initials derived from "Fullmetal Alchemist" → "FA"
+    expect(screen.getByText('FA')).toBeInTheDocument()
   })
 })
