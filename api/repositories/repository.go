@@ -108,6 +108,23 @@ type FavoriteRepository interface {
 	DeleteByUserAndAnime(ctx context.Context, userID, animeID uint) error
 }
 
+// CharacterRepository defines methods for character-related database operations.
+type CharacterRepository interface {
+	Repository
+
+	// GetByAnimeID retrieves all characters for a given anime (paginated).
+	GetByAnimeID(ctx context.Context, animeID uint, page, limit int) ([]models.Character, int64, error)
+
+	// GetByName retrieves characters whose name contains the query string.
+	GetByName(ctx context.Context, name string, page, limit int) ([]models.Character, int64, error)
+
+	// AddToAnime associates a set of characters with an anime.
+	AddToAnime(ctx context.Context, animeID uint, characterIDs []uint) error
+
+	// RemoveFromAnime dissociates a character from an anime.
+	RemoveFromAnime(ctx context.Context, animeID, characterID uint) error
+}
+
 // WatchlistRepository defines methods for watchlist database operations
 type WatchlistRepository interface {
 	Repository

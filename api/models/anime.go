@@ -52,9 +52,10 @@ type Anime struct {
 	MALId       *int      `json:"mal_id,omitempty" gorm:"column:mal_id;uniqueIndex:idx_animes_mal_id" example:"20"`    // MyAnimeList ID (used for ETL deduplication)
 	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                                           // Timestamp when the anime was added
 	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                                           // Timestamp when the anime was last updated
-	Reviews     []Review  `json:"reviews,omitempty" gorm:"foreignKey:AnimeID"`                                         // Associated reviews
-	Genres      []Genre   `json:"genres,omitempty" gorm:"many2many:anime_genres"`                                      // Associated genres
-	Tags        []Tag     `json:"tags,omitempty" gorm:"many2many:anime_tags"`                                          // Associated tags
+	Reviews    []Review    `json:"reviews,omitempty" gorm:"foreignKey:AnimeID"`    // Associated reviews
+	Genres     []Genre     `json:"genres,omitempty" gorm:"many2many:anime_genres"` // Associated genres
+	Tags       []Tag       `json:"tags,omitempty" gorm:"many2many:anime_tags"`     // Associated tags
+	Characters []Character `json:"characters,omitempty" gorm:"many2many:anime_characters"` // Associated characters
 }
 
 // AnimeResponse represents the response format for an anime entry.
@@ -107,9 +108,10 @@ type AnimeResponse struct {
 	MALId       *int      `json:"mal_id,omitempty" example:"20"`                                       // MyAnimeList ID
 	CreatedAt   time.Time `json:"created_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was added
 	UpdatedAt   time.Time `json:"updated_at" example:"2025-02-20T19:27:00Z"`                           // Timestamp when the anime was last updated
-	Reviews     []AnimeReviewEntry `json:"reviews,omitempty"`                                          // Associated reviews (includes username)
-	Genres      []Genre   `json:"genres,omitempty"`                                                    // Associated genres
-	Tags        []Tag     `json:"tags,omitempty"`                                                      // Associated tags
+	Reviews    []AnimeReviewEntry `json:"reviews,omitempty"`    // Associated reviews (includes username)
+	Genres     []Genre            `json:"genres,omitempty"`     // Associated genres
+	Tags       []Tag              `json:"tags,omitempty"`       // Associated tags
+	Characters []CharacterResponse `json:"characters,omitempty"` // Associated characters
 }
 
 // AnimeCreateRequest represents the request payload for creating a new anime.
@@ -210,10 +212,22 @@ func (a Anime) ToResponse() AnimeResponse {
 		MALId:       a.MALId,
 		CreatedAt:   a.CreatedAt,
 		UpdatedAt:   a.UpdatedAt,
-		Reviews:     reviews,
-		Genres:      a.Genres,
-		Tags:        a.Tags,
+		Reviews:    reviews,
+		Genres:     a.Genres,
+		Tags:       a.Tags,
+		Characters: characterResponses(a.Characters),
 	}
+}
+
+func characterResponses(chars []Character) []CharacterResponse {
+	if len(chars) == 0 {
+		return nil
+	}
+	out := make([]CharacterResponse, len(chars))
+	for i, c := range chars {
+		out[i] = c.ToResponse()
+	}
+	return out
 }
 
 // AnimeListResponse represents a paginated list of anime responses.

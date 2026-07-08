@@ -5,6 +5,7 @@ package graphql
 // accidentally move them into its "unknown code" comment block.
 
 import (
+	"fmt"
 	"strconv"
 
 	"myanimeapi/api/adapters/graphql/model"
@@ -79,4 +80,34 @@ func paginationArgs(page, limit *int) (int, int) {
 		l = *limit
 	}
 	return p, l
+}
+
+func toGQLCharacter(c *models.Character) *model.Character {
+	if c == nil {
+		return nil
+	}
+	gql := &model.Character{
+		ID:   strconv.FormatUint(uint64(c.ID), 10),
+		Name: c.Name,
+	}
+	if c.Description != "" {
+		gql.Description = &c.Description
+	}
+	if c.VoiceActor != "" {
+		gql.VoiceActor = &c.VoiceActor
+	}
+	gql.ImageURL = c.ImageURL
+	return gql
+}
+
+// parseID converts a GraphQL ID string to a uint suitable for database lookups.
+// Using strconv.Atoi (returns int, same word size as uint on every platform) avoids
+// the CodeQL go/incorrect-integer-conversion warning that arises from casting a
+// uint64 (ParseUint result) down to uint on 32-bit systems.
+func parseID(s string) (uint, error) {
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("invalid ID: %s", s)
+	}
+	return uint(n), nil
 }

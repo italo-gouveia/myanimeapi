@@ -81,6 +81,62 @@ func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, er
 	return true, nil
 }
 
+// CreateCharacter is the resolver for the createCharacter field.
+func (r *mutationResolver) CreateCharacter(ctx context.Context, name string, description *string, voiceActor *string, imageURL *string) (*model.Character, error) {
+	character := &models.Character{Name: name}
+	if description != nil {
+		character.Description = *description
+	}
+	if voiceActor != nil {
+		character.VoiceActor = *voiceActor
+	}
+	character.ImageURL = imageURL
+	if err := r.CharacterService.CreateCharacter(ctx, character); err != nil {
+		return nil, err
+	}
+	return toGQLCharacter(character), nil
+}
+
+// UpdateCharacter is the resolver for the updateCharacter field.
+func (r *mutationResolver) UpdateCharacter(ctx context.Context, id string, name *string, description *string, voiceActor *string, imageURL *string) (*model.Character, error) {
+	uid, err := parseID(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid character ID: %s", id)
+	}
+	character, err := r.CharacterService.GetCharacterByID(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	if name != nil {
+		character.Name = *name
+	}
+	if description != nil {
+		character.Description = *description
+	}
+	if voiceActor != nil {
+		character.VoiceActor = *voiceActor
+	}
+	if imageURL != nil {
+		character.ImageURL = imageURL
+	}
+	if err := r.CharacterService.UpdateCharacter(ctx, character); err != nil {
+		return nil, err
+	}
+	return toGQLCharacter(character), nil
+}
+
+// DeleteCharacter is the resolver for the deleteCharacter field.
+func (r *mutationResolver) DeleteCharacter(ctx context.Context, id string) (bool, error) {
+	uid, err := parseID(id)
+	if err != nil {
+		return false, fmt.Errorf("invalid character ID: %s", id)
+	}
+	if err := r.CharacterService.DeleteCharacter(ctx, uid); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Anime is the resolver for the anime field.
 func (r *queryResolver) Anime(ctx context.Context, id string) (*model.Anime, error) {
 	uid, err := parseID(id)
@@ -210,6 +266,74 @@ func (r *queryResolver) Genres(ctx context.Context, page *int, limit *int) ([]*m
 	return result, nil
 }
 
+// Character is the resolver for the character field.
+func (r *queryResolver) Character(ctx context.Context, id string) (*model.Character, error) {
+	uid, err := parseID(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid character ID: %s", id)
+	}
+	character, err := r.CharacterService.GetCharacterByID(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	return toGQLCharacter(character), nil
+}
+
+// Characters is the resolver for the characters field.
+func (r *queryResolver) Characters(ctx context.Context, page *int, limit *int) (*model.CharacterList, error) {
+	p, l := paginationArgs(page, limit)
+	characters, total, err := r.CharacterService.GetAllCharacters(ctx, p, l)
+	if err != nil {
+		return nil, err
+	}
+	list := &model.CharacterList{Total: int(total)}
+	for _, c := range characters {
+		list.Data = append(list.Data, toGQLCharacter(c))
+	}
+	if list.Data == nil {
+		list.Data = []*model.Character{}
+	}
+	return list, nil
+}
+
+// CharactersByName is the resolver for the charactersByName field.
+func (r *queryResolver) CharactersByName(ctx context.Context, name string, page *int, limit *int) (*model.CharacterList, error) {
+	p, l := paginationArgs(page, limit)
+	characters, total, err := r.CharacterService.GetCharactersByName(ctx, name, p, l)
+	if err != nil {
+		return nil, err
+	}
+	list := &model.CharacterList{Total: int(total)}
+	for _, c := range characters {
+		list.Data = append(list.Data, toGQLCharacter(c))
+	}
+	if list.Data == nil {
+		list.Data = []*model.Character{}
+	}
+	return list, nil
+}
+
+// CharactersByAnime is the resolver for the charactersByAnime field.
+func (r *queryResolver) CharactersByAnime(ctx context.Context, animeID string, page *int, limit *int) (*model.CharacterList, error) {
+	uid, err := parseID(animeID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid anime ID: %s", animeID)
+	}
+	p, l := paginationArgs(page, limit)
+	characters, total, err := r.CharacterService.GetCharactersByAnime(ctx, uid, p, l)
+	if err != nil {
+		return nil, err
+	}
+	list := &model.CharacterList{Total: int(total)}
+	for _, c := range characters {
+		list.Data = append(list.Data, toGQLCharacter(c))
+	}
+	if list.Data == nil {
+		list.Data = []*model.Character{}
+	}
+	return list, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -218,16 +342,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// parseID converts a GraphQL ID string to a uint suitable for database lookups.
-// Using strconv.Atoi (returns int, same word size as uint on every platform) avoids
-// the CodeQL go/incorrect-integer-conversion warning that arises from casting a
-// uint64 (ParseUint result) down to uint on 32-bit systems.
-// This helper lives at the end of the file so gqlgen preserves it on regeneration.
-func parseID(s string) (uint, error) {
-	n, err := strconv.Atoi(s)
-	if err != nil || n <= 0 {
-		return 0, fmt.Errorf("invalid ID: %s", s)
-	}
-	return uint(n), nil
-}

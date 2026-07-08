@@ -1,5 +1,18 @@
 scalar Time
 
+type Character {
+  id: ID!
+  name: String!
+  description: String
+  voiceActor: String
+  imageURL: String
+}
+
+type CharacterList {
+  data: [Character!]!
+  total: Int!
+}
+
 type Anime {
   id: ID!
   title: String!
@@ -11,6 +24,7 @@ type Anime {
   endDate: Time
   genres: [Genre!]
   tags: [Tag!]
+  characters: [Character!]
 }
 
 type Genre {
@@ -62,6 +76,10 @@ type Query {
   animesByTitle(title: String!, page: Int, limit: Int, sortBy: String, sortOrder: String): AnimeList!
   genre(id: ID!): Genre
   genres(page: Int, limit: Int): [Genre!]!
+  character(id: ID!): Character
+  characters(page: Int, limit: Int): CharacterList!
+  charactersByName(name: String!, page: Int, limit: Int): CharacterList!
+  charactersByAnime(animeId: ID!, page: Int, limit: Int): CharacterList!
 }
 
 type Mutation {
@@ -69,4 +87,7 @@ type Mutation {
   login(username: String!, password: String!): AuthPayload!
   createAnime(title: String!, description: String, episodes: Int, status: String): Anime!
   deleteAnime(id: ID!): Boolean!
+  createCharacter(name: String!, description: String, voiceActor: String, imageURL: String): Character!
+  updateCharacter(id: ID!, name: String, description: String, voiceActor: String, imageURL: String): Character!
+  deleteCharacter(id: ID!): Boolean!
 }

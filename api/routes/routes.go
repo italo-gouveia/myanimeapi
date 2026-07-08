@@ -124,6 +124,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	authRepo := repositories.NewAuthRepository(dbWrapper)
 	genreRepo := repositories.NewGenreRepository(dbWrapper)
 	tagRepo := repositories.NewTagRepository(dbWrapper)
+	characterRepo := repositories.NewCharacterRepository(dbWrapper)
 	log.Info("Repositories initialized")
 
 	// Initialize cache output adapter.
@@ -153,6 +154,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	watchlistService := services.NewWatchlistService(watchlistRepo)
 	genreService := services.NewGenreService(genreRepo, cacheImpl)
 	tagService := services.NewTagService(tagRepo, cacheImpl)
+	characterService := services.NewCharacterService(characterRepo)
 	emailService, err := services.NewEmailService()
 	if err != nil {
 		log.WithField("error", err.Error()).Warning("Email service not configured — password reset emails will be unavailable")
@@ -204,6 +206,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 	tagHandler.RegisterTagRoutes(v1Router)
 	log.Info("Tag routes registered")
 
+	// Register character routes
+	characterHandler := httphandler.NewCharacterHandler(characterService)
+	characterHandler.RegisterCharacterRoutes(v1Router)
+	log.Info("Character routes registered")
+
 	// Register ETL routes (admin-only data ingestion)
 	etlHandler := httphandler.NewETLHandler(services.NewETLService(dbWrapper, cacheImpl))
 	etlHandler.RegisterETLRoutes(v1Router)
@@ -216,10 +223,11 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 
 	// Register GraphQL adapter (second input port — same services, different protocol)
 	gqlResolver := &graphqladapter.Resolver{
-		AnimeService: animeService,
-		AuthService:  authService,
-		GenreService: genreService,
-		UserService:  userService,
+		AnimeService:     animeService,
+		AuthService:      authService,
+		GenreService:     genreService,
+		UserService:      userService,
+		CharacterService: characterService,
 	}
 	gqlSrv := gqlhandler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
 		Resolvers: gqlResolver,

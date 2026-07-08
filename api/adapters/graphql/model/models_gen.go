@@ -7,16 +7,17 @@ import (
 )
 
 type Anime struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Description *string    `json:"description,omitempty"`
-	Rating      *float64   `json:"rating,omitempty"`
-	Episodes    *int       `json:"episodes,omitempty"`
-	Status      *string    `json:"status,omitempty"`
-	StartDate   *time.Time `json:"startDate,omitempty"`
-	EndDate     *time.Time `json:"endDate,omitempty"`
-	Genres      []*Genre   `json:"genres,omitempty"`
-	Tags        []*Tag     `json:"tags,omitempty"`
+	ID          string       `json:"id"`
+	Title       string       `json:"title"`
+	Description *string      `json:"description,omitempty"`
+	Rating      *float64     `json:"rating,omitempty"`
+	Episodes    *int         `json:"episodes,omitempty"`
+	Status      *string      `json:"status,omitempty"`
+	StartDate   *time.Time   `json:"startDate,omitempty"`
+	EndDate     *time.Time   `json:"endDate,omitempty"`
+	Genres      []*Genre     `json:"genres,omitempty"`
+	Tags        []*Tag       `json:"tags,omitempty"`
+	Characters  []*Character `json:"characters,omitempty"`
 }
 
 type AnimeFilterInput struct {
@@ -42,6 +43,19 @@ type AnimeList struct {
 
 type AuthPayload struct {
 	Token string `json:"token"`
+}
+
+type Character struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	VoiceActor  *string `json:"voiceActor,omitempty"`
+	ImageURL    *string `json:"imageURL,omitempty"`
+}
+
+type CharacterList struct {
+	Data  []*Character `json:"data"`
+	Total int          `json:"total"`
 }
 
 type Genre struct {
