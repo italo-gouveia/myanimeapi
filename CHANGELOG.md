@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.3...v1.23.0) (2026-07-08)
+
+
+### Features
+
+* **characters:** implement Character entity — [#132](https://github.com/italo-gouveia/myanimeapi/issues/132) ([0bbe54a](https://github.com/italo-gouveia/myanimeapi/commit/0bbe54ad5791f1b325c0bc182a17c231ccfa2490))
+
 ## [1.22.3](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.2...v1.22.3) (2026-06-04)
 
 
