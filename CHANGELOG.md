@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.23.0...v1.24.0) (2026-07-09)
+
+
+### Features
+
+* **characters:** implement Characters frontend — [#132](https://github.com/italo-gouveia/myanimeapi/issues/132) ([826dfc0](https://github.com/italo-gouveia/myanimeapi/commit/826dfc00e42c66edc9b4cd91340e3243cf366b56))
+
 # [1.23.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.22.3...v1.23.0) (2026-07-08)
 
 
