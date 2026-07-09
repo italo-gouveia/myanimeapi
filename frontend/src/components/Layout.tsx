@@ -31,6 +31,9 @@ export function Layout() {
             <NavLink to="/" end className={navLinkClass}>
               Catalog
             </NavLink>
+            <NavLink to="/characters" className={navLinkClass}>
+              Characters
+            </NavLink>
             {isAuthenticated && (
               <>
                 <NavLink to="/favorites" className={navLinkClass}>

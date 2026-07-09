@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Layout } from '../components/Layout'
 import { HomePage } from '../pages/HomePage'
 import { AnimeDetailPage } from '../pages/AnimeDetailPage'
+import { CharactersPage } from '../pages/CharactersPage'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { FavoritesPage } from '../pages/FavoritesPage'
@@ -21,6 +22,7 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="animes/:id" element={<AnimeDetailPage />} />
+        <Route path="characters" element={<CharactersPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
 

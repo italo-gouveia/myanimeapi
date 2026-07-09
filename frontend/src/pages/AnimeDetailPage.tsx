@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAnime } from '../lib/api/animes'
 import { listFavorites, addFavorite, removeFavorite } from '../lib/api/favorites'
 import { createReview, updateReview, deleteReview } from '../lib/api/reviews'
+import { listCharactersByAnime } from '../lib/api/characters'
 import {
   getWatchlist, upsertWatchlistEntry, removeWatchlistEntry,
   WATCHLIST_STATUS_LABELS, WATCHLIST_STATUSES, type WatchlistStatus,
 } from '../lib/api/watchlist'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { Button } from '../components/Button'
+import { CharacterCard } from '../components/CharacterCard'
 import { ToastContainer, useToast } from '../components/Toast'
 import type { Review } from '../lib/api/types'
 
@@ -226,6 +228,12 @@ export function AnimeDetailPage() {
     enabled: isAuthenticated,
   })
 
+  const { data: charactersData } = useQuery({
+    queryKey: ['characters', 'anime', animeId],
+    queryFn: () => listCharactersByAnime(animeId, { limit: 12 }),
+    enabled: Number.isFinite(animeId),
+  })
+
   const isFavorited       = favorites?.some((f) => f.anime_id === animeId) ?? false
   const myWatchlistEntry  = watchlist?.entries.find((e) => e.anime_id === animeId)
 
@@ -353,6 +361,30 @@ export function AnimeDetailPage() {
           ))}
         </section>
       ) : null}
+
+      {/* ── Characters / Cast ── */}
+      {charactersData && charactersData.data.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
+              Characters
+              <span className="ml-2 text-sm font-normal text-slate-400">({charactersData.total})</span>
+            </h2>
+            {charactersData.total > 12 && (
+              <Link to="/characters" className="text-sm text-brand-700 hover:underline">
+                View all →
+              </Link>
+            )}
+          </div>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" data-testid="anime-detail-characters">
+            {charactersData.data.map((char) => (
+              <li key={char.id}>
+                <CharacterCard character={char} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ── Reviews ── */}
       <section className="flex flex-col gap-5">

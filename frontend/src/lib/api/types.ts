@@ -43,6 +43,14 @@ export interface Review {
   updated_at: string
 }
 
+export interface Character {
+  id: number
+  name: string
+  description?: string
+  voice_actor?: string
+  image_url?: string
+}
+
 export interface Anime {
   id: number
   title: string
@@ -59,6 +67,7 @@ export interface Anime {
   reviews?: Review[]
   genres?: Genre[]
   tags?: Tag[]
+  characters?: Character[]
 }
 
 // AnimeResponse is the lean shape returned in nested contexts (watchlist, etc.)
