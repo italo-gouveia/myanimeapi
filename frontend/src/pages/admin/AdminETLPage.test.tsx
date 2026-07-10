@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AdminETLPage } from './AdminETLPage'
 
@@ -8,18 +7,14 @@ const mockMutate = vi.fn()
 let mockIsPending = false
 let mockIsError = false
 let mockError: Error | null = null
-let capturedOnSuccess: ((data: unknown) => void) | undefined
 
 vi.mock('@tanstack/react-query', () => ({
-  useMutation: (opts: { mutationFn: () => unknown; onSuccess?: (data: unknown) => void }) => {
-    capturedOnSuccess = opts.onSuccess
-    return {
-      mutate: mockMutate,
-      isPending: mockIsPending,
-      isError: mockIsError,
-      error: mockError,
-    }
-  },
+  useMutation: (_opts: { mutationFn: () => unknown; onSuccess?: (data: unknown) => void }) => ({
+    mutate: mockMutate,
+    isPending: mockIsPending,
+    isError: mockIsError,
+    error: mockError,
+  }),
 }))
 
 // Mock the admin API module — we test UI behaviour, not HTTP
