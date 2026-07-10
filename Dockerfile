@@ -13,8 +13,8 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
-# Install swag CLI using the version locked in go.sum (no @version = uses go.mod lock)
-RUN go install github.com/swaggo/swag/cmd/swag
+# Install swag CLI pinned to the version in go.mod
+RUN go install github.com/swaggo/swag/cmd/swag@v1.16.6
 
 # Generate Swagger documentation (source dir updated after hexagonal refactor)
 RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
