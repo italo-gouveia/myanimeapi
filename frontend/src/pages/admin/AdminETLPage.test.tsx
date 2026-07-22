@@ -27,7 +27,6 @@ beforeEach(() => {
   mockIsPending = false
   mockIsError = false
   mockError = null
-  capturedOnSuccess = undefined
 })
 
 describe('AdminETLPage', () => {
