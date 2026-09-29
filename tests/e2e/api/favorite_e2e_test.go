@@ -12,12 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"myanimeapi/api/middleware"
 	"myanimeapi/tests/suites"
 )
 
 // TestFavoriteFlow_E2E verifies the complete favorite flow:
-// create an anime → add to favorites → list favorites → remove from favorites.
+// register a user → create an anime → add to favorites → list favorites → remove from favorites.
 func TestFavoriteFlow_E2E(t *testing.T) {
 	suite := suites.NewBaseSuite(t)
 
@@ -25,12 +24,59 @@ func TestFavoriteFlow_E2E(t *testing.T) {
 		_ = os.Setenv("JWT_SECRET_KEY", "test-secret")
 	}
 
-	token, err := middleware.GenerateToken("1", true, "admin")
-	require.NoError(t, err)
-	authHeader := "Bearer " + token
+	username := "e2euser_favorite"
+	password := "E2Epassword123!"
+	email := username + "@example.com"
+	var authHeader string
 
 	// -----------------------------------------------------------------------
-	// Step 1: Create an anime to use as the favorite target
+	// Step 0: Register a user and login to get a real JWT
+	// -----------------------------------------------------------------------
+	t.Run("RegisterUser", func(t *testing.T) {
+		body := map[string]string{
+			"username": username,
+			"email":    email,
+			"password": password,
+		}
+		b, _ := json.Marshal(body)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/auth/register", bytes.NewReader(b))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		suite.Router.ServeHTTP(rec, req)
+
+		if rec.Code == http.StatusConflict {
+			t.Log("User already exists, proceeding to login")
+		} else {
+			require.Equal(t, http.StatusCreated, rec.Code, "user registration must succeed")
+		}
+	})
+
+	t.Run("LoginUser", func(t *testing.T) {
+		body := map[string]string{
+			"username": username,
+			"password": password,
+		}
+		b, _ := json.Marshal(body)
+
+		req := httptest.NewRequest(http.MethodPost, "/v1/auth/authenticate", bytes.NewReader(b))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		suite.Router.ServeHTTP(rec, req)
+
+		require.Equal(t, http.StatusOK, rec.Code, "user login must succeed")
+
+		var resp map[string]interface{}
+		require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
+		data, ok := resp["data"].(map[string]interface{})
+		require.True(t, ok, "expected data in login response")
+		token, _ := data["token"].(string)
+		require.NotEmpty(t, token, "expected JWT token")
+		authHeader = "Bearer " + token
+	})
+
+	// -----------------------------------------------------------------------
+	// Step 1: Create an anime to use as the favorite target (admin JWT needed)
 	// -----------------------------------------------------------------------
 	var animeID float64
 
@@ -90,7 +136,6 @@ func TestFavoriteFlow_E2E(t *testing.T) {
 		var favorites []interface{}
 		require.NoError(t, json.NewDecoder(rec.Body).Decode(&favorites))
 
-		// Verify our anime is in the favorites list
 		found := false
 		for _, fav := range favorites {
 			if favMap, ok := fav.(map[string]interface{}); ok {
