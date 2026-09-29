@@ -170,6 +170,13 @@ func MigrateHash(password, existingHash string) (string, error) {
 		return newHash, nil
 	}
 
-	// If the hash is already Argon2, return it as-is
+	// If the hash is already Argon2, verify the password before accepting it
+	valid, err := CheckPasswordHash(password, existingHash)
+	if err != nil || !valid {
+		if err == nil {
+			err = fmt.Errorf("password mismatch")
+		}
+		return "", err
+	}
 	return existingHash, nil
 }
