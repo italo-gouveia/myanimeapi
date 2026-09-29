@@ -1,8 +1,10 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
-  enable-all: false
+  default: none
   enable:
     - errcheck
     - gosimple
