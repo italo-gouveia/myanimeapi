@@ -20,29 +20,231 @@
     "host": "localhost:8080",
     "basePath": "/v1",
     "paths": {
+        "/admin/analytics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin analytics",
+                "responses": {}
+            }
+        },
+        "/admin/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Admin dashboard stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httphandler.AdminStats"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List all users (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/admin/users/{id}/role": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update user role (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New role",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httphandler.UpdateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/animes": {
             "get": {
-                "description": "Get a list of all animes with pagination",
+                "description": "Returns a paginated, filterable, sortable list of animes.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "anime"
                 ],
-                "summary": "Get all animes",
+                "summary": "List animes",
                 "parameters": [
                     {
                         "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
+                        "description": "Page number (default 1)",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 10,
-                        "description": "Items per page",
+                        "description": "Items per page (default 100)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "Airing",
+                            "Completed",
+                            "Upcoming"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact genre name (single)",
+                        "name": "genre",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by multiple genres, comma-separated (AND logic)",
+                        "name": "genres",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact tag name (single)",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by multiple tags, comma-separated (AND logic)",
+                        "name": "tags",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Minimum rating (0–10)",
+                        "name": "rating_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Maximum rating (0–10)",
+                        "name": "rating_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum episode count",
+                        "name": "episodes_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum episode count",
+                        "name": "episodes_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start-date year lower bound (inclusive)",
+                        "name": "year_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start-date year upper bound (inclusive)",
+                        "name": "year_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "title",
+                            "rating",
+                            "episodes",
+                            "created_at",
+                            "start_date"
+                        ],
+                        "type": "string",
+                        "description": "Sort field",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort direction",
+                        "name": "order",
                         "in": "query"
                     }
                 ],
@@ -50,17 +252,34 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.AnimeListResponse"
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/models.AnimeResponse"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer"
+                                },
+                                "page": {
+                                    "type": "integer"
+                                },
+                                "total": {
+                                    "type": "integer"
+                                }
+                            }
                         }
                     },
                     "400": {
-                        "description": "Invalid pagination parameters",
+                        "description": "Invalid filter or pagination",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve animes",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -117,64 +336,9 @@
                 }
             }
         },
-        "/animes/genre/{genre}": {
-            "get": {
-                "description": "Search for animes by genre with pagination",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Search animes by genre",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Genre to search for",
-                        "name": "genre",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "Items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.AnimeListResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Genre parameter is required",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to search animes by genre",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/animes/search": {
             "get": {
-                "description": "Search for animes by title with pagination",
+                "description": "Returns animes whose title contains the given string. Supports sort and pagination.",
                 "produces": [
                     "application/json"
                 ],
@@ -185,9 +349,102 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Title to search for",
+                        "description": "Title substring to search for",
                         "name": "title",
                         "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "title",
+                            "rating",
+                            "episodes",
+                            "created_at",
+                            "start_date"
+                        ],
+                        "type": "string",
+                        "description": "Sort field",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort direction",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/models.AnimeResponse"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer"
+                                },
+                                "page": {
+                                    "type": "integer"
+                                },
+                                "total": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/animes/{animeId}/characters": {
+            "get": {
+                "description": "Returns the cast of a given anime",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Get characters for an anime",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Anime ID",
+                        "name": "animeId",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -209,308 +466,54 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.AnimeListResponse"
+                            "$ref": "#/definitions/models.CharacterListResponse"
                         }
                     },
                     "400": {
-                        "description": "Title parameter is required",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to search animes by title",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/animes/{id}": {
-            "get": {
-                "description": "Get an anime's details by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Get an anime by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.AnimeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid anime ID",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve anime",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
             },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing anime's details",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Update an anime",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated anime details",
-                        "name": "anime",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.AnimeUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.AnimeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid anime ID or request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update anime",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an anime by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Delete an anime",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid anime ID",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete anime",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/animes/{id}/genres": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Add one or more genres to an existing anime",
                 "consumes": [
                     "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "anime"
+                    "characters"
                 ],
-                "summary": "Add genres to an anime",
+                "summary": "Add characters to anime",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "Anime ID",
-                        "name": "id",
+                        "name": "animeId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Genre IDs to add",
-                        "name": "genres",
+                        "description": "Character IDs",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
+                            "$ref": "#/definitions/models.AnimeCharacterRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Invalid anime ID or request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to add genres to anime",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Remove one or more genres from an existing anime",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Remove genres from an anime",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Genre IDs to remove",
-                        "name": "genres",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid anime ID or request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to remove genres from anime",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -518,131 +521,39 @@
                 }
             }
         },
-        "/animes/{id}/tags": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Add one or more tags to an existing anime",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "anime"
-                ],
-                "summary": "Add tags to an anime",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Anime ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Tag IDs to add",
-                        "name": "tags",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid anime ID or request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to add tags to anime",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
+        "/animes/{animeId}/characters/{characterId}": {
             "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Remove one or more tags from an existing anime",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "anime"
+                    "characters"
                 ],
-                "summary": "Remove tags from an anime",
+                "summary": "Remove character from anime",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "Anime ID",
-                        "name": "id",
+                        "name": "animeId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Tag IDs to remove",
-                        "name": "tags",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
+                        "type": "integer",
+                        "description": "Character ID",
+                        "name": "characterId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
-                        "description": "Invalid anime ID or request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to remove tags from anime",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -735,6 +646,331 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/characters": {
+            "get": {
+                "description": "Get a paginated list of all characters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Get all characters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new character entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Create character",
+                "parameters": [
+                    {
+                        "description": "Character data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/characters/search": {
+            "get": {
+                "description": "Find characters whose name contains the given query",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Search characters by name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name substring to search",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/characters/{id}": {
+            "get": {
+                "description": "Retrieve a character and its anime appearances",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Get character by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Character ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update character fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Update character",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Character ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CharacterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "characters"
+                ],
+                "summary": "Delete character",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Character ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/sync": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches the top-anime list from Jikan API (jikan.moe) and upserts\neach entry into the local database, including genres, tags, cover\nimages, and MyAnimeList scores.  Admin-only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "etl"
+                ],
+                "summary": "Sync anime data from Jikan / MyAnimeList",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pages to fetch from Jikan (1 page = 25 anime, default 5, max 20)",
+                        "name": "pages",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.SyncResult"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -915,33 +1151,6 @@
             }
         },
         "/genres": {
-            "get": {
-                "description": "Get a list of all genres",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Get all genres",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.GenreResponse"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve genres",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -998,621 +1207,7 @@
                 }
             }
         },
-        "/genres/bulk": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create multiple genres in bulk",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Create multiple genres",
-                "parameters": [
-                    {
-                        "description": "List of genres to create",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.BulkCreateGenresRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.GenreResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Genre name already exists",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to create genres",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete multiple genres in bulk",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Delete multiple genres",
-                "parameters": [
-                    {
-                        "description": "List of genre IDs to delete",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.BulkDeleteGenresRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Genre not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete genres",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/genres/search": {
-            "get": {
-                "description": "Search genres by name",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Search genres",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search query",
-                        "name": "query",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Items per page (default: 10)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.GenreResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Missing search query",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to search genres",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/genres/{id}": {
-            "get": {
-                "description": "Get a genre's details by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Get a genre by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Genre ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.GenreResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid genre ID",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Genre not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve genre",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing genre's details",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Update a genre",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Genre ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated genre details",
-                        "name": "genre",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Genre"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.GenreResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Genre not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Genre name already exists",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update genre",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a genre by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "genres"
-                ],
-                "summary": "Delete a genre",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Genre ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid genre ID",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Genre not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete genre",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/reviews": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new review for an anime",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "reviews"
-                ],
-                "summary": "Create a new review",
-                "parameters": [
-                    {
-                        "description": "Review data",
-                        "name": "review",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ReviewCreateRequest"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "Media files (images or videos)",
-                        "name": "media",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User or anime not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to create review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/reviews/{id}": {
-            "get": {
-                "description": "Retrieve a review by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "reviews"
-                ],
-                "summary": "Get a review by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Review not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing review's details",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "reviews"
-                ],
-                "summary": "Update a review",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated review data",
-                        "name": "review",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ReviewUpdateRequest"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "Media files (images or videos)",
-                        "name": "media",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ReviewResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized to update this review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Review not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete an existing review by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "reviews"
-                ],
-                "summary": "Delete a review",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Review ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid ID format",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized to delete this review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Review not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to delete review",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/tags": {
-            "get": {
-                "description": "Get a list of all tags",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tags"
-                ],
-                "summary": "Get all tags",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Items per page (default: 10)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.TagResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid pagination parameters",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve tags",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -1669,59 +1264,51 @@
                 }
             }
         },
-        "/tags/{id}": {
+        "/watchlist": {
             "get": {
-                "description": "Get a tag's details by its ID",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all watchlist entries for the authenticated user, with a grouped view",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tags"
+                    "watchlist"
                 ],
-                "summary": "Get a tag by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Tag ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get user's watchlist",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.TagResponse"
+                            "$ref": "#/definitions/httphandler.watchlistResponse"
                         }
                     },
-                    "400": {
-                        "description": "Invalid tag ID",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Tag not found",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to retrieve tag",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
-            },
+            }
+        },
+        "/watchlist/{animeId}": {
             "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update an existing tag's details",
+                "description": "Add an anime to the authenticated user's watchlist or update its status",
                 "consumes": [
                     "application/json"
                 ],
@@ -1729,24 +1316,24 @@
                     "application/json"
                 ],
                 "tags": [
-                    "tags"
+                    "watchlist"
                 ],
-                "summary": "Update a tag",
+                "summary": "Add or update watchlist entry",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Tag ID",
-                        "name": "id",
+                        "description": "Anime ID",
+                        "name": "animeId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Updated tag details",
-                        "name": "tag",
+                        "description": "Watchlist status",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TagUpdateRequest"
+                            "$ref": "#/definitions/models.WatchlistUpsertRequest"
                         }
                     }
                 ],
@@ -1754,29 +1341,23 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.TagResponse"
+                            "$ref": "#/definitions/models.WatchlistEntryResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
-                    "404": {
-                        "description": "Tag not found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Tag name already exists",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to update tag",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -1789,19 +1370,19 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an existing tag by its ID",
+                "description": "Remove an anime from the authenticated user's watchlist",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tags"
+                    "watchlist"
                 ],
-                "summary": "Delete a tag",
+                "summary": "Remove watchlist entry",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Tag ID",
-                        "name": "id",
+                        "description": "Anime ID",
+                        "name": "animeId",
                         "in": "path",
                         "required": true
                     }
@@ -1811,421 +1392,25 @@
                         "description": "No Content"
                     },
                     "400": {
-                        "description": "Invalid tag ID",
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Tag not found",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to delete tag",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/change-password": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Change the authenticated user's password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Change user password",
-                "parameters": [
-                    {
-                        "description": "Password change request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ChangePasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid current password",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to change password",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/deactivate": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deactivate the authenticated user's account",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Deactivate user account",
-                "parameters": [
-                    {
-                        "description": "Account deactivation request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.DeactivateAccountRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid password",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to deactivate account",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/forgot-password": {
-            "post": {
-                "description": "Send a password reset email to the user's email address",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Request password reset",
-                "parameters": [
-                    {
-                        "description": "Password reset request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.PasswordResetRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to process password reset request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/login": {
-            "post": {
-                "description": "Authenticate a user with username and password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Login user",
-                "parameters": [
-                    {
-                        "description": "User credentials",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UserCredentials"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid credentials",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to authenticate user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/profile": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get the authenticated user's profile information",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get user profile",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "User not authenticated",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to get user profile",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update the authenticated user's profile information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Update user profile",
-                "parameters": [
-                    {
-                        "description": "Profile update request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UserUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "User not authenticated",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update profile",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/register": {
-            "post": {
-                "description": "Register a new user with the provided credentials",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Register a new user",
-                "parameters": [
-                    {
-                        "description": "User registration data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UserCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Username or email already exists",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to create user",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/reset-password": {
-            "post": {
-                "description": "Reset user's password using a valid reset token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Reset password",
-                "parameters": [
-                    {
-                        "description": "Password reset request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ResetPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body or token",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to reset password",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -2262,39 +1447,81 @@
                 }
             }
         },
-        "handlers.BulkCreateGenresRequest": {
+        "httphandler.AdminStats": {
             "type": "object",
-            "required": [
-                "genres"
-            ],
             "properties": {
-                "genres": {
-                    "description": "List of genres to create",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Genre"
-                    }
+                "anime_total": {
+                    "type": "integer"
+                },
+                "favorites_total": {
+                    "type": "integer"
+                },
+                "genres_total": {
+                    "type": "integer"
+                },
+                "reviews_total": {
+                    "type": "integer"
+                },
+                "tags_total": {
+                    "type": "integer"
+                },
+                "users_total": {
+                    "type": "integer"
+                },
+                "with_cover_total": {
+                    "type": "integer"
                 }
             }
         },
-        "handlers.BulkDeleteGenresRequest": {
+        "httphandler.UpdateRoleRequest": {
             "type": "object",
             "required": [
-                "ids"
+                "role"
             ],
             "properties": {
-                "ids": {
-                    "description": "List of genre IDs to delete",
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "httphandler.watchlistGrouped": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/definitions/models.WatchlistEntryResponse"
+                }
+            }
+        },
+        "httphandler.watchlistResponse": {
+            "type": "object",
+            "properties": {
+                "entries": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "$ref": "#/definitions/models.WatchlistEntryResponse"
                     }
+                },
+                "grouped": {
+                    "$ref": "#/definitions/httphandler.watchlistGrouped"
                 }
             }
         },
         "models.Anime": {
             "type": "object",
             "properties": {
+                "characters": {
+                    "description": "Associated characters",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Character"
+                    }
+                },
+                "cover_url": {
+                    "description": "Cover image URL (populated by ETL)",
+                    "type": "string",
+                    "example": "https://cdn.myanimelist.net/…"
+                },
                 "created_at": {
                     "description": "Timestamp when the anime was added",
                     "type": "string",
@@ -2326,6 +1553,11 @@
                     "description": "Unique identifier for the anime",
                     "type": "integer",
                     "example": 1
+                },
+                "mal_id": {
+                    "description": "MyAnimeList ID (used for ETL deduplication)",
+                    "type": "integer",
+                    "example": 20
                 },
                 "rating": {
                     "description": "Average rating of the anime",
@@ -2365,6 +1597,26 @@
                     "description": "Timestamp when the anime was last updated",
                     "type": "string",
                     "example": "2025-02-20T19:27:00Z"
+                }
+            }
+        },
+        "models.AnimeCharacterRequest": {
+            "type": "object",
+            "required": [
+                "character_ids"
+            ],
+            "properties": {
+                "character_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        1,
+                        2,
+                        3
+                    ]
                 }
             }
         },
@@ -2441,36 +1693,21 @@
                 }
             }
         },
-        "models.AnimeListResponse": {
-            "type": "object",
-            "properties": {
-                "animes": {
-                    "description": "List of anime responses",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.AnimeResponse"
-                    }
-                },
-                "limit": {
-                    "description": "Number of items per page",
-                    "type": "integer",
-                    "example": 10
-                },
-                "page": {
-                    "description": "Current page number",
-                    "type": "integer",
-                    "example": 1
-                },
-                "total": {
-                    "description": "Total number of animes",
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
         "models.AnimeResponse": {
             "type": "object",
             "properties": {
+                "characters": {
+                    "description": "Associated characters",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CharacterResponse"
+                    }
+                },
+                "cover_url": {
+                    "description": "Cover image URL",
+                    "type": "string",
+                    "example": "https://cdn.myanimelist.net/images/…"
+                },
                 "created_at": {
                     "description": "Timestamp when the anime was added",
                     "type": "string",
@@ -2503,16 +1740,21 @@
                     "type": "integer",
                     "example": 1
                 },
+                "mal_id": {
+                    "description": "MyAnimeList ID",
+                    "type": "integer",
+                    "example": 20
+                },
                 "rating": {
                     "description": "Average rating of the anime",
                     "type": "number",
                     "example": 8.5
                 },
                 "reviews": {
-                    "description": "Associated reviews",
+                    "description": "Associated reviews (includes username)",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.Review"
+                        "$ref": "#/definitions/models.AnimeReviewEntry"
                     }
                 },
                 "start_date": {
@@ -2544,79 +1786,186 @@
                 }
             }
         },
-        "models.AnimeUpdateRequest": {
+        "models.AnimeReviewEntry": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Character": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "animes": {
+                    "description": "Anime appearances",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Anime"
+                    }
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "deleted_at": {
+                    "description": "Soft delete timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "description": {
+                    "description": "Brief description",
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "The main protagonist."
+                },
+                "id": {
+                    "description": "Unique identifier",
+                    "type": "integer",
+                    "example": 1
+                },
+                "image_url": {
+                    "description": "Image URL",
+                    "type": "string",
+                    "example": "https://cdn.example.com/naruto.jpg"
+                },
+                "name": {
+                    "description": "Character name",
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "Naruto Uzumaki"
+                },
+                "updated_at": {
+                    "description": "Update timestamp",
+                    "type": "string",
+                    "example": "2025-02-20T19:27:00Z"
+                },
+                "voice_actor": {
+                    "description": "Voice actor name",
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "Junko Takeuchi"
+                }
+            }
+        },
+        "models.CharacterCreateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "The main protagonist."
+                },
+                "image_url": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/naruto.jpg"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "Naruto Uzumaki"
+                },
+                "voice_actor": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "Junko Takeuchi"
+                }
+            }
+        },
+        "models.CharacterListResponse": {
+            "type": "object",
+            "properties": {
+                "characters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CharacterResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
+        "models.CharacterResponse": {
             "type": "object",
             "properties": {
                 "description": {
-                    "description": "Description of the anime",
                     "type": "string",
-                    "example": "The continuation of Naruto's story."
+                    "example": "The main protagonist."
                 },
-                "end_date": {
-                    "description": "Date when the anime finished airing",
-                    "type": "string",
-                    "example": "2017-03-23T00:00:00Z"
-                },
-                "episodes": {
-                    "description": "Number of episodes",
+                "id": {
                     "type": "integer",
-                    "example": 500
+                    "example": 1
                 },
-                "rating": {
-                    "description": "Updated rating for the anime",
-                    "type": "number",
-                    "maximum": 10,
-                    "minimum": 0,
-                    "example": 8.7
-                },
-                "start_date": {
-                    "description": "Date when the anime started airing",
+                "image_url": {
                     "type": "string",
-                    "example": "2007-02-15T00:00:00Z"
+                    "example": "https://cdn.example.com/naruto.jpg"
                 },
-                "status": {
-                    "description": "Current status of the anime",
+                "name": {
                     "type": "string",
-                    "example": "Completed"
+                    "example": "Naruto Uzumaki"
                 },
-                "title": {
-                    "description": "Title of the anime",
+                "voice_actor": {
                     "type": "string",
-                    "example": "Naruto Shippuden"
+                    "example": "Junko Takeuchi"
                 }
             }
         },
-        "models.ChangePasswordRequest": {
+        "models.CharacterUpdateRequest": {
             "type": "object",
-            "required": [
-                "current_password",
-                "new_password"
-            ],
             "properties": {
-                "current_password": {
-                    "description": "Current password for verification",
+                "description": {
                     "type": "string",
-                    "minLength": 6,
-                    "example": "oldpassword123"
+                    "maxLength": 1000,
+                    "example": "The main protagonist."
                 },
-                "new_password": {
-                    "description": "New password to set",
+                "image_url": {
                     "type": "string",
-                    "minLength": 6,
-                    "example": "newpassword123"
-                }
-            }
-        },
-        "models.DeactivateAccountRequest": {
-            "type": "object",
-            "required": [
-                "password"
-            ],
-            "properties": {
-                "password": {
-                    "description": "User's password for verification",
+                    "example": "https://cdn.example.com/naruto.jpg"
+                },
+                "name": {
                     "type": "string",
-                    "example": "password123"
+                    "maxLength": 150,
+                    "example": "Naruto Uzumaki"
+                },
+                "voice_actor": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "example": "Junko Takeuchi"
                 }
             }
         },
@@ -2772,33 +2121,6 @@
                 }
             }
         },
-        "models.PasswordResetRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.ResetPasswordRequest": {
-            "type": "object",
-            "required": [
-                "new_password",
-                "token"
-            ],
-            "properties": {
-                "new_password": {
-                    "type": "string",
-                    "minLength": 8
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Response": {
             "type": "object",
             "properties": {
@@ -2868,148 +2190,6 @@
                     "description": "User ID",
                     "type": "integer",
                     "example": 1
-                }
-            }
-        },
-        "models.ReviewCreateRequest": {
-            "type": "object",
-            "required": [
-                "animeId",
-                "content",
-                "rating",
-                "userId"
-            ],
-            "properties": {
-                "animeId": {
-                    "description": "ID of the anime being reviewed (required)",
-                    "type": "integer",
-                    "example": 1
-                },
-                "content": {
-                    "description": "Content of the review (required, max 500 characters)",
-                    "type": "string",
-                    "maxLength": 500,
-                    "example": "This anime is amazing!"
-                },
-                "media_attachments": {
-                    "description": "Media attachments for the review (optional)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.MediaAttachment"
-                    }
-                },
-                "rating": {
-                    "description": "Rating given in the review (0-10, required)",
-                    "type": "integer",
-                    "maximum": 10,
-                    "minimum": 0,
-                    "example": 9
-                },
-                "userId": {
-                    "description": "ID of the user creating the review (required)",
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "models.ReviewResponse": {
-            "type": "object",
-            "properties": {
-                "anime": {
-                    "description": "Anime details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.AnimeResponse"
-                        }
-                    ]
-                },
-                "animeId": {
-                    "description": "ID of the anime being reviewed",
-                    "type": "integer",
-                    "example": 1
-                },
-                "content": {
-                    "description": "Content of the review",
-                    "type": "string",
-                    "example": "This anime is amazing!"
-                },
-                "created_at": {
-                    "description": "Timestamp when the review was created",
-                    "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
-                },
-                "id": {
-                    "description": "Unique identifier for the review",
-                    "type": "integer",
-                    "example": 1
-                },
-                "media_attachments": {
-                    "description": "Associated media attachments",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.MediaAttachment"
-                    }
-                },
-                "rating": {
-                    "description": "Rating given in the review (0-10)",
-                    "type": "integer",
-                    "example": 9
-                },
-                "updated_at": {
-                    "description": "Timestamp when the review was last updated",
-                    "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
-                },
-                "user": {
-                    "description": "User details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.UserResponse"
-                        }
-                    ]
-                },
-                "userId": {
-                    "description": "ID of the user who created the review",
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "models.ReviewUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "description": "Updated content of the review (optional, max 500 characters)",
-                    "type": "string",
-                    "maxLength": 500,
-                    "example": "Updated review content"
-                },
-                "media_attachments": {
-                    "description": "Updated media attachments (optional)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.MediaAttachment"
-                    }
-                },
-                "rating": {
-                    "description": "Updated rating (optional, 0-10)",
-                    "type": "integer",
-                    "maximum": 10,
-                    "minimum": 0,
-                    "example": 8
-                }
-            }
-        },
-        "models.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Optional response data"
-                },
-                "message": {
-                    "description": "Success message",
-                    "type": "string",
-                    "example": "Operation completed successfully"
                 }
             }
         },
@@ -3087,21 +2267,6 @@
                 }
             }
         },
-        "models.TagUpdateRequest": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "name": {
-                    "description": "Name of the tag",
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 1,
-                    "example": "Updated Action"
-                }
-            }
-        },
         "models.User": {
             "type": "object",
             "required": [
@@ -3172,6 +2337,11 @@
                         "$ref": "#/definitions/models.Review"
                     }
                 },
+                "role": {
+                    "description": "RBAC role: user | reviewer | admin",
+                    "type": "string",
+                    "example": "user"
+                },
                 "social_links": {
                     "description": "User's social media links",
                     "allOf": [
@@ -3187,37 +2357,6 @@
                 },
                 "username": {
                     "description": "Unique username for the user",
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3,
-                    "example": "john_doe"
-                }
-            }
-        },
-        "models.UserCreateRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "username"
-            ],
-            "properties": {
-                "email": {
-                    "description": "Email address for the new user (required, valid email format, 5-100 characters)",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 5,
-                    "example": "john@example.com"
-                },
-                "password": {
-                    "description": "Password for the new user (required, 5-100 characters)",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 5,
-                    "example": "password123"
-                },
-                "username": {
-                    "description": "Username for the new user (required, 3-50 characters)",
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
@@ -3248,81 +2387,77 @@
                 }
             }
         },
-        "models.UserResponse": {
+        "models.WatchlistEntryResponse": {
             "type": "object",
             "properties": {
+                "anime": {
+                    "$ref": "#/definitions/models.AnimeResponse"
+                },
+                "anime_id": {
+                    "type": "integer"
+                },
                 "created_at": {
-                    "description": "Timestamp when the user was created",
-                    "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
+                    "type": "string"
                 },
                 "id": {
-                    "description": "Unique identifier for the user",
-                    "type": "integer",
-                    "example": 1
+                    "type": "integer"
                 },
-                "is_admin": {
-                    "description": "Indicates if the user has admin privileges",
-                    "type": "boolean",
-                    "example": false
+                "status": {
+                    "$ref": "#/definitions/models.WatchlistStatus"
                 },
                 "updated_at": {
-                    "description": "Timestamp when the user was last updated",
-                    "type": "string",
-                    "example": "2025-02-20T19:27:00Z"
+                    "type": "string"
                 },
-                "username": {
-                    "description": "Username of the user",
-                    "type": "string",
-                    "example": "john_doe"
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
-        "models.UserUpdateRequest": {
+        "models.WatchlistStatus": {
+            "type": "string",
+            "enum": [
+                "plan_to_watch",
+                "watching",
+                "completed",
+                "dropped",
+                "on_hold"
+            ],
+            "x-enum-varnames": [
+                "WatchlistStatusPlanToWatch",
+                "WatchlistStatusWatching",
+                "WatchlistStatusCompleted",
+                "WatchlistStatusDropped",
+                "WatchlistStatusOnHold"
+            ]
+        },
+        "models.WatchlistUpsertRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/models.WatchlistStatus"
+                }
+            }
+        },
+        "services.SyncResult": {
             "type": "object",
             "properties": {
-                "bio": {
-                    "description": "New biography (optional, max 500 chars)",
-                    "type": "string",
-                    "maxLength": 500,
-                    "example": "Anime enthusiast"
+                "errors": {
+                    "type": "integer"
                 },
-                "email": {
-                    "description": "New email address (optional, valid email)",
-                    "type": "string",
-                    "example": "john@example.com"
+                "imported": {
+                    "type": "integer"
                 },
-                "genre_ids": {
-                    "description": "New preferred genre IDs (optional)",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    },
-                    "example": [
-                        1,
-                        2,
-                        3
-                    ]
+                "pages": {
+                    "type": "integer"
                 },
-                "profile_pic": {
-                    "description": "New profile picture URL (optional, valid URL)",
-                    "type": "string",
-                    "example": "https://example.com/profile.jpg"
+                "skipped": {
+                    "type": "integer"
                 },
-                "social_links": {
-                    "description": "New social media links (optional)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.JSON"
-                        }
-                    ]
-                },
-                "username": {
-                    "description": "New username (optional, 3-50 chars)",
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 3,
-                    "example": "johndoe"
+                "updated": {
+                    "type": "integer"
                 }
             }
         }
