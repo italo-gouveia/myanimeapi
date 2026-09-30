@@ -87,11 +87,11 @@ func (l *Logger) log(level LogLevel, message string) {
 
 	jsonBytes, err := json.Marshal(entry)
 	if err != nil {
-		l.Logger.Printf("Failed to marshal log entry: %v", err)
+		l.Printf("Failed to marshal log entry: %v", err)
 		return
 	}
 
-	l.Logger.Println(string(jsonBytes))
+	l.Println(string(jsonBytes))
 }
 
 // Debug logs a debug level message
