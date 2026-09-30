@@ -38,10 +38,9 @@ if [[ -n "$(git status --porcelain)" ]]; then
     exit 1
 fi
 
-# Run linter on module packages only (go list excludes frontend/node_modules)
+# Run linter on project source dirs only (avoids frontend/node_modules Go files)
 echo -e "${YELLOW}Running golangci-lint...${NC}"
-LINT_PKGS=$(go list ./... 2>/dev/null | grep -v 'frontend' | tr '\n' ' ')
-golangci-lint run --timeout 10m ${LINT_PKGS}
+golangci-lint run --timeout 10m ./api/... ./cmd/... ./internal/... ./tests/...
 if [ $? -ne 0 ]; then
     echo -e "${RED}Linting failed${NC}"
     exit 1
