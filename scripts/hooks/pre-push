@@ -38,9 +38,9 @@ if [[ -n "$(git status --porcelain)" ]]; then
     exit 1
 fi
 
-# Run linter
+# Run linter (exclude frontend/node_modules which contains third-party Go files)
 echo -e "${YELLOW}Running golangci-lint...${NC}"
-golangci-lint run --timeout 10m ./...
+golangci-lint run --timeout 10m --exclude-dirs frontend ./...
 if [ $? -ne 0 ]; then
     echo -e "${RED}Linting failed${NC}"
     exit 1
