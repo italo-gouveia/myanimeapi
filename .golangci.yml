@@ -14,11 +14,5 @@ linters:
 
 issues:
   exclude-use-default: false
-  exclude-rules:
-    - path: frontend
-      linters:
-        - govet
-        - staticcheck
-        - errcheck
-        - ineffassign
-        - unused
+  exclude-files:
+    - ".*node_modules.*"
