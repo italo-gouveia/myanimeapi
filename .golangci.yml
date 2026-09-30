@@ -2,8 +2,6 @@ version: "2"
 
 run:
   timeout: 5m
-  exclude-dirs:
-    - frontend
 
 linters:
   default: none
@@ -16,3 +14,11 @@ linters:
 
 issues:
   exclude-use-default: false
+  exclude-rules:
+    - path: frontend
+      linters:
+        - govet
+        - staticcheck
+        - errcheck
+        - ineffassign
+        - unused
