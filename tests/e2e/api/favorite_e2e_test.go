@@ -8,10 +8,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"myanimeapi/api/models"
 	"myanimeapi/tests/suites"
 )
 
@@ -76,32 +78,21 @@ func TestFavoriteFlow_E2E(t *testing.T) {
 	})
 
 	// -----------------------------------------------------------------------
-	// Step 1: Create an anime to use as the favorite target (admin JWT needed)
+	// Step 1: Seed an anime directly via DB (POST /animes requires admin).
 	// -----------------------------------------------------------------------
 	var animeID float64
 
 	t.Run("CreateAnimeForFavorite", func(t *testing.T) {
-		body := map[string]interface{}{
-			"title":       "Favorite Flow Anime",
-			"description": "Used for the favorite E2E flow test",
-			"status":      "Ongoing",
-			"episodes":    12,
-			"rating":      8.0,
-			"start_date":  "2024-01-01T00:00:00Z",
+		anime := models.Anime{
+			Title:       "Favorite Flow Anime",
+			Description: "Used for the favorite E2E flow test",
+			Status:      "Ongoing",
+			Episodes:    12,
+			Rating:      8.0,
+			StartDate:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		}
-		b, _ := json.Marshal(body)
-
-		req := httptest.NewRequest(http.MethodPost, "/v1/animes", bytes.NewReader(b))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", authHeader)
-		rec := httptest.NewRecorder()
-		suite.Router.ServeHTTP(rec, req)
-
-		require.Equal(t, http.StatusCreated, rec.Code, "anime creation must succeed")
-
-		var resp map[string]interface{}
-		require.NoError(t, json.NewDecoder(rec.Body).Decode(&resp))
-		animeID = resp["id"].(float64)
+		require.NoError(t, suite.DB.Create(&anime).Error, "anime seed must succeed")
+		animeID = float64(anime.ID)
 		assert.NotEqual(t, float64(0), animeID)
 	})
 
