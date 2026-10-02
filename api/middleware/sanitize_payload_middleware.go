@@ -101,7 +101,7 @@ func ValidateAndSanitizePayload(payloadType interface{}) func(http.Handler) http
 // sanitizePayload recursively sanitizes string fields in a struct
 func sanitizePayload(payload interface{}) error {
 	val := reflect.ValueOf(payload)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
@@ -120,7 +120,7 @@ func sanitizePayload(payload interface{}) error {
 			if err := sanitizePayload(field.Addr().Interface()); err != nil {
 				return err
 			}
-		} else if field.Kind() == reflect.Ptr && field.Elem().Kind() == reflect.Struct {
+		} else if field.Kind() == reflect.Pointer && field.Elem().Kind() == reflect.Struct {
 			if err := sanitizePayload(field.Interface()); err != nil {
 				return err
 			}

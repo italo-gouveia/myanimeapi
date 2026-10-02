@@ -13,9 +13,9 @@ permissions:
   pull-requests: read
 
 env:
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.26'
   NODE_VERSION: '20'
-  GOLANGCI_LINT_VERSION: 'v1.64.8'
+  GOLANGCI_LINT_VERSION: 'v2.12.2'
 
 jobs:
   # ============================================================
@@ -31,7 +31,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
 
@@ -365,7 +365,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Semgrep
@@ -394,7 +394,7 @@ jobs:
       - name: Build image
         run: docker build -t myanimeapi:scan .
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.30.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'myanimeapi:scan'
           format: 'table'
@@ -406,6 +406,8 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     needs: [test-unit-backend, test-integration-backend]
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -419,7 +421,7 @@ jobs:
         with:
           name: coverage-integration
       - name: SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
