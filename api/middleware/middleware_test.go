@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"myanimeapi/internal/errors"
 	apperrors "myanimeapi/internal/errors"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -241,10 +240,10 @@ func TestErrorHandlingMiddleware(t *testing.T) {
 
 		// Check the status code and error response
 		assert.Equal(t, http.StatusInternalServerError, rr.Code, "Status code should be 500")
-		var errResp errors.ErrorResponse
+		var errResp apperrors.ErrorResponse
 		err = json.NewDecoder(rr.Body).Decode(&errResp)
 		assert.NoError(t, err, "Error response should be valid JSON")
-		assert.Equal(t, errors.ErrInternalServer, errResp.Error.Code, "Error code should match")
+		assert.Equal(t, apperrors.ErrInternalServer, errResp.Error.Code, "Error code should match")
 	})
 
 	t.Run("Error Metrics", func(t *testing.T) {
@@ -414,10 +413,10 @@ func TestAuthenticateMiddleware(t *testing.T) {
 
 		// Check the status code and error response
 		assert.Equal(t, http.StatusUnauthorized, rr.Code, "Status code should be 401")
-		var errResp errors.ErrorResponse
+		var errResp apperrors.ErrorResponse
 		err = json.NewDecoder(rr.Body).Decode(&errResp)
 		assert.NoError(t, err, "Error response should be valid JSON")
-		assert.Equal(t, errors.ErrUnauthorized, errResp.Error.Code, "Error code should match")
+		assert.Equal(t, apperrors.ErrUnauthorized, errResp.Error.Code, "Error code should match")
 	})
 
 	t.Run("Expired Token", func(t *testing.T) {
@@ -450,10 +449,10 @@ func TestAuthenticateMiddleware(t *testing.T) {
 
 		// Check the status code and error response
 		assert.Equal(t, http.StatusUnauthorized, rr.Code, "Status code should be 401")
-		var errResp errors.ErrorResponse
+		var errResp apperrors.ErrorResponse
 		err = json.NewDecoder(rr.Body).Decode(&errResp)
 		assert.NoError(t, err, "Error response should be valid JSON")
-		assert.Equal(t, errors.ErrUnauthorized, errResp.Error.Code, "Error code should match")
+		assert.Equal(t, apperrors.ErrUnauthorized, errResp.Error.Code, "Error code should match")
 	})
 }
 
@@ -503,10 +502,10 @@ func TestRequireAdmin(t *testing.T) {
 
 		// Check the status code and error response
 		assert.Equal(t, http.StatusForbidden, rr.Code, "Status code should be 403")
-		var errResp errors.ErrorResponse
+		var errResp apperrors.ErrorResponse
 		err = json.NewDecoder(rr.Body).Decode(&errResp)
 		assert.NoError(t, err, "Error response should be valid JSON")
-		assert.Equal(t, errors.ErrForbidden, errResp.Error.Code, "Error code should match")
+		assert.Equal(t, apperrors.ErrForbidden, errResp.Error.Code, "Error code should match")
 	})
 }
 

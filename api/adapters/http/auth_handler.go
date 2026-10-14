@@ -61,12 +61,22 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		"request_id": r.Context().Value(middleware.RequestIDContextKey),
 	}
 
-	// Decode request body
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	// Decode request body via a DTO — models.User.Password has json:"-" so it
+	// cannot be populated by direct JSON decode; use an intermediate struct instead.
+	var req struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body could not be decoded.", logFields)
 		return
+	}
+	user := models.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Password: req.Password,
 	}
 
 	log.WithFields(logFields).WithField("username", user.Username).WithField("email", user.Email).Info("Processing user registration request")

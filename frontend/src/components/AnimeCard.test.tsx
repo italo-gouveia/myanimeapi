@@ -37,10 +37,15 @@ vi.mock('../lib/api/watchlist', () => ({
 const mockAnime: Anime = {
   id: 42,
   title: 'Fullmetal Alchemist',
+  description: 'Two brothers search for the Philosopher\'s Stone.',
   cover_url: 'https://example.com/fma.jpg',
   rating: 9.1,
   status: 'Completed',
   episodes: 64,
+  start_date: '2003-10-04T00:00:00Z',
+  end_date: '2004-10-02T00:00:00Z',
+  created_at: '2025-01-01T00:00:00Z',
+  updated_at: '2025-01-01T00:00:00Z',
 }
 
 function renderCard(props: Partial<React.ComponentProps<typeof AnimeCard>> = {}) {
