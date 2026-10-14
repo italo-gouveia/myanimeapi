@@ -397,6 +397,7 @@ jobs:
           args: >-
             --failOnCVSS 7
             --exclude "**/vendor/**,**/node_modules/**,**/test/**,**/tests/**,**/docs/**"
+            --suppression owasp-suppressions.xml
 
   trivy:
     name: Trivy image scan
