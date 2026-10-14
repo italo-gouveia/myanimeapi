@@ -25,11 +25,10 @@ RUN CGO_ENABLED=0 go build -o main ./cmd
 # Stage 2: Run the Go binary — pinned to avoid unpredictable updates (S8545)
 FROM alpine:3.21
 
-# Upgrade all packages to pick up security patches (e.g. libcrypto3/libssl3 CVEs)
-RUN apk upgrade --no-cache
-
-# Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Upgrade packages to pick up security patches and create a non-root user
+RUN apk upgrade --no-cache \
+    && addgroup -S appgroup \
+    && adduser -S appuser -G appgroup
 
 # Set the working directory inside the container
 WORKDIR /app
