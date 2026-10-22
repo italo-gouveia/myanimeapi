@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+  <!--
+    braces@3.0.3 is flagged for GHSA-vfj7-8cjw-p6xm by OWASP NVD data, but
+    3.0.3 IS the patched version according to the npm advisory (< 3.0.3 is vulnerable).
+    This is an NVD/OWASP false positive. Build-only dependency; not in Docker runtime.
+  -->
+  <suppress>
+    <notes>False positive: braces 3.0.3 is the patched release; npm advisory says &lt; 3.0.3 is vulnerable. Dev/build dependency only.</notes>
+    <packageUrl regex="true">^pkg:npm/braces@.*$</packageUrl>
+    <vulnerabilityName>GHSA-vfj7-8cjw-p6xm</vulnerabilityName>
+  </suppress>
+
+  <!--
+    source-map-js@1.2.1 is flagged for GHSA-68fv-2mgg-jv7q.
+    All versions 1.0.0-1.2.1 are affected and 1.2.1 is the latest release —
+    no upstream fix exists. Used only by PostCSS/Vite/Tailwind at build time;
+    not present in the production Docker image.
+  -->
+  <suppress>
+    <notes>No fix available: source-map-js 1.2.1 is the latest release and all versions are affected by GHSA-68fv-2mgg-jv7q. Dev/build dependency only, not in runtime.</notes>
+    <packageUrl regex="true">^pkg:npm/source\-map\-js@.*$</packageUrl>
+    <vulnerabilityName>GHSA-68fv-2mgg-jv7q</vulnerabilityName>
+  </suppress>
+</suppressions>
