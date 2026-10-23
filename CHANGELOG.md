@@ -1,3 +1,10 @@
+## [1.24.1](https://github.com/italo-gouveia/myanimeapi/compare/v1.24.0...v1.24.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* **docker:** pin swag install version to fix Go 1.25 build failure ([eccacc1](https://github.com/italo-gouveia/myanimeapi/commit/eccacc13cdab22323d4c45b3bf7ec83b3b6aebd5))
+
 # [1.24.0](https://github.com/italo-gouveia/myanimeapi/compare/v1.23.0...v1.24.0) (2026-07-09)
 
 
