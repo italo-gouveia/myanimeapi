@@ -310,7 +310,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
       - name: Build frontend
         working-directory: frontend
         run: npm run build
@@ -460,7 +460,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Install swag
-        run: go install github.com/swaggo/swag/cmd/swag@latest
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.6
       - name: Generate swagger
         run: swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs
       - name: Check for drift

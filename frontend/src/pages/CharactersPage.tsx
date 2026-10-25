@@ -74,9 +74,12 @@ export function CharactersPage() {
       {/* Results info */}
       {data && (
         <p className="text-sm text-slate-500">
-          {data.total === 0
-            ? 'No characters found.'
-            : `${data.total} character${data.total !== 1 ? 's' : ''}${query ? ` matching "${query}"` : ''}`}
+          {(() => {
+            if (data.total === 0) return 'No characters found.'
+            const plural = data.total !== 1 ? 's' : ''
+            const queryPart = query ? ` matching "${query}"` : ''
+            return `${data.total} character${plural}${queryPart}`
+          })()}
         </p>
       )}
 

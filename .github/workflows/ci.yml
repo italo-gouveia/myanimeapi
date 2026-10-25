@@ -30,9 +30,9 @@ jobs:
           node-version: '20'
 
       - name: Install semantic-release
-        run: npm install -g --ignore-scripts semantic-release@24
+        run: npm install -g --ignore-scripts semantic-release@24.2.5
 
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: semantic-release

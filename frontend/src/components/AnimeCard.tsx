@@ -58,8 +58,8 @@ export function AnimeCard({
       if (isFavorited) await removeFavorite(anime.id)
       else await addFavorite(anime.id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] })
       favFlash.trigger(isFavorited ? 'Removed' : '✓ Saved!')
     },
   })
@@ -69,8 +69,8 @@ export function AnimeCard({
       if (status) await upsertWatchlistEntry(anime.id, status)
       else await removeWatchlistEntry(anime.id)
     },
-    onSuccess: (_, status) => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+    onSuccess: async (_, status) => {
+      await queryClient.invalidateQueries({ queryKey: ['watchlist'] })
       watchFlash.trigger(status ? `✓ ${WATCHLIST_STATUS_LABELS[status]}` : '✓ Removed')
     },
   })

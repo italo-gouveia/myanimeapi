@@ -17,6 +17,11 @@ type CharacterRepositoryImpl struct {
 	logger *logger.Logger
 }
 
+const (
+	errMsgCountCharacters    = "Failed to count characters"
+	errMsgRetrieveCharacters = "Failed to retrieve characters"
+)
+
 // NewCharacterRepository creates a new CharacterRepositoryImpl.
 func NewCharacterRepository(dbConn db.DBInterface) CharacterRepository {
 	return &CharacterRepositoryImpl{db: dbConn, logger: logger.New()}
@@ -46,15 +51,15 @@ func (r *CharacterRepositoryImpl) GetAll(ctx context.Context, page, limit int) (
 	var total int64
 
 	if err := r.db.WithContext(ctx).Model(&models.Character{}).Count(&total).Error; err != nil {
-		r.logger.WithField("error", err.Error()).Error("Failed to count characters")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count characters",
+		r.logger.WithField("error", err.Error()).Error(errMsgCountCharacters)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, errMsgCountCharacters,
 			err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	offset := (page - 1) * limit
 	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&characters).Error; err != nil {
-		r.logger.WithField("error", err.Error()).Error("Failed to retrieve characters")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve characters",
+		r.logger.WithField("error", err.Error()).Error(errMsgRetrieveCharacters)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, errMsgRetrieveCharacters,
 			err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
@@ -134,13 +139,13 @@ func (r *CharacterRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint
 		Where("anime_characters.anime_id = ?", animeID)
 
 	if err := base.Model(&models.Character{}).Count(&total).Error; err != nil {
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count characters",
+		return nil, 0, errors.NewError(errors.ErrInternalServer, errMsgCountCharacters,
 			err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	offset := (page - 1) * limit
 	if err := base.Offset(offset).Limit(limit).Find(&characters).Error; err != nil {
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve characters",
+		return nil, 0, errors.NewError(errors.ErrInternalServer, errMsgRetrieveCharacters,
 			err.Error(), http.StatusInternalServerError, map[string]interface{}{"anime_id": animeID}, err)
 	}
 
@@ -159,7 +164,7 @@ func (r *CharacterRepositoryImpl) GetByName(ctx context.Context, name string, pa
 	query := r.db.WithContext(ctx).Where("name ILIKE ?", "%"+name+"%")
 
 	if err := query.Model(&models.Character{}).Count(&total).Error; err != nil {
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count characters",
+		return nil, 0, errors.NewError(errors.ErrInternalServer, errMsgCountCharacters,
 			err.Error(), http.StatusInternalServerError, nil, err)
 	}
 

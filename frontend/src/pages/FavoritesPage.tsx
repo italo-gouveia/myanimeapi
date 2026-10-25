@@ -15,8 +15,8 @@ export function FavoritesPage() {
 
   const removeMutation = useMutation({
     mutationFn: (animeId: number) => removeFavorite(animeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] })
       pushToast('Removed from favorites', 'info')
     },
   })
