@@ -22,4 +22,29 @@
     <packageUrl regex="true">^pkg:npm/source\-map\-js@.*$</packageUrl>
     <vulnerabilityName>GHSA-68fv-2mgg-jv7q</vulnerabilityName>
   </suppress>
+
+  <!--
+    undici is flagged for GHSA-xjj6-f33q-929c (CVSS 7.5).
+    undici is a transitive dependency of jsdom, which is a dev-only testing
+    dependency. It is not included in the production Docker image and is never
+    invoked in a deployed context. Any network calls it makes are test-only.
+  -->
+  <suppress>
+    <notes>undici is a transitive dep of jsdom (dev/test only). Not in production Docker image. Network exploit requires the library to be used in a deployed server context, which it is not.</notes>
+    <packageUrl regex="true">^pkg:npm/undici@.*$</packageUrl>
+    <vulnerabilityName>GHSA-xjj6-f33q-929c</vulnerabilityName>
+  </suppress>
+
+  <!--
+    zod@3.25.76 is flagged for GHSA-mrhx-c7xc-m3w5 (CVSS 7.5).
+    3.25.76 is the latest zod 3.x release — no fix exists in the 3.x line.
+    Upgrading to zod 4.x is a breaking change requiring code migration.
+    zod is a form-validation library used only in the frontend build; it does
+    not handle network connections or sensitive server-side data.
+  -->
+  <suppress>
+    <notes>No fix available in zod 3.x: 3.25.76 is the latest 3.x release. Upgrading to zod v4 is a breaking change. Frontend form-validation library only, not a network or server-side component.</notes>
+    <packageUrl regex="true">^pkg:npm/zod@3\..*$</packageUrl>
+    <vulnerabilityName>GHSA-mrhx-c7xc-m3w5</vulnerabilityName>
+  </suppress>
 </suppressions>
