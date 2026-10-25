@@ -44,7 +44,7 @@ export function FavoritesPage() {
         </p>
       )}
 
-      {data && data.length === 0 && (
+      {data?.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <span className="text-5xl">🎌</span>
           <p className="text-slate-500" data-testid="favorites-empty">

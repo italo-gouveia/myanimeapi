@@ -38,7 +38,7 @@ function setupMutation() {
     isPending: false,
     isError: false,
     error: null,
-  } as ReturnType<typeof useMutation>)
+  } as unknown as ReturnType<typeof useMutation>)
 }
 
 function renderPage() {

@@ -25,7 +25,7 @@ function setupMutation(overrides = {}) {
     isError: false,
     error: null,
     ...overrides,
-  } as ReturnType<typeof useMutation>)
+  } as unknown as ReturnType<typeof useMutation>)
 }
 
 function renderPage() {
@@ -111,7 +111,7 @@ describe('FavoritesPage', () => {
 
   it('shows mutation error alert', () => {
     vi.mocked(useQuery).mockReturnValue({ isLoading: false, isError: false, data: [] } as ReturnType<typeof useQuery>)
-    setupMutation({ isError: true, error: new Error('Failed') })
+    setupMutation({ isError: true, error: new Error('Failed') } as unknown as ReturnType<typeof useMutation>)
     renderPage()
     expect(screen.getByText(/failed to remove/i)).toBeInTheDocument()
   })
