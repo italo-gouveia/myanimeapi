@@ -252,6 +252,31 @@ jobs:
           path: frontend/dist
           retention-days: 7
 
+  test-unit-frontend:
+    name: Unit tests (frontend)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install deps
+        run: npm ci --ignore-scripts
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/lcov.info
+          retention-days: 7
+
   test-e2e-frontend:
     name: E2E tests (frontend, Playwright)
     runs-on: ubuntu-latest
@@ -420,7 +445,7 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
-    needs: [test-unit-backend, test-integration-backend]
+    needs: [test-unit-backend, test-integration-backend, test-unit-frontend]
     permissions:
       contents: read
       pull-requests: read
@@ -438,6 +463,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-integration
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage
       - name: SonarCloud Scan
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
@@ -448,6 +478,7 @@ jobs:
         with:
           args: >-
             -Dsonar.go.coverage.reportPaths=coverage-unit.out,coverage-integration.out
+            -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
 
   swagger-check:
     name: Swagger up to date
