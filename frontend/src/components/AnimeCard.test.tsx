@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, vi, beforeEach } from 'vitest'
 import { render, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
