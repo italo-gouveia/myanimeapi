@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { FavoritesPage } from './FavoritesPage'
 
@@ -120,5 +120,16 @@ describe('FavoritesPage', () => {
     vi.mocked(useQuery).mockReturnValue({ isLoading: false, isError: false, data: [] } as ReturnType<typeof useQuery>)
     renderPage()
     expect(screen.getByRole('heading', { name: /favorites/i })).toBeInTheDocument()
+  })
+
+  it('covers onSuccess callback after remove mutation', async () => {
+    let capturedOnSuccess: (() => Promise<void>) | undefined
+    vi.mocked(useMutation).mockImplementation(({ onSuccess }: any = {}) => {
+      capturedOnSuccess = onSuccess
+      return { mutate: vi.fn(), isPending: false, isError: false, error: null } as unknown as ReturnType<typeof useMutation>
+    })
+    vi.mocked(useQuery).mockReturnValue({ isLoading: false, isError: false, data: [] } as ReturnType<typeof useQuery>)
+    renderPage()
+    await act(async () => { await capturedOnSuccess?.() })
   })
 })

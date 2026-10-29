@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { WatchlistPage } from './WatchlistPage'
 
@@ -119,5 +119,22 @@ describe('WatchlistPage', () => {
     vi.mocked(useQuery).mockReturnValue({ isLoading: false, isError: false, data: { entries: [], grouped: {} } } as ReturnType<typeof useQuery>)
     renderPage()
     expect(screen.getByRole('heading', { name: /watchlist/i })).toBeInTheDocument()
+  })
+
+  it('covers onSuccess callbacks for move and remove mutations', async () => {
+    const callbacks: Array<((...args: any[]) => any) | undefined> = []
+    vi.mocked(useMutation).mockImplementation(({ onSuccess }: any = {}) => {
+      callbacks.push(onSuccess)
+      return { mutate: vi.fn(), isPending: false, isError: false, error: null } as unknown as ReturnType<typeof useMutation>
+    })
+    const entry = { id: 1, anime_id: 5, status: 'watching', anime: { id: 5, title: 'One Piece', rating: 8.7, episodes: 1000 } }
+    vi.mocked(useQuery).mockReturnValue({
+      isLoading: false, isError: false,
+      data: { entries: [entry], grouped: { watching: [entry] } },
+    } as ReturnType<typeof useQuery>)
+    renderPage()
+    await act(async () => {
+      for (const cb of callbacks) await cb?.(undefined, 'watching', undefined)
+    })
   })
 })
