@@ -85,8 +85,8 @@ function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId,
       isEdit
         ? updateReview(reviewId!, { content, rating })
         : createReview({ animeId, content, rating }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['anime', animeId] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['anime', animeId] })
       onDone()
     },
   })
@@ -245,8 +245,8 @@ export function AnimeDetailPage() {
       if (status) await upsertWatchlistEntry(animeId, status)
       else await removeWatchlistEntry(animeId)
     },
-    onSuccess: (_, status) => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+    onSuccess: async (_, status) => {
+      await queryClient.invalidateQueries({ queryKey: ['watchlist'] })
       if (status) pushToast(`Added to ${WATCHLIST_STATUS_LABELS[status]}`)
       else pushToast('Removed from watchlist', 'info')
     },
@@ -367,7 +367,7 @@ export function AnimeDetailPage() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">
-              Characters
+              {'Characters '}
               <span className="ml-2 text-sm font-normal text-slate-400">({charactersData.total})</span>
             </h2>
             {charactersData.total > 12 && (

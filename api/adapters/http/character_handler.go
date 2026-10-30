@@ -15,6 +15,11 @@ import (
 	"myanimeapi/internal/logger"
 )
 
+const (
+	errInvalidRequestBody = "Invalid request body"
+	errFailedToParseJSON  = "Failed to parse JSON"
+)
+
 // CharacterHandler handles character-related HTTP requests.
 type CharacterHandler struct {
 	characterService services.CharacterServiceInterface
@@ -163,7 +168,7 @@ func (h *CharacterHandler) CreateCharacterHandler(w http.ResponseWriter, r *http
 	var req models.CharacterCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput,
-			"Invalid request body", "Failed to parse JSON", nil)
+			errInvalidRequestBody, errFailedToParseJSON, nil)
 		return
 	}
 
@@ -210,7 +215,7 @@ func (h *CharacterHandler) UpdateCharacterHandler(w http.ResponseWriter, r *http
 	var req models.CharacterUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput,
-			"Invalid request body", "Failed to parse JSON", nil)
+			errInvalidRequestBody, errFailedToParseJSON, nil)
 		return
 	}
 
@@ -277,7 +282,7 @@ func (h *CharacterHandler) AddAnimeCharactersHandler(w http.ResponseWriter, r *h
 	var req models.AnimeCharacterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput,
-			"Invalid request body", "Failed to parse JSON", nil)
+			errInvalidRequestBody, errFailedToParseJSON, nil)
 		return
 	}
 

@@ -1,10 +1,10 @@
 import type { Character } from '../lib/api/types'
 
 interface CharacterCardProps {
-  character: Character
+  readonly character: Character
 }
 
-function CharacterAvatar({ character }: { character: Character }) {
+function CharacterAvatar({ character }: Readonly<{ character: Character }>) {
   if (character.image_url) {
     return (
       <img

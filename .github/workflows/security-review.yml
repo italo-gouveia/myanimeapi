@@ -29,7 +29,7 @@ jobs:
 
       - name: Install security tools
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.0
 
       - name: Run gosec security scan
         run: gosec -fmt=json -out=gosec-report.json ./... || true

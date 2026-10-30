@@ -25,16 +25,16 @@ function WatchlistCard({ entry, onToast }: { entry: WatchlistEntry; onToast: (ms
 
   const moveMutation = useMutation({
     mutationFn: (status: WatchlistStatus) => upsertWatchlistEntry(entry.anime_id, status),
-    onSuccess: (_, status) => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+    onSuccess: async (_, status) => {
+      await queryClient.invalidateQueries({ queryKey: ['watchlist'] })
       onToast(`Moved to ${WATCHLIST_STATUS_LABELS[status]}`)
     },
   })
 
   const removeMutation = useMutation({
     mutationFn: () => removeWatchlistEntry(entry.anime_id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['watchlist'] })
       onToast('Removed from watchlist')
     },
   })
