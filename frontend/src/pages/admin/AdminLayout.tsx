@@ -31,6 +31,9 @@ export function AdminLayout() {
           <NavLink to="/admin/users" className={sideNavClass}>
             <span>👥</span> Users
           </NavLink>
+          <NavLink to="/admin/characters" className={sideNavClass}>
+            <span>🎭</span> Characters
+          </NavLink>
         </nav>
       </aside>
 

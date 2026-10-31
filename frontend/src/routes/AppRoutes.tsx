@@ -14,6 +14,7 @@ import { AdminDashboard } from '../pages/admin/AdminDashboard'
 import { AdminAnalyticsPage } from '../pages/admin/AdminAnalyticsPage'
 import { AdminETLPage } from '../pages/admin/AdminETLPage'
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
+import { AdminCharactersPage } from '../pages/admin/AdminCharactersPage'
 import { ProtectedRoute } from './ProtectedRoute'
 
 export function AppRoutes() {
@@ -40,6 +41,7 @@ export function AppRoutes() {
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="etl" element={<AdminETLPage />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="characters" element={<AdminCharactersPage />} />
           </Route>
         </Route>
 
