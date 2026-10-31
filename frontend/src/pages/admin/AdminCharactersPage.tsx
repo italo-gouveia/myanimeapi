@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { TableSkeleton, Pagination } from './components'
 import {
   listCharacters,
   createCharacter,
@@ -226,15 +227,7 @@ export function AdminCharactersPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: 5 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <div className="h-4 bg-slate-100 rounded animate-pulse" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
+              ? <TableSkeleton rows={8} cols={5} />
               : data?.data.map((char) => (
                   <tr key={char.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-slate-400 tabular-nums">{char.id}</td>
@@ -280,29 +273,12 @@ export function AdminCharactersPage() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1.5 rounded border border-slate-200 text-sm disabled:opacity-40 hover:bg-slate-50"
-          >
-            ← Previous
-          </button>
-          <span className="text-sm text-slate-500">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 rounded border border-slate-200 text-sm disabled:opacity-40 hover:bg-slate-50"
-          >
-            Next →
-          </button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPrev={() => setPage((p) => p - 1)}
+        onNext={() => setPage((p) => p + 1)}
+      />
 
       {modal.kind === 'create' && (
         <Modal title="New character" onClose={() => setModal({ kind: 'closed' })}>
