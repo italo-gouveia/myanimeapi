@@ -10,6 +10,7 @@ package middleware
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -91,31 +92,23 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 //
 // Example:  /v1/animes/42/genres  →  /v1/animes/:id/genres
 func sanitizePath(path string) string {
-	var result []byte
-	i := 0
-	for i < len(path) {
-		if path[i] == '/' {
-			result = append(result, '/')
-			i++
-			// Collect the next segment.
-			j := i
-			isNum := true
-			for j < len(path) && path[j] != '/' {
-				if path[j] < '0' || path[j] > '9' {
-					isNum = false
-				}
-				j++
-			}
-			if isNum && j > i {
-				result = append(result, []byte(":id")...)
-			} else {
-				result = append(result, []byte(path[i:j])...)
-			}
-			i = j
-		} else {
-			result = append(result, path[i])
-			i++
+	segments := strings.Split(path, "/")
+	for i, seg := range segments {
+		if isNumericSegment(seg) {
+			segments[i] = ":id"
 		}
 	}
-	return string(result)
+	return strings.Join(segments, "/")
+}
+
+func isNumericSegment(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }

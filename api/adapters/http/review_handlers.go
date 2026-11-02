@@ -35,6 +35,63 @@ func NewReviewHandler(reviewService services.ReviewServiceInterface, storageSvc 
 	}
 }
 
+// mediaTypeFromExt maps a lowercase file extension to a media type string.
+func mediaTypeFromExt(ext string) string {
+	switch ext {
+	case ".mp4", ".webm", ".mov":
+		return "video"
+	default:
+		return "image"
+	}
+}
+
+// processMediaFiles reads all files from the multipart form and uploads them
+// via the storage service. It returns the list of created attachments, or an
+// error if any upload fails.
+func (h *ReviewHandler) processMediaFiles(r *http.Request) ([]models.MediaAttachment, error) {
+	form := r.MultipartForm
+	if form == nil || form.File == nil {
+		return nil, nil
+	}
+	var attachments []models.MediaAttachment
+	for _, files := range form.File {
+		for _, file := range files {
+			mediaType := mediaTypeFromExt(strings.ToLower(filepath.Ext(file.Filename)))
+			fileURL, err := h.storageSvc.SaveFile(file, mediaType)
+			if err != nil {
+				return nil, err
+			}
+			attachments = append(attachments, models.MediaAttachment{Type: mediaType, URL: fileURL})
+		}
+	}
+	return attachments, nil
+}
+
+// toReviewResponse converts a Review model to a ReviewResponse DTO.
+func toReviewResponse(review *models.Review) models.ReviewResponse {
+	return models.ReviewResponse{
+		ID:        review.ID,
+		CreatedAt: review.CreatedAt,
+		UpdatedAt: review.UpdatedAt,
+		UserID:    review.UserID,
+		AnimeID:   review.AnimeID,
+		Content:   review.Content,
+		Rating:    review.Rating,
+		User: models.UserResponse{
+			ID:       review.User.ID,
+			Username: review.User.Username,
+			IsAdmin:  review.User.IsAdmin,
+		},
+		Anime: models.AnimeResponse{
+			ID:          review.Anime.ID,
+			Title:       review.Anime.Title,
+			Description: review.Anime.Description,
+			Rating:      review.Anime.Rating,
+		},
+		MediaAttachments: review.MediaAttachments,
+	}
+}
+
 // RegisterReviewRoutes registers all review-related routes with a *mux.Router.
 func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	// Public routes (no authentication required)
@@ -77,29 +134,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := models.ReviewResponse{
-		ID:        review.ID,
-		CreatedAt: review.CreatedAt,
-		UpdatedAt: review.UpdatedAt,
-		UserID:    review.UserID,
-		AnimeID:   review.AnimeID,
-		Content:   review.Content,
-		Rating:    review.Rating,
-		User: models.UserResponse{
-			ID:       review.User.ID,
-			Username: review.User.Username,
-			IsAdmin:  review.User.IsAdmin,
-		},
-		Anime: models.AnimeResponse{
-			ID:          review.Anime.ID,
-			Title:       review.Anime.Title,
-			Description: review.Anime.Description,
-			Rating:      review.Anime.Rating,
-		},
-	}
-
 	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(toReviewResponse(review)); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
 			"error": err.Error(),
@@ -139,32 +175,15 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Handle media file uploads
-	form := r.MultipartForm
-	if form != nil && form.File != nil {
-		for _, files := range form.File {
-			for _, file := range files {
-				ext := strings.ToLower(filepath.Ext(file.Filename))
-				mediaType := "image"
-				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
-					mediaType = "video"
-				}
-
-				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
-				if err != nil {
-					h.logger.WithField("err", err).Warning("Failed to upload file")
-					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
-						"error": err.Error(),
-					})
-					return
-				}
-
-				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
-					Type: mediaType,
-					URL:  fileURL,
-				})
-			}
-		}
+	attachments, err := h.processMediaFiles(r)
+	if err != nil {
+		h.logger.WithField("err", err).Warning("Failed to upload file")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
 	}
+	review.MediaAttachments = attachments
 
 	// Create review using service
 	if err := h.reviewService.CreateReview(r.Context(), review); err != nil {
@@ -187,31 +206,9 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := models.ReviewResponse{
-		ID:        createdReview.ID,
-		CreatedAt: createdReview.CreatedAt,
-		UpdatedAt: createdReview.UpdatedAt,
-		UserID:    createdReview.UserID,
-		AnimeID:   createdReview.AnimeID,
-		Content:   createdReview.Content,
-		Rating:    createdReview.Rating,
-		User: models.UserResponse{
-			ID:       createdReview.User.ID,
-			Username: createdReview.User.Username,
-			IsAdmin:  createdReview.User.IsAdmin,
-		},
-		Anime: models.AnimeResponse{
-			ID:          createdReview.Anime.ID,
-			Title:       createdReview.Anime.Title,
-			Description: createdReview.Anime.Description,
-			Rating:      createdReview.Anime.Rating,
-		},
-		MediaAttachments: createdReview.MediaAttachments,
-	}
-
 	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(toReviewResponse(createdReview)); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
 			"error": err.Error(),
@@ -282,32 +279,15 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Handle media file uploads
-	form := r.MultipartForm
-	if form != nil && form.File != nil {
-		for _, files := range form.File {
-			for _, file := range files {
-				ext := strings.ToLower(filepath.Ext(file.Filename))
-				mediaType := "image"
-				if ext == ".mp4" || ext == ".webm" || ext == ".mov" {
-					mediaType = "video"
-				}
-
-				fileURL, err := h.storageSvc.SaveFile(file, mediaType)
-				if err != nil {
-					h.logger.WithField("err", err).Warning("Failed to upload file")
-					errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
-						"error": err.Error(),
-					})
-					return
-				}
-
-				review.MediaAttachments = append(review.MediaAttachments, models.MediaAttachment{
-					Type: mediaType,
-					URL:  fileURL,
-				})
-			}
-		}
+	newAttachments, err := h.processMediaFiles(r)
+	if err != nil {
+		h.logger.WithField("err", err).Warning("Failed to upload file")
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
 	}
+	review.MediaAttachments = append(review.MediaAttachments, newAttachments...)
 
 	if err := h.reviewService.UpdateReview(r.Context(), review); err != nil {
 		h.logger.WithField("err", err).Warning("Failed to update review")
@@ -326,30 +306,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := models.ReviewResponse{
-		ID:        updatedReview.ID,
-		CreatedAt: updatedReview.CreatedAt,
-		UpdatedAt: updatedReview.UpdatedAt,
-		UserID:    updatedReview.UserID,
-		AnimeID:   updatedReview.AnimeID,
-		Content:   updatedReview.Content,
-		Rating:    updatedReview.Rating,
-		User: models.UserResponse{
-			ID:       updatedReview.User.ID,
-			Username: updatedReview.User.Username,
-			IsAdmin:  updatedReview.User.IsAdmin,
-		},
-		Anime: models.AnimeResponse{
-			ID:          updatedReview.Anime.ID,
-			Title:       updatedReview.Anime.Title,
-			Description: updatedReview.Anime.Description,
-			Rating:      updatedReview.Anime.Rating,
-		},
-		MediaAttachments: updatedReview.MediaAttachments,
-	}
-
 	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(toReviewResponse(updatedReview)); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
 			"error": err.Error(),
