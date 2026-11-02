@@ -98,7 +98,7 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
@@ -117,8 +117,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
 	if !ok {
-		h.logger.Warning("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Warning(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to create a review.", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthReview, nil)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		MediaAttachments: createdReview.MediaAttachments,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
@@ -241,8 +241,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewUpdateRequest)
 	if !ok {
-		h.logger.Warning("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Warning(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to update a review.", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthUpdateReview, nil)
 		return
 	}
 
@@ -270,7 +270,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 			"review_user_id":  review.UserID,
 			"request_user_id": userID,
 		}).Warning("Unauthorized review update attempt")
-		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", "You are not authorized to update this review.", nil)
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", msgUnauthorizedUpdate, nil)
 		return
 	}
 
@@ -348,7 +348,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		MediaAttachments: updatedReview.MediaAttachments,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.WithField("err", err).Error("Failed to encode response")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
@@ -375,7 +375,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "You must be logged in to delete a review.", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthDeleteReview, nil)
 		return
 	}
 
@@ -393,7 +393,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 			"review_user_id":  review.UserID,
 			"request_user_id": userID,
 		}).Warning("Unauthorized review deletion attempt")
-		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", "You are not authorized to delete this review.", nil)
+		errors.WriteErrorResponse(w, http.StatusForbidden, errors.ErrForbidden, "Unauthorized", msgUnauthorizedDelete, nil)
 		return
 	}
 

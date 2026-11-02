@@ -45,7 +45,7 @@ func NewUserHandler(userService services.UserServiceInterface, genreService serv
 
 // writeJSONResponse writes a JSON response to the http.ResponseWriter
 func (h *UserHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}, log *logger.Logger, logFields map[string]interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to encode response")
@@ -155,7 +155,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		log.WithFields(logFields).Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		log.WithFields(logFields).Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -285,7 +285,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		log.WithFields(logFields).Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -338,7 +338,7 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		log.WithFields(logFields).Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -499,7 +499,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		log.WithFields(logFields).Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -545,7 +545,7 @@ func (h *UserHandler) ExportUserDataHandler(w http.ResponseWriter, r *http.Reque
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgUserNotAuth, logFields)
 		return
 	}
 
@@ -579,7 +579,7 @@ func (h *UserHandler) ExportUserDataHandler(w http.ResponseWriter, r *http.Reque
 
 	switch format {
 	case "csv":
-		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set(contentTypeKey, "text/csv")
 		w.Header().Set("Content-Disposition", `attachment; filename="myanimeapi-export.csv"`)
 
 		cw := csv.NewWriter(w)
@@ -639,7 +639,7 @@ func (h *UserHandler) ExportUserDataHandler(w http.ResponseWriter, r *http.Reque
 			Reviews:    reviews,
 			ExportedAt: time.Now().UTC(),
 		}
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(contentTypeKey, contentTypeJSON)
 		if err := json.NewEncoder(w).Encode(payload); err != nil {
 			log.WithFields(logFields).WithField("error", err).Error("Failed to encode export response")
 		}

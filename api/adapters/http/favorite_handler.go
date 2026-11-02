@@ -49,7 +49,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -85,7 +85,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(favorite); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -122,7 +122,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -182,7 +182,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -203,7 +203,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(favorites); err != nil {
 		h.logger.WithFields(map[string]interface{}{

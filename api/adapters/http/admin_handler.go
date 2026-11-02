@@ -52,7 +52,7 @@ func (h *AdminHandler) StatsHandler(w http.ResponseWriter, r *http.Request) {
 	gdb.Model(&models.Favorite{}).Count(&stats.FavoritesTotal)
 	gdb.Model(&models.Genre{}).Count(&stats.GenresTotal)
 	gdb.Model(&models.Tag{}).Count(&stats.TagsTotal)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	_ = json.NewEncoder(w).Encode(stats)
 }
 
@@ -108,7 +108,7 @@ func (h *AdminHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"data": rows, "total": total, "page": page, "limit": limit,
 	})
@@ -158,7 +158,7 @@ func (h *AdminHandler) UpdateRoleHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	_ = json.NewEncoder(w).Encode(map[string]string{"role": req.Role})
 }
 
@@ -236,7 +236,7 @@ func (h *AdminHandler) AnalyticsHandler(w http.ResponseWriter, r *http.Request) 
 		recentSignupsPerDay = []DailyCountRow{}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"top_favorited":          topFavorited,
 		"top_reviewed":           topReviewed,

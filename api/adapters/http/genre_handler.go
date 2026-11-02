@@ -65,8 +65,8 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Genre)
 	if !ok {
-		h.logger.Error("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Error(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(payload.ToResponse()); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -124,7 +124,7 @@ func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(genre.ToResponse()); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -155,7 +155,7 @@ func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Reques
 		responses[i] = genre.ToResponse()
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(responses); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -184,8 +184,8 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Genre)
 	if !ok {
-		h.logger.Error("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Error(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 
@@ -203,7 +203,7 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(payload.ToResponse()); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -287,7 +287,7 @@ func (h *GenreHandler) SearchGenresHandler(w http.ResponseWriter, r *http.Reques
 		"limit":  limit,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -308,8 +308,8 @@ func (h *GenreHandler) BulkCreateGenresHandler(w http.ResponseWriter, r *http.Re
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkCreateGenresRequest)
 	if !ok {
-		h.logger.Error("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Error(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 
@@ -339,8 +339,8 @@ func (h *GenreHandler) BulkDeleteGenresHandler(w http.ResponseWriter, r *http.Re
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkDeleteGenresRequest)
 	if !ok {
-		h.logger.Error("Invalid payload")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		h.logger.Error(msgInvalidPayload)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 		return
 	}
 

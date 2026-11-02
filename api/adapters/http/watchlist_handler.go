@@ -53,7 +53,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -93,7 +93,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 		Grouped: grouped,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(result); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -129,7 +129,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -183,7 +183,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 	}
 
 	resp := entry.ToResponse()
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -220,7 +220,7 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error("Failed to get user ID from context")
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")

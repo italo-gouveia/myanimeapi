@@ -31,7 +31,7 @@ func NewAuthHandler(authService services.AuthServiceInterface, logger *logger.Lo
 
 // writeJSONResponse writes a JSON response to the http.ResponseWriter
 func (h *AuthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}, log *logger.Logger, logFields map[string]interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		logFields["error"] = err.Error()
