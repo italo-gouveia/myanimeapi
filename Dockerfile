@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Install swag CLI pinned to the version in go.mod
-RUN go install github.com/swaggo/swag/cmd/swag@v1.16.6
+RUN go install github.com/swaggo/swag/cmd/swag@v1.16.6 # NOSONAR
 
 # Generate Swagger documentation (source dir updated after hexagonal refactor)
 RUN swag init --dir ./cmd,./api/adapters/http,./api/models,./api/services,./internal/errors --output ./cmd/docs

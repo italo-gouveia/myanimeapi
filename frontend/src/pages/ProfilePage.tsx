@@ -44,7 +44,7 @@ export function ProfilePage() {
 
   function handleLogout() {
     clearSession()
-    navigate('/', { replace: true })
+    void navigate('/', { replace: true })
   }
 
   async function handleExport(format: ExportFormat) {
