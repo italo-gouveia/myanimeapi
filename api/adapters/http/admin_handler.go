@@ -52,8 +52,7 @@ func (h *AdminHandler) StatsHandler(w http.ResponseWriter, r *http.Request) {
 	gdb.Model(&models.Favorite{}).Count(&stats.FavoritesTotal)
 	gdb.Model(&models.Genre{}).Count(&stats.GenresTotal)
 	gdb.Model(&models.Tag{}).Count(&stats.TagsTotal)
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	_ = json.NewEncoder(w).Encode(stats)
+	writeJSON(w, http.StatusOK, stats, nil)
 }
 
 // AdminUserRow is the safe subset of User returned to the admin panel.
@@ -108,10 +107,9 @@ func (h *AdminHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"data": rows, "total": total, "page": page, "limit": limit,
-	})
+	}, nil)
 }
 
 // UpdateRoleRequest is the payload for changing a user's role.
@@ -158,8 +156,7 @@ func (h *AdminHandler) UpdateRoleHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	_ = json.NewEncoder(w).Encode(map[string]string{"role": req.Role})
+	writeJSON(w, http.StatusOK, map[string]string{"role": req.Role}, nil)
 }
 
 // TopFavoritedRow holds a single row from the top-favorited analytics query.
@@ -236,13 +233,12 @@ func (h *AdminHandler) AnalyticsHandler(w http.ResponseWriter, r *http.Request) 
 		recentSignupsPerDay = []DailyCountRow{}
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"top_favorited":          topFavorited,
 		"top_reviewed":           topReviewed,
 		"recent_reviews_per_day": recentReviewsPerDay,
 		"recent_signups_per_day": recentSignupsPerDay,
-	})
+	}, nil)
 }
 
 // RegisterAdminRoutes wires admin endpoints (all admin-only).

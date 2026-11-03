@@ -1,5 +1,13 @@
 package httphandler
 
+import (
+	"encoding/json"
+	"net/http"
+
+	"myanimeapi/internal/errors"
+	"myanimeapi/internal/logger"
+)
+
 const (
 	contentTypeJSON = "application/json"
 	contentTypeKey  = "Content-Type"
@@ -14,4 +22,30 @@ const (
 	msgUnauthorizedUpdate  = "You are not authorized to update this review."
 	msgUnauthorizedDelete  = "You are not authorized to delete this review."
 	msgUserNotAuth         = "The user is not authenticated."
+
+	msgFailedEncodeDetails = "An internal server error occurred while encoding the response."
 )
+
+// writeJSON sets Content-Type, writes status, and encodes v as JSON. On encode
+// failure it logs (when log is non-nil), writes an error response, and returns
+// false so the caller can return immediately.
+func writeJSON(w http.ResponseWriter, status int, v interface{}, log *logger.Logger) bool {
+	w.Header().Set(contentTypeKey, contentTypeJSON)
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		if log != nil {
+			log.WithField("error", err.Error()).Error("Failed to encode response")
+		}
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", msgFailedEncodeDetails, nil)
+		return false
+	}
+	return true
+}
+
+// respondInvalidPayload writes the standard "invalid payload" error and logs a warning.
+func respondInvalidPayload(w http.ResponseWriter, log *logger.Logger) {
+	if log != nil {
+		log.Warning(msgInvalidPayload)
+	}
+	errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+}

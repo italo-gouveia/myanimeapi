@@ -1,7 +1,6 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"myanimeapi/api/middleware"
@@ -85,15 +84,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Return success response
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(favorite); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id":  userID,
-			"anime_id": animeID,
-			"error":    err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusCreated, favorite, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -203,14 +194,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Return success response
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(favorites); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id": userID,
-			"error":   err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, favorites, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{

@@ -3,7 +3,6 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -134,14 +133,7 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(toReviewResponse(review)); err != nil {
-		h.logger.WithField("err", err).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
-			"error": err.Error(),
-		})
-		return
-	}
+	writeJSON(w, http.StatusOK, toReviewResponse(review), h.logger)
 }
 
 // CreateReviewHandler creates a new review in the database.
@@ -153,8 +145,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewCreateRequest)
 	if !ok {
-		h.logger.Warning(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 
@@ -206,15 +197,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(toReviewResponse(createdReview)); err != nil {
-		h.logger.WithField("err", err).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
-			"error": err.Error(),
-		})
-		return
-	}
+	writeJSON(w, http.StatusCreated, toReviewResponse(createdReview), h.logger)
 }
 
 // UpdateReviewHandler updates an existing review in the database.
@@ -238,8 +221,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.ReviewUpdateRequest)
 	if !ok {
-		h.logger.Warning(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 
@@ -306,14 +288,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(toReviewResponse(updatedReview)); err != nil {
-		h.logger.WithField("err", err).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", map[string]interface{}{
-			"error": err.Error(),
-		})
-		return
-	}
+	writeJSON(w, http.StatusOK, toReviewResponse(updatedReview), h.logger)
 }
 
 // DeleteReviewHandler handles the deletion of a review.

@@ -29,17 +29,6 @@ func NewAuthHandler(authService services.AuthServiceInterface, logger *logger.Lo
 	}
 }
 
-// writeJSONResponse writes a JSON response to the http.ResponseWriter
-func (h *AuthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}, log *logger.Logger, logFields map[string]interface{}) {
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		logFields["error"] = err.Error()
-		log.WithFields(logFields).Error("Failed to encode response")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-}
 
 // RegisterUserHandler handles user registration requests.
 //
@@ -106,7 +95,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 		Data:    userResponse,
 	}
 
-	h.writeJSONResponse(w, http.StatusCreated, response, log, logFields)
+	writeJSON(w, http.StatusCreated, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("User registered successfully")
 }
 
@@ -163,7 +152,7 @@ func (h *AuthHandler) AuthenticateUserHandler(w http.ResponseWriter, r *http.Req
 		Data:    authResponse,
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).Info("Authentication successful")
 }
 

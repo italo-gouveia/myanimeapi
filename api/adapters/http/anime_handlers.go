@@ -14,7 +14,6 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -67,7 +66,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeCreateRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -133,12 +132,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(createdAnime.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusCreated, createdAnime.ToResponse(), nil)
 }
 
 // GetAnimeHandler handles retrieving an anime by ID.
@@ -162,11 +156,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(anime.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, anime.ToResponse(), nil)
 }
 
 // GetAllAnimesHandler handles retrieving all animes with pagination, filtering, and sorting.
@@ -273,11 +263,7 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 		Limit: limit,
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, response, nil)
 }
 
 // UpdateAnimeHandler handles updating an existing anime.
@@ -294,7 +280,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeUpdateRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -342,11 +328,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(anime.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, anime.ToResponse(), nil)
 }
 
 // DeleteAnimeHandler handles deleting an anime.
@@ -386,7 +368,7 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeGenresRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -416,7 +398,7 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeGenresRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -445,7 +427,7 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeTagsRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -474,7 +456,7 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.AnimeTagsRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -551,11 +533,7 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 		"limit": limit,
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, response, nil)
 }
 
 // GetAnimesByGenreHandler handles searching animes by genre.
@@ -590,11 +568,7 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 		"limit": limit,
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, response, nil)
 }
 
 // splitCSV splits a comma-separated string into a trimmed, non-empty slice.

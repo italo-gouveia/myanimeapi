@@ -56,7 +56,7 @@ func (h *CharacterHandler) GetCharactersHandler(w http.ResponseWriter, r *http.R
 	}
 	writeJSON(w, http.StatusOK, models.CharacterListResponse{
 		Characters: responses, Total: total, Page: page, Limit: limit,
-	})
+	}, h.logger)
 }
 
 // GetCharacterHandler returns a single character by ID.
@@ -81,7 +81,7 @@ func (h *CharacterHandler) GetCharacterHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeJSON(w, http.StatusOK, character.ToResponse())
+	writeJSON(w, http.StatusOK, character.ToResponse(), h.logger)
 }
 
 // SearchCharactersHandler searches characters by name.
@@ -116,7 +116,7 @@ func (h *CharacterHandler) SearchCharactersHandler(w http.ResponseWriter, r *htt
 	}
 	writeJSON(w, http.StatusOK, models.CharacterListResponse{
 		Characters: responses, Total: total, Page: page, Limit: limit,
-	})
+	}, h.logger)
 }
 
 // GetAnimeCharactersHandler returns characters for a specific anime.
@@ -149,7 +149,7 @@ func (h *CharacterHandler) GetAnimeCharactersHandler(w http.ResponseWriter, r *h
 	}
 	writeJSON(w, http.StatusOK, models.CharacterListResponse{
 		Characters: responses, Total: total, Page: page, Limit: limit,
-	})
+	}, h.logger)
 }
 
 // CreateCharacterHandler creates a new character (admin only).
@@ -184,7 +184,7 @@ func (h *CharacterHandler) CreateCharacterHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, character.ToResponse())
+	writeJSON(w, http.StatusCreated, character.ToResponse(), h.logger)
 }
 
 // UpdateCharacterHandler updates an existing character (admin only).
@@ -237,7 +237,7 @@ func (h *CharacterHandler) UpdateCharacterHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	writeJSON(w, http.StatusOK, character.ToResponse())
+	writeJSON(w, http.StatusOK, character.ToResponse(), h.logger)
 }
 
 // DeleteCharacterHandler deletes a character (admin only).
@@ -370,11 +370,6 @@ func pathID(w http.ResponseWriter, r *http.Request, key string) (uint, bool) {
 	return id, true
 }
 
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
 
 func (h *CharacterHandler) writeServiceError(w http.ResponseWriter, err error, fallbackMsg string) {
 	h.logger.WithField("error", err.Error()).Error(fallbackMsg)

@@ -1,7 +1,6 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"myanimeapi/api/middleware"
@@ -65,8 +64,7 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Genre)
 	if !ok {
-		h.logger.Error(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 
@@ -82,15 +80,7 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(payload.ToResponse()); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusCreated, payload.ToResponse(), h.logger)
 }
 
 // GetGenreHandler handles retrieving a genre by ID.
@@ -124,15 +114,7 @@ func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(genre.ToResponse()); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, genre.ToResponse(), h.logger)
 }
 
 // GetAllGenresHandler handles retrieving all genres.
@@ -155,15 +137,7 @@ func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Reques
 		responses[i] = genre.ToResponse()
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(responses); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, responses, h.logger)
 }
 
 // UpdateGenreHandler handles updating an existing genre.
@@ -184,8 +158,7 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.Genre)
 	if !ok {
-		h.logger.Error(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 
@@ -203,15 +176,7 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(payload.ToResponse()); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, payload.ToResponse(), h.logger)
 }
 
 // DeleteGenreHandler handles deleting a genre by ID.
@@ -287,15 +252,7 @@ func (h *GenreHandler) SearchGenresHandler(w http.ResponseWriter, r *http.Reques
 		"limit":  limit,
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, response, h.logger)
 }
 
 // BulkCreateGenresRequest represents a request to create multiple genres.
@@ -308,8 +265,7 @@ func (h *GenreHandler) BulkCreateGenresHandler(w http.ResponseWriter, r *http.Re
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkCreateGenresRequest)
 	if !ok {
-		h.logger.Error(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 
@@ -339,8 +295,7 @@ func (h *GenreHandler) BulkDeleteGenresHandler(w http.ResponseWriter, r *http.Re
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*BulkDeleteGenresRequest)
 	if !ok {
-		h.logger.Error(msgInvalidPayload)
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
+		respondInvalidPayload(w, h.logger)
 		return
 	}
 

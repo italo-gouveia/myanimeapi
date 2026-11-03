@@ -93,14 +93,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 		Grouped: grouped,
 	}
 
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id": userID,
-			"error":   err.Error(),
-		}).Error("Failed to encode watchlist response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, result, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -183,15 +176,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 	}
 
 	resp := entry.ToResponse()
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id":  userID,
-			"anime_id": animeID,
-			"error":    err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, resp, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
