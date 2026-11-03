@@ -43,17 +43,6 @@ func NewUserHandler(userService services.UserServiceInterface, genreService serv
 	}
 }
 
-// writeJSONResponse writes a JSON response to the http.ResponseWriter
-func (h *UserHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}, log *logger.Logger, logFields map[string]interface{}) {
-	w.Header().Set(contentTypeKey, contentTypeJSON)
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An error occurred while encoding the response.", logFields)
-		return
-	}
-}
-
 // Register handles user registration requests.
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log := logger.Get()
@@ -93,7 +82,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Data:    user,
 	}
 
-	h.writeJSONResponse(w, http.StatusCreated, response, log, logFields)
+	writeJSON(w, http.StatusCreated, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("User registered successfully")
 }
 
@@ -139,7 +128,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("User logged in successfully")
 }
 
@@ -176,7 +165,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		Data:    user,
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Profile retrieved successfully")
 }
 
@@ -262,7 +251,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Data:    user,
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Profile updated successfully")
 }
 
@@ -315,7 +304,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		Message: "Password changed successfully",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Password changed successfully")
 }
 
@@ -368,7 +357,7 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 		Message: "Account deactivated successfully",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Account deactivated successfully")
 }
 
@@ -403,7 +392,7 @@ func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Reques
 		Message: "Password reset instructions sent to your email",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("email", req.Email).Info("Password reset request processed successfully")
 }
 
@@ -438,7 +427,7 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		Message: "Password reset successfully",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).Info("Password reset successfully")
 }
 
@@ -529,7 +518,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		Message: "Account deleted successfully",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response, log, logFields)
+	writeJSON(w, http.StatusOK, response, log)
 	log.WithFields(logFields).WithField("user_id", user.ID).Info("Account deleted successfully")
 }
 
