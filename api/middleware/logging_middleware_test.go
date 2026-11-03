@@ -210,7 +210,7 @@ type hijackableRecorder struct {
 
 func (h *hijackableRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	server, client := net.Pipe()
-	go server.Close()
+	go func() { _ = server.Close() }()
 	br := bufio.NewReadWriter(bufio.NewReader(client), bufio.NewWriter(client))
 	return client, br, nil
 }
