@@ -68,8 +68,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userService.CreateUser(r.Context(), user); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to create user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create user", "An internal server error occurred while creating the user.", logFields)
@@ -105,8 +104,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.ValidateUser(r.Context(), req.Username, req.Password)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Authentication failed")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Authentication failed", "Invalid username or password.", logFields)
@@ -151,8 +149,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to get user profile")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user profile", "An internal server error occurred while retrieving the user profile.", logFields)
@@ -195,8 +192,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
@@ -225,8 +221,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		genres, err := h.genreService.GetGenresByIDs(r.Context(), req.GenreIDs)
 		if err != nil {
 			log.WithFields(logFields).WithField("error", err).Error("Failed to get genres")
-			if appErr, ok := err.(*errors.AppError); ok {
-				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+			if writeAppError(w, err) {
 				return
 			}
 			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get genres", "An internal server error occurred while retrieving the genres.", logFields)
@@ -237,8 +232,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userService.UpdateUser(r.Context(), user); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to update user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update user", "An internal server error occurred while updating the user.", logFields)
@@ -281,8 +275,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
@@ -291,8 +284,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userService.ChangePassword(r.Context(), user.ID, req.CurrentPassword, req.NewPassword); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to change password")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to change password", "An internal server error occurred while changing the password.", logFields)
@@ -334,8 +326,7 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
@@ -344,8 +335,7 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 
 	if err := h.userService.DeactivateAccount(r.Context(), user.ID, req.Password); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to deactivate account")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to deactivate account", "An internal server error occurred while deactivating the account.", logFields)
@@ -379,8 +369,7 @@ func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Reques
 
 	if err := h.passwordResetSvc.RequestPasswordReset(r.Context(), req.Email); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to process password reset request")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to process password reset request", "An internal server error occurred while processing the password reset request.", logFields)
@@ -414,8 +403,7 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.passwordResetSvc.ResetPassword(r.Context(), req.Token, req.NewPassword); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to reset password")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to reset password", "An internal server error occurred while resetting the password.", logFields)
@@ -495,8 +483,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
@@ -505,8 +492,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.userService.DeleteUser(r.Context(), user.ID); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to delete user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete user", "An internal server error occurred while deleting the user.", logFields)

@@ -68,8 +68,7 @@ func (h *TagHandler) CreateTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.CreateTag(r.Context(), tag); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create tag", "An internal server error occurred while creating the tag.", nil)
@@ -92,8 +91,7 @@ func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 
 	tag, err := h.tagService.GetTagByID(r.Context(), id)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve tag", "An internal server error occurred while retrieving the tag.", nil)
@@ -114,8 +112,7 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 
 	tags, total, err := h.tagService.GetAllTags(r.Context(), page, limit)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve tags", "An internal server error occurred while retrieving the tags.", nil)
@@ -168,8 +165,7 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.UpdateTag(r.Context(), tag); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update tag", "An internal server error occurred while updating the tag.", nil)
@@ -191,8 +187,7 @@ func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.DeleteTag(r.Context(), id); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete tag", "An internal server error occurred while deleting the tag.", nil)

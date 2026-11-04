@@ -75,8 +75,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to add favorite")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to add favorite to database", nil)
@@ -139,8 +138,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to remove favorite")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove favorite from database", nil)
@@ -185,8 +183,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 			"user_id": userID,
 			"error":   err.Error(),
 		}).Error("Failed to retrieve favorites")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", nil)

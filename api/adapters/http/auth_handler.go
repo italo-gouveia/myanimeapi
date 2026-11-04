@@ -73,8 +73,7 @@ func (h *AuthHandler) RegisterUserHandler(w http.ResponseWriter, r *http.Request
 	// Register user
 	if err := h.authService.RegisterUser(r.Context(), &user); err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to register user")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to register user", err.Error(), logFields)
@@ -134,8 +133,7 @@ func (h *AuthHandler) AuthenticateUserHandler(w http.ResponseWriter, r *http.Req
 	token, err := h.authService.AuthenticateUser(r.Context(), &credentials)
 	if err != nil {
 		log.WithFields(logFields).WithField("error", err).Warning("Authentication failed")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, logFields)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "Authentication failed", "Invalid credentials.", logFields)

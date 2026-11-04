@@ -72,8 +72,7 @@ func (h *GenreHandler) CreateGenreHandler(w http.ResponseWriter, r *http.Request
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to create genre")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create genre", "An internal server error occurred while creating the genre.", nil)
@@ -104,8 +103,7 @@ func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 			"error": err.Error(),
 			"id":    id,
 		}).Error("Failed to retrieve genre")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve genre", "An internal server error occurred while retrieving the genre.", map[string]interface{}{
@@ -124,8 +122,7 @@ func (h *GenreHandler) GetAllGenresHandler(w http.ResponseWriter, r *http.Reques
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to retrieve genres")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve genres", "An internal server error occurred while retrieving genres.", nil)
@@ -168,8 +165,7 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 			"error": err.Error(),
 			"id":    id,
 		}).Error("Failed to update genre")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update genre", "An internal server error occurred while updating the genre.", nil)
@@ -199,8 +195,7 @@ func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request
 			"error": err.Error(),
 			"id":    id,
 		}).Error("Failed to delete genre")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete genre", "An internal server error occurred while deleting the genre.", map[string]interface{}{
@@ -230,8 +225,7 @@ func (h *GenreHandler) SearchGenresHandler(w http.ResponseWriter, r *http.Reques
 			"error": err.Error(),
 			"query": query,
 		}).Error("Failed to search genres")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to search genres", "An internal server error occurred while searching genres.", map[string]interface{}{
@@ -274,8 +268,7 @@ func (h *GenreHandler) BulkCreateGenresHandler(w http.ResponseWriter, r *http.Re
 			"error": err.Error(),
 			"count": len(payload.Genres),
 		}).Error("Failed to bulk create genres")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to bulk create genres", "An internal server error occurred while creating genres in bulk.", nil)
@@ -304,8 +297,7 @@ func (h *GenreHandler) BulkDeleteGenresHandler(w http.ResponseWriter, r *http.Re
 			"error": err.Error(),
 			"ids":   payload.IDs,
 		}).Error("Failed to bulk delete genres")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to bulk delete genres", "An internal server error occurred while deleting genres in bulk.", nil)

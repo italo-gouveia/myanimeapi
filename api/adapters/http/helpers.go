@@ -49,3 +49,14 @@ func respondInvalidPayload(w http.ResponseWriter, log *logger.Logger) {
 	}
 	errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgInvalidPayload, msgPayloadNotRetrieved, nil)
 }
+
+// writeAppError checks whether err is an *errors.AppError and writes the
+// appropriate HTTP response. Returns true if it was an AppError (caller should
+// return), false otherwise.
+func writeAppError(w http.ResponseWriter, err error) bool {
+	if appErr, ok := err.(*errors.AppError); ok {
+		errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		return true
+	}
+	return false
+}

@@ -373,8 +373,7 @@ func pathID(w http.ResponseWriter, r *http.Request, key string) (uint, bool) {
 
 func (h *CharacterHandler) writeServiceError(w http.ResponseWriter, err error, fallbackMsg string) {
 	h.logger.WithField("error", err.Error()).Error(fallbackMsg)
-	if appErr, ok := err.(*errors.AppError); ok {
-		errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+	if writeAppError(w, err) {
 		return
 	}
 	errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, fallbackMsg, "", nil)

@@ -64,8 +64,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 			"user_id": userID,
 			"error":   err.Error(),
 		}).Error("Failed to retrieve watchlist")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve watchlist from database", nil)
@@ -167,8 +166,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to upsert watchlist entry")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to upsert watchlist entry", nil)
@@ -229,8 +227,7 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to remove watchlist entry")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove watchlist entry", nil)

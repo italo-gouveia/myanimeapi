@@ -179,9 +179,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Create review using service
 	if err := h.reviewService.CreateReview(r.Context(), review); err != nil {
 		h.logger.WithField("err", err).Warning("Failed to create review")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
-		} else {
+		if !writeAppError(w, err) {
 			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create review", err.Error(), nil)
 		}
 		return

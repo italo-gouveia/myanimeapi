@@ -83,8 +83,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 
 	// Create the anime first
 	if err := h.service.CreateAnime(r.Context(), anime); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create anime", "An internal server error occurred while creating the anime.", nil)
@@ -97,8 +96,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
 				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after genre association error")
 			}
-			if appErr, ok := err.(*errors.AppError); ok {
-				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+			if writeAppError(w, err) {
 				return
 			}
 			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add genres to anime", "An internal server error occurred while adding genres to the anime.", nil)
@@ -112,8 +110,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 			if rollbackErr := h.service.DeleteAnime(r.Context(), anime.ID); rollbackErr != nil {
 				logger.Get().WithField("anime_id", anime.ID).WithField("error", rollbackErr.Error()).Error("Failed to rollback anime after tag association error")
 			}
-			if appErr, ok := err.(*errors.AppError); ok {
-				errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+			if writeAppError(w, err) {
 				return
 			}
 			errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add tags to anime", "An internal server error occurred while adding tags to the anime.", nil)
@@ -124,8 +121,7 @@ func (h *AnimeHandler) CreateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Get the complete anime with genres and tags
 	createdAnime, err := h.service.GetAnimeByID(r.Context(), anime.ID)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve created anime", "An internal server error occurred while retrieving the created anime.", nil)
@@ -148,8 +144,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 
 	anime, err := h.service.GetAnimeByID(r.Context(), id)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve anime", "An internal server error occurred while retrieving the anime.", nil)
@@ -237,8 +232,7 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 
 	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit, filter)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve animes", "An internal server error occurred while retrieving the animes.", nil)
@@ -287,8 +281,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	// Get the existing anime
 	anime, err := h.service.GetAnimeByID(r.Context(), id)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve anime", "An internal server error occurred while retrieving the anime.", nil)
@@ -320,8 +313,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 
 	// Update the anime
 	if err := h.service.UpdateAnime(r.Context(), anime); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update anime", "An internal server error occurred while updating the anime.", nil)
@@ -343,8 +335,7 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.service.DeleteAnime(r.Context(), id); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete anime", "An internal server error occurred while deleting the anime.", nil)
@@ -373,8 +364,7 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	if err := h.service.AddGenresToAnime(r.Context(), animeID, payload.GenreIDs); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add genres to anime", "An internal server error occurred while adding genres to the anime.", nil)
@@ -403,8 +393,7 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 	}
 
 	if err := h.service.RemoveGenresFromAnime(r.Context(), animeID, payload.GenreIDs); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove genres from anime", "An internal server error occurred while removing genres from the anime.", nil)
@@ -432,8 +421,7 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.service.AddTagsToAnime(r.Context(), animeID, payload.TagIDs); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to add tags to anime", "An internal server error occurred while adding tags to the anime.", nil)
@@ -461,8 +449,7 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 	}
 
 	if err := h.service.RemoveTagsFromAnime(r.Context(), animeID, payload.TagIDs); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to remove tags from anime", "An internal server error occurred while removing tags from the anime.", nil)
@@ -513,8 +500,7 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 
 	animes, total, err := h.service.GetAllAnimes(r.Context(), page, limit, filter)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes", nil)
@@ -553,8 +539,7 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 
 	animes, total, err := h.service.GetAnimesByGenre(r.Context(), genre, page, limit)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes by genre", nil)
