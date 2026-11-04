@@ -434,3 +434,15 @@ func (s *UserHandlerSuite) TestDeleteAccount_Unauthenticated() {
 
 	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
 }
+
+func TestPasswordResetRateLimit(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		maxReqs, window := passwordResetRateLimit()
+		if maxReqs <= 0 {
+			t.Errorf("expected positive maxReqs, got %d", maxReqs)
+		}
+		if window <= 0 {
+			t.Errorf("expected positive window, got %v", window)
+		}
+	})
+}

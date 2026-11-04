@@ -11,6 +11,7 @@ import (
 	apperrors "myanimeapi/internal/errors"
 
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -662,4 +663,11 @@ func (s *AnimeHandlerSuite) TestGetByGenre_ServiceError() {
 	s.handler.GetAnimesByGenreHandler(rr, req)
 
 	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func TestSplitCSV(t *testing.T) {
+	assert.Equal(t, []string{"a", "b", "c"}, splitCSV("a, b , c"))
+	assert.Equal(t, []string{"one"}, splitCSV("one"))
+	assert.Nil(t, splitCSV(""))
+	assert.Equal(t, []string{"x", "y"}, splitCSV("x,,y"))
 }

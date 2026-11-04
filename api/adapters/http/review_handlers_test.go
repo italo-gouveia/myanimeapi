@@ -291,3 +291,18 @@ func (s *ReviewHandlerSuite) TestDelete_Unauthenticated() {
 
 	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
 }
+
+func TestMediaTypeFromExt(t *testing.T) {
+	assert := func(ext, want string) {
+		t.Helper()
+		if got := mediaTypeFromExt(ext); got != want {
+			t.Errorf("mediaTypeFromExt(%q) = %q, want %q", ext, got, want)
+		}
+	}
+	assert(".mp4", "video")
+	assert(".webm", "video")
+	assert(".mov", "video")
+	assert(".jpg", "image")
+	assert(".png", "image")
+	assert("", "image")
+}
