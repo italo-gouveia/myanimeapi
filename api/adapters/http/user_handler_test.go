@@ -8,9 +8,15 @@ import (
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
+	appdb "myanimeapi/internal/db"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // sampleUser returns a minimal User for handler tests.
@@ -445,4 +451,70 @@ func TestPasswordResetRateLimit(t *testing.T) {
 			t.Errorf("expected positive window, got %v", window)
 		}
 	})
+}
+
+// ─── ExportUserDataHandler ────────────────────────────────────────────────────
+
+func newExportTestDB(t *testing.T) *UserHandler {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+	})
+	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Anime{},
+		&models.Review{},
+		&models.Favorite{},
+		&models.WatchlistEntry{},
+		&models.Genre{},
+		&models.Tag{},
+	)
+	require.NoError(t, err)
+
+	return NewUserHandler(nil, nil, nil, appdb.NewGormDB(db))
+}
+
+func TestExportUserDataHandler_Unauthenticated(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export", nil)
+	req = req.WithContext(noAuthCtx())
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestExportUserDataHandler_JSONFormat(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export", nil)
+	req = req.WithContext(testCtx()) // userID = 1
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Header().Get("Content-Type"), "application/json")
+	body := bodyJSON(t, rr)
+	assert.Contains(t, body, "favorites")
+	assert.Contains(t, body, "watchlist")
+	assert.Contains(t, body, "reviews")
+}
+
+func TestExportUserDataHandler_CSVFormat(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export?format=csv", nil)
+	req = req.WithContext(testCtx()) // userID = 1
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Header().Get("Content-Type"), "text/csv")
+	assert.Contains(t, rr.Body.String(), "FAVORITES")
+	assert.Contains(t, rr.Body.String(), "WATCHLIST")
+	assert.Contains(t, rr.Body.String(), "REVIEWS")
 }

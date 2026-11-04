@@ -671,3 +671,67 @@ func TestSplitCSV(t *testing.T) {
 	assert.Nil(t, splitCSV(""))
 	assert.Equal(t, []string{"x", "y"}, splitCSV("x,,y"))
 }
+
+func (s *AnimeHandlerSuite) TestCreate_AddGenresError() {
+	payload := &models.AnimeCreateRequest{
+		Title:    "Test Anime",
+		Status:   "Airing",
+		GenreIDs: []uint{1},
+	}
+
+	s.svc.EXPECT().CreateAnime(mock.Anything, mock.AnythingOfType("*models.Anime")).
+		Run(func(ctx context.Context, a *models.Anime) { a.ID = 10 }).
+		Return(nil).Once()
+	s.svc.EXPECT().AddGenresToAnime(mock.Anything, uint(10), []uint{1}).
+		Return(apperrors.NewError(apperrors.ErrInternalServer, "genre error", "", http.StatusInternalServerError, nil, nil)).Once()
+	s.svc.EXPECT().DeleteAnime(mock.Anything, uint(10)).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
+	req = req.WithContext(withPayload(adminCtx(), payload))
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *AnimeHandlerSuite) TestCreate_AddTagsError() {
+	payload := &models.AnimeCreateRequest{
+		Title:  "Test Anime",
+		Status: "Airing",
+		TagIDs: []uint{2},
+	}
+
+	s.svc.EXPECT().CreateAnime(mock.Anything, mock.AnythingOfType("*models.Anime")).
+		Run(func(ctx context.Context, a *models.Anime) { a.ID = 11 }).
+		Return(nil).Once()
+	s.svc.EXPECT().AddTagsToAnime(mock.Anything, uint(11), []uint{2}).
+		Return(apperrors.NewError(apperrors.ErrInternalServer, "tag error", "", http.StatusInternalServerError, nil, nil)).Once()
+	s.svc.EXPECT().DeleteAnime(mock.Anything, uint(11)).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
+	req = req.WithContext(withPayload(adminCtx(), payload))
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *AnimeHandlerSuite) TestCreate_GetCreatedAnimeError() {
+	payload := &models.AnimeCreateRequest{
+		Title:  "Test Anime",
+		Status: "Airing",
+	}
+
+	s.svc.EXPECT().CreateAnime(mock.Anything, mock.AnythingOfType("*models.Anime")).
+		Run(func(ctx context.Context, a *models.Anime) { a.ID = 12 }).
+		Return(nil).Once()
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(12)).
+		Return(nil, apperrors.NewError(apperrors.ErrInternalServer, "fetch error", "", http.StatusInternalServerError, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/animes", jsonBuf(payload))
+	req = req.WithContext(withPayload(adminCtx(), payload))
+	rr := httptest.NewRecorder()
+	s.handler.CreateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}

@@ -60,3 +60,13 @@ func writeAppError(w http.ResponseWriter, err error) bool {
 	}
 	return false
 }
+
+// respondUploadError writes a 500 "Failed to upload file" error response.
+func respondUploadError(w http.ResponseWriter, log *logger.Logger, err error) {
+	if log != nil {
+		log.WithField("err", err).Warning("Failed to upload file")
+	}
+	errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
+		"error": err.Error(),
+	})
+}

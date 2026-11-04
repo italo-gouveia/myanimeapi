@@ -168,10 +168,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Handle media file uploads
 	attachments, err := h.processMediaFiles(r)
 	if err != nil {
-		h.logger.WithField("err", err).Warning("Failed to upload file")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
-			"error": err.Error(),
-		})
+		respondUploadError(w, h.logger, err)
 		return
 	}
 	review.MediaAttachments = attachments
@@ -261,10 +258,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Handle media file uploads
 	newAttachments, err := h.processMediaFiles(r)
 	if err != nil {
-		h.logger.WithField("err", err).Warning("Failed to upload file")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to upload file", "An internal server error occurred while uploading the file.", map[string]interface{}{
-			"error": err.Error(),
-		})
+		respondUploadError(w, h.logger, err)
 		return
 	}
 	review.MediaAttachments = append(review.MediaAttachments, newAttachments...)
