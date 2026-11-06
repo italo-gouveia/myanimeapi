@@ -2,6 +2,7 @@ package httphandler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -732,6 +733,100 @@ func (s *AnimeHandlerSuite) TestCreate_GetCreatedAnimeError() {
 	req = req.WithContext(withPayload(adminCtx(), payload))
 	rr := httptest.NewRecorder()
 	s.handler.CreateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ---------------------------------------------------------------------------
+// Update – additional error branches
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestUpdate_ServiceError() {
+	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
+
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(&models.Anime{ID: 1, Title: "Old Title", Genres: []models.Genre{}, Tags: []models.Tag{}}, nil).Once()
+	s.svc.EXPECT().UpdateAnime(mock.Anything, mock.Anything).
+		Return(apperrors.NewError(apperrors.ErrConflict, "Conflict", "", http.StatusConflict, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(payload))
+	ctx := withPayload(adminCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusConflict, apperrors.ErrConflict)
+}
+
+func (s *AnimeHandlerSuite) TestUpdate_InternalError() {
+	payload := &models.AnimeUpdateRequest{Title: "Updated Title", Status: "Ongoing"}
+
+	s.svc.EXPECT().GetAnimeByID(mock.Anything, uint(1)).
+		Return(&models.Anime{ID: 1, Title: "Old Title", Genres: []models.Genre{}, Tags: []models.Tag{}}, nil).Once()
+	s.svc.EXPECT().UpdateAnime(mock.Anything, mock.Anything).
+		Return(fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/animes/1", jsonBuf(payload))
+	ctx := withPayload(adminCtx(), payload)
+	req = req.WithContext(ctx)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+	rr := httptest.NewRecorder()
+	s.handler.UpdateAnimeHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ---------------------------------------------------------------------------
+// GetAll – multi-value filters and non-AppError
+// ---------------------------------------------------------------------------
+
+func (s *AnimeHandlerSuite) TestGetAll_WithMultiValueFilters() {
+	expected := models.AnimeFilter{
+		Statuses: []string{"Completed", "Airing"},
+		Genres:   []string{"Action", "Drama"},
+		Tags:     []string{"mecha"},
+	}
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, expected).
+		Return([]*models.Anime{{ID: 1, Title: "Gundam"}}, int64(1), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10&statuses=Completed,Airing&genres=Action,Drama&tags=mecha", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+	body := bodyJSON(s.T(), rr)
+	s.Equal(float64(1), body["total"])
+}
+
+func (s *AnimeHandlerSuite) TestGetAll_WithNumericFilters() {
+	expected := models.AnimeFilter{
+		EpisodesMin: 12,
+		EpisodesMax: 24,
+		YearFrom:    2020,
+		YearTo:      2023,
+		RatingMax:   9.5,
+	}
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, expected).
+		Return([]*models.Anime{{ID: 2, Title: "Some Anime"}}, int64(1), nil).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10&episodes_min=12&episodes_max=24&year_from=2020&year_to=2023&rating_max=9.5", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+}
+
+func (s *AnimeHandlerSuite) TestGetAll_NonAppError() {
+	s.svc.EXPECT().GetAllAnimes(mock.Anything, 1, 10, models.AnimeFilter{}).
+		Return(nil, int64(0), fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodGet, "/animes?page=1&limit=10", nil)
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.GetAllAnimesHandler(rr, req)
 
 	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
 }

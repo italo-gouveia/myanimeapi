@@ -106,6 +106,19 @@ func (h *ReviewHandler) RegisterReviewRoutes(router *mux.Router) {
 	protectedRouter.HandleFunc("/{id}", h.DeleteReviewHandler).Methods("DELETE")
 }
 
+// fetchReview loads a review by id, writing a 404 response and returning nil on failure.
+func (h *ReviewHandler) fetchReview(w http.ResponseWriter, r *http.Request, id uint) *models.Review {
+	review, err := h.reviewService.GetReviewByID(r.Context(), id)
+	if err != nil {
+		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
+		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
+			"id": id,
+		})
+		return nil
+	}
+	return review
+}
+
 // GetReviewHandler retrieves a review by its ID.
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -124,12 +137,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 	h.logger.WithField("parsed_id", id).Debug("Parsed ID")
 
-	review, err := h.reviewService.GetReviewByID(r.Context(), id)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
-			"id": id,
-		})
+	review := h.fetchReview(w, r, id)
+	if review == nil {
 		return
 	}
 
@@ -229,12 +238,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get the existing review
-	review, err := h.reviewService.GetReviewByID(r.Context(), id)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
-			"id": id,
-		})
+	review := h.fetchReview(w, r, id)
+	if review == nil {
 		return
 	}
 
@@ -304,12 +309,8 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	review, err := h.reviewService.GetReviewByID(r.Context(), id)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{"review_id": id, "err": err}).Warning("Failed to get review")
-		errors.WriteErrorResponse(w, http.StatusNotFound, errors.ErrResourceNotFound, "Review not found", fmt.Sprintf("Review with ID '%d' not found.", id), map[string]interface{}{
-			"id": id,
-		})
+	review := h.fetchReview(w, r, id)
+	if review == nil {
 		return
 	}
 
