@@ -354,10 +354,10 @@ func applyAnimeFilters(q *gorm.DB, filter models.AnimeFilter) *gorm.DB {
 		q = q.Where("animes.episodes <= ?", filter.EpisodesMax)
 	}
 	if filter.YearFrom > 0 {
-		q = q.Where("strftime('%Y', animes.start_date) >= ?", fmt.Sprintf("%d", filter.YearFrom))
+		q = q.Where("animes.start_date >= ?", fmt.Sprintf("%04d-01-01", filter.YearFrom))
 	}
 	if filter.YearTo > 0 {
-		q = q.Where("strftime('%Y', animes.start_date) <= ?", fmt.Sprintf("%d", filter.YearTo))
+		q = q.Where("animes.start_date < ?", fmt.Sprintf("%04d-01-01", filter.YearTo+1))
 	}
 	if filter.Genre != "" {
 		q = q.Where("animes.id IN (SELECT ag.anime_id FROM anime_genres ag JOIN genres g ON ag.genre_id = g.id WHERE g.name = ?)", filter.Genre)
