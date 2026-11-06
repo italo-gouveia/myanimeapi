@@ -8,10 +8,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
 
 	"myanimeapi/api/models"
 	appdb "myanimeapi/internal/db"
@@ -19,25 +15,10 @@ import (
 
 func newAdminTestDB(t *testing.T) *AdminHandler {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
-	})
-	require.NoError(t, err)
-
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	sqlDB.SetMaxOpenConns(1)
-
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.Anime{},
-		&models.Review{},
-		&models.Favorite{},
-		&models.Genre{},
-		&models.Tag{},
+	db := newSQLiteTestDB(t,
+		&models.User{}, &models.Anime{}, &models.Review{},
+		&models.Favorite{}, &models.Genre{}, &models.Tag{},
 	)
-	require.NoError(t, err)
-
 	return NewAdminHandler(appdb.NewGormDB(db))
 }
 

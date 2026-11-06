@@ -6,18 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	appdb "myanimeapi/internal/db"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
-	appdb "myanimeapi/internal/db"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
 )
 
 // sampleUser returns a minimal User for handler tests.
@@ -604,26 +600,10 @@ func (s *UserHandlerSuite) TestDeactivateAccount_InternalError() {
 
 func newExportTestDB(t *testing.T) *UserHandler {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
-	})
-	require.NoError(t, err)
-
-	sqlDB, err := db.DB()
-	require.NoError(t, err)
-	sqlDB.SetMaxOpenConns(1)
-
-	err = db.AutoMigrate(
-		&models.User{},
-		&models.Anime{},
-		&models.Review{},
-		&models.Favorite{},
-		&models.WatchlistEntry{},
-		&models.Genre{},
-		&models.Tag{},
+	db := newSQLiteTestDB(t,
+		&models.User{}, &models.Anime{}, &models.Review{},
+		&models.Favorite{}, &models.WatchlistEntry{}, &models.Genre{}, &models.Tag{},
 	)
-	require.NoError(t, err)
-
 	return NewUserHandler(nil, nil, nil, appdb.NewGormDB(db))
 }
 

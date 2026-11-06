@@ -6,6 +6,7 @@ package repositories_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -325,4 +326,52 @@ func TestGetWithFilters_EpisodesMin_Only(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, "Long", result[0].(*models.Anime).Title)
+}
+
+func TestGetWithFilters_FilterByStatuses(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	seed(t, db, &models.Anime{Title: "Completed1", Status: "Completed"})
+	seed(t, db, &models.Anime{Title: "Airing1", Status: "Airing"})
+	seed(t, db, &models.Anime{Title: "Upcoming1", Status: "Upcoming"})
+
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{
+		Statuses: []string{"Completed", "Airing"},
+	}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Len(t, result, 2)
+	for _, r := range result {
+		s := r.(*models.Anime).Status
+		assert.True(t, s == "Completed" || s == "Airing")
+	}
+}
+
+func TestGetWithFilters_YearRange(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	seed(t, db, &models.Anime{Title: "Old", StartDate: time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC)})
+	seed(t, db, &models.Anime{Title: "Mid", StartDate: time.Date(2020, 6, 15, 0, 0, 0, 0, time.UTC)})
+	seed(t, db, &models.Anime{Title: "New", StartDate: time.Date(2023, 3, 10, 0, 0, 0, 0, time.UTC)})
+
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{YearFrom: 2019, YearTo: 2022}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, result, 1)
+	assert.Equal(t, "Mid", result[0].(*models.Anime).Title)
+}
+
+func TestGetWithFilters_YearFrom_Only(t *testing.T) {
+	repo, db := newTestRepo(t)
+	ctx := context.Background()
+
+	seed(t, db, &models.Anime{Title: "Before", StartDate: time.Date(2018, 12, 31, 0, 0, 0, 0, time.UTC)})
+	seed(t, db, &models.Anime{Title: "After", StartDate: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)})
+
+	result, total, err := repo.GetWithFilters(ctx, models.AnimeFilter{YearFrom: 2020}, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, "After", result[0].(*models.Anime).Title)
 }
