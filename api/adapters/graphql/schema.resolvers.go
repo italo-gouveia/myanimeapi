@@ -150,51 +150,58 @@ func (r *queryResolver) Anime(ctx context.Context, id string) (*model.Anime, err
 	return toGQLAnime(anime), nil
 }
 
+// gqlFilterToModel converts a GraphQL AnimeFilterInput to the internal AnimeFilter model.
+func gqlFilterToModel(filter *model.AnimeFilterInput) models.AnimeFilter {
+	f := models.AnimeFilter{}
+	if filter == nil {
+		return f
+	}
+	if filter.Status != nil {
+		f.Status = *filter.Status
+	}
+	if filter.Genre != nil {
+		f.Genre = *filter.Genre
+	}
+	if len(filter.Genres) > 0 {
+		f.Genres = filter.Genres
+	}
+	if filter.Tag != nil {
+		f.Tag = *filter.Tag
+	}
+	if len(filter.Tags) > 0 {
+		f.Tags = filter.Tags
+	}
+	if filter.RatingMin != nil {
+		f.RatingMin = *filter.RatingMin
+	}
+	if filter.RatingMax != nil {
+		f.RatingMax = *filter.RatingMax
+	}
+	if filter.EpisodesMin != nil {
+		f.EpisodesMin = *filter.EpisodesMin
+	}
+	if filter.EpisodesMax != nil {
+		f.EpisodesMax = *filter.EpisodesMax
+	}
+	if filter.YearFrom != nil {
+		f.YearFrom = *filter.YearFrom
+	}
+	if filter.YearTo != nil {
+		f.YearTo = *filter.YearTo
+	}
+	if filter.SortBy != nil {
+		f.SortBy = *filter.SortBy
+	}
+	if filter.SortOrder != nil {
+		f.SortOrder = *filter.SortOrder
+	}
+	return f
+}
+
 // Animes is the resolver for the animes field.
 func (r *queryResolver) Animes(ctx context.Context, page *int, limit *int, filter *model.AnimeFilterInput) (*model.AnimeList, error) {
 	p, l := paginationArgs(page, limit)
-	f := models.AnimeFilter{}
-	if filter != nil {
-		if filter.Status != nil {
-			f.Status = *filter.Status
-		}
-		if filter.Genre != nil {
-			f.Genre = *filter.Genre
-		}
-		if len(filter.Genres) > 0 {
-			f.Genres = filter.Genres
-		}
-		if filter.Tag != nil {
-			f.Tag = *filter.Tag
-		}
-		if len(filter.Tags) > 0 {
-			f.Tags = filter.Tags
-		}
-		if filter.RatingMin != nil {
-			f.RatingMin = *filter.RatingMin
-		}
-		if filter.RatingMax != nil {
-			f.RatingMax = *filter.RatingMax
-		}
-		if filter.EpisodesMin != nil {
-			f.EpisodesMin = *filter.EpisodesMin
-		}
-		if filter.EpisodesMax != nil {
-			f.EpisodesMax = *filter.EpisodesMax
-		}
-		if filter.YearFrom != nil {
-			f.YearFrom = *filter.YearFrom
-		}
-		if filter.YearTo != nil {
-			f.YearTo = *filter.YearTo
-		}
-		if filter.SortBy != nil {
-			f.SortBy = *filter.SortBy
-		}
-		if filter.SortOrder != nil {
-			f.SortOrder = *filter.SortOrder
-		}
-	}
+	f := gqlFilterToModel(filter)
 	if err := f.Validate(); err != nil {
 		return nil, err
 	}

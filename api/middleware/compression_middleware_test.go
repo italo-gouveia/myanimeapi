@@ -144,3 +144,19 @@ func TestGzipMiddleware_LargePayload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, large, string(body))
 }
+
+func TestGzipResponseWriter_Flush(t *testing.T) {
+	handler := GzipMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("hello"))
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rr := httptest.NewRecorder()
+
+	assert.NotPanics(t, func() { handler.ServeHTTP(rr, req) })
+}

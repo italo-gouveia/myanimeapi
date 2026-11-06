@@ -31,6 +31,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	contentTypeJSON = "application/json"
+	contentTypeKey  = "Content-Type"
+)
+
 // RegisterRoutes registers all routes for the application.
 // It sets up routes for health checks, anime, users, reviews, and authentication.
 // It also applies global middleware, such as logging, error handling and rate limiting.
@@ -93,7 +98,7 @@ func RegisterRoutes(router *mux.Router, swaggerURL string, dbWrapper db.DBInterf
 		}
 
 		if dbWrapper.IsHealthy() {
-			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set(contentTypeKey, contentTypeJSON)
 			w.WriteHeader(http.StatusOK)
 			response := models.Response{
 				Status:  "success",
@@ -271,7 +276,7 @@ func VersionHandler(version string, log *logger.Logger) http.HandlerFunc {
 			"request_id": r.Context().Value(middleware.RequestIDContextKey),
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(contentTypeKey, contentTypeJSON)
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte(`{"version": "` + version + `"}`)); err != nil {
 			logFields["error"] = err.Error()
