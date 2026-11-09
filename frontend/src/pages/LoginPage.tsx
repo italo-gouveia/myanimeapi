@@ -27,7 +27,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true })
+      void navigate(from, { replace: true })
     }
   }, [isAuthenticated, navigate, from])
 
@@ -44,7 +44,7 @@ export function LoginPage() {
     mutationFn: login,
     onSuccess: (data, variables) => {
       setSession(data.token, variables.username)
-      navigate(from, { replace: true })
+      void navigate(from, { replace: true })
     },
     onError: (error) => {
       setSubmitError(extractErrorMessage(error, 'Could not sign in. Check your credentials.'))

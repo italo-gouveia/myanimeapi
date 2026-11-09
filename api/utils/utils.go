@@ -6,6 +6,11 @@ import (
 	"strconv"
 )
 
+const (
+	contentTypeJSON = "application/json"
+	contentTypeKey  = "Content-Type"
+)
+
 // ParseUint parses a string to uint
 func ParseUint(s string) (uint, error) {
 	val, err := strconv.ParseUint(s, 10, 32)
@@ -17,7 +22,7 @@ func ParseUint(s string) (uint, error) {
 
 // WriteErrorResponse writes an error response to the HTTP response writer
 func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
 		// If we can't encode the error response, we can't do much more
@@ -27,7 +32,7 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 
 // WriteJSONResponse writes a JSON response to the HTTP response writer
 func WriteJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeKey, contentTypeJSON)
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		// If we can't encode the response, we can't do much more
