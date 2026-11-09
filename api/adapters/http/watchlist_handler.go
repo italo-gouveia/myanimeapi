@@ -7,7 +7,6 @@ import (
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/api/services"
-	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 
@@ -28,9 +27,8 @@ func NewWatchlistHandler(watchlistService services.WatchlistServiceInterface) *W
 	}
 }
 
-// extractUserAndAnimeID reads the authenticated user's ID from the request context and the
-// anime ID from the URL path variable "animeId". On failure it writes the appropriate error
-// response and returns false so the caller can return immediately.
+// extractUserAndAnimeID reads the user ID from the request context and the anime ID
+// from the "animeId" URL path variable. Writes an error response and returns false on failure.
 func (h *WatchlistHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.Request) (uint, uint, bool) {
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
@@ -39,20 +37,8 @@ func (h *WatchlistHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.
 		return 0, 0, false
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
-
-	vars := mux.Vars(r)
-	animeIDStr := vars["animeId"]
-	animeID, err := utils.ValidateID(animeIDStr)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"anime_id": animeIDStr,
-			"error":    err.Error(),
-		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
-		return 0, 0, false
-	}
-	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
-	return userID, animeID, true
+	animeID, ok := extractAnimeID(w, r, "animeId", h.logger)
+	return userID, animeID, ok
 }
 
 // watchlistGrouped is the grouped-by-status response shape

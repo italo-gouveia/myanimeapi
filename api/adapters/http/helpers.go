@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
+
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -59,6 +62,23 @@ func writeAppError(w http.ResponseWriter, err error) bool {
 		return true
 	}
 	return false
+}
+
+// extractAnimeID reads the anime ID from the URL path variable named varKey.
+// On failure it writes an error response and returns (0, false).
+func extractAnimeID(w http.ResponseWriter, r *http.Request, varKey string, log *logger.Logger) (uint, bool) {
+	animeIDStr := mux.Vars(r)[varKey]
+	animeID, err := utils.ValidateID(animeIDStr)
+	if err != nil {
+		log.WithFields(map[string]interface{}{
+			"anime_id": animeIDStr,
+			"error":    err.Error(),
+		}).Error("Invalid anime ID format")
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
+		return 0, false
+	}
+	log.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
+	return animeID, true
 }
 
 // respondUploadError writes a 500 "Failed to upload file" error response.
