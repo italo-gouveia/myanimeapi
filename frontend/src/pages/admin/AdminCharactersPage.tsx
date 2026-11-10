@@ -156,7 +156,7 @@ export function AdminCharactersPage() {
   const createMutation = useMutation({
     mutationFn: (payload: CreateCharacterPayload) => createCharacter(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
       setModal({ kind: 'closed' })
     },
   })
@@ -165,7 +165,7 @@ export function AdminCharactersPage() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<CreateCharacterPayload> }) =>
       updateCharacter(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
       setModal({ kind: 'closed' })
     },
   })
@@ -173,7 +173,7 @@ export function AdminCharactersPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteCharacter(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'characters'] })
       setModal({ kind: 'closed' })
     },
   })
