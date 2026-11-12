@@ -52,7 +52,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -68,7 +68,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve watchlist from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve watchlist from database", nil)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -178,7 +178,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to upsert watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to upsert watchlist entry", nil)
 		return
 	}
 
@@ -219,7 +219,7 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -248,7 +248,7 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove watchlist entry", nil)
 		return
 	}
 

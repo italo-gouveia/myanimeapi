@@ -146,7 +146,7 @@ func (h *AnimeHandler) GetAnimeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -200,7 +200,7 @@ func (h *AnimeHandler) GetAllAnimesHandler(w http.ResponseWriter, r *http.Reques
 	// Pagination
 	page, limit, err := utils.ValidatePagination(q.Get("page"), q.Get("limit"), 1, 100)
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidPagination, err.Error(), nil)
 		return
 	}
 
@@ -285,7 +285,7 @@ func (h *AnimeHandler) UpdateAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -354,7 +354,7 @@ func (h *AnimeHandler) DeleteAnimeHandler(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -377,7 +377,7 @@ func (h *AnimeHandler) AddGenresToAnimeHandler(w http.ResponseWriter, r *http.Re
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -407,7 +407,7 @@ func (h *AnimeHandler) RemoveGenresFromAnimeHandler(w http.ResponseWriter, r *ht
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -437,7 +437,7 @@ func (h *AnimeHandler) AddTagsToAnimeHandler(w http.ResponseWriter, r *http.Requ
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -466,7 +466,7 @@ func (h *AnimeHandler) RemoveTagsFromAnimeHandler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	animeID, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -515,7 +515,7 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 
 	page, limit, err := utils.ValidatePagination(q.Get("page"), q.Get("limit"), 1, 100)
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidPagination, err.Error(), nil)
 		return
 	}
 
@@ -535,7 +535,7 @@ func (h *AnimeHandler) GetAnimesByTitleHandler(w http.ResponseWriter, r *http.Re
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to search animes", nil)
 		return
 	}
 
@@ -569,7 +569,7 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 
 	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidPagination, err.Error(), nil)
 		return
 	}
 
@@ -579,7 +579,7 @@ func (h *AnimeHandler) GetAnimesByGenreHandler(w http.ResponseWriter, r *http.Re
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to search animes by genre", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to search animes by genre", nil)
 		return
 	}
 

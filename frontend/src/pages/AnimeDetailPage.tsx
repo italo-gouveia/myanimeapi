@@ -42,10 +42,10 @@ function Avatar({ name, size = 'md' }: { name?: string; size?: 'sm' | 'md' }) {
 }
 
 // ── Star rating input ─────────────────────────────────────────────────────────
-function StarRating({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+function StarRating({ value, onChange }: Readonly<{ value: number; onChange: (n: number) => void }>) {
   const [hovered, setHovered] = useState(0)
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label="Rating">
+    <fieldset className="flex items-center gap-0.5 border-0 p-0 m-0" aria-label="Rating">
       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
@@ -60,7 +60,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
       <span className="ml-2 text-sm text-slate-500 tabular-nums w-12">
         {(hovered || value) > 0 ? `${hovered || value}/10` : ''}
       </span>
-    </div>
+    </fieldset>
   )
 }
 
@@ -74,7 +74,7 @@ interface ReviewFormProps {
   onCancel?: () => void
 }
 
-function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId, onDone, onCancel }: ReviewFormProps) {
+function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId, onDone, onCancel }: Readonly<ReviewFormProps>) {
   const [content, setContent] = useState(initialContent)
   const [rating, setRating]   = useState(initialRating)
   const queryClient           = useQueryClient()
@@ -143,7 +143,7 @@ interface ReviewCardProps {
   isDeleting?: boolean
 }
 
-function ReviewCard({ review, isOwn, onEdit, onDelete, isDeleting }: ReviewCardProps) {
+function ReviewCard({ review, isOwn, onEdit, onDelete, isDeleting }: Readonly<ReviewCardProps>) {
   const displayName = review.username || `User #${review.userId ?? review.user_id ?? '?'}`
 
   return (

@@ -64,8 +64,8 @@ func (r *AnimeRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]in
 	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedCountAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountAnimes, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Calculate offset
@@ -75,8 +75,8 @@ func (r *AnimeRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]in
 	if err := r.db.WithContext(ctx).Preload("Reviews").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve animes", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveAnimes, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Convert to interface slice
@@ -98,8 +98,8 @@ func (r *AnimeRepositoryImpl) Create(ctx context.Context, entity interface{}) er
 
 	anime, ok := entity.(*models.Anime)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Anime", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Anime", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(anime).Error; err != nil {
@@ -121,8 +121,8 @@ func (r *AnimeRepositoryImpl) Update(ctx context.Context, entity interface{}) er
 
 	anime, ok := entity.(*models.Anime)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Anime", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Anime", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(anime).Error; err != nil {
@@ -173,8 +173,8 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	if err := r.db.WithContext(ctx).Model(&models.Anime{}).Where("title ILIKE ?", "%"+title+"%").Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, map[string]interface{}{"title": title}, err)
+		}).Error(msgFailedCountAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountAnimes, err.Error(), http.StatusInternalServerError, map[string]interface{}{"title": title}, err)
 	}
 
 	// Calculate offset
@@ -184,8 +184,8 @@ func (r *AnimeRepositoryImpl) GetByTitle(ctx context.Context, title string, page
 	if err := r.db.WithContext(ctx).Preload("Reviews").Where("title ILIKE ?", "%"+title+"%").Offset(offset).Limit(limit).Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve animes", err.Error(), http.StatusInternalServerError, map[string]interface{}{"title": title}, err)
+		}).Error(msgFailedRetrieveAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveAnimes, err.Error(), http.StatusInternalServerError, map[string]interface{}{"title": title}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -214,8 +214,8 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 		Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, map[string]interface{}{"genre": genre}, err)
+		}).Error(msgFailedCountAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountAnimes, err.Error(), http.StatusInternalServerError, map[string]interface{}{"genre": genre}, err)
 	}
 
 	// Calculate offset
@@ -234,8 +234,8 @@ func (r *AnimeRepositoryImpl) GetByGenre(ctx context.Context, genre string, page
 		Find(&animes).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve animes")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve animes", err.Error(), http.StatusInternalServerError, map[string]interface{}{"genre": genre}, err)
+		}).Error(msgFailedRetrieveAnimes)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveAnimes, err.Error(), http.StatusInternalServerError, map[string]interface{}{"genre": genre}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -323,7 +323,7 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 	var total int64
 	if err := applyAdvancedFilters(r.db.WithContext(ctx).Model(&models.Anime{})).Count(&total).Error; err != nil {
 		r.logger.WithField("error", err.Error()).Error("Failed to count animes with filters")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count animes", err.Error(), http.StatusInternalServerError, nil, err)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountAnimes, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// --- FETCH ---
@@ -340,7 +340,7 @@ func (r *AnimeRepositoryImpl) GetWithFilters(ctx context.Context, filter models.
 		Limit(limit).
 		Find(&animes).Error; err != nil {
 		r.logger.WithField("error", err.Error()).Error("Failed to retrieve animes with filters")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve animes", err.Error(), http.StatusInternalServerError, nil, err)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveAnimes, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	result := make([]interface{}, len(animes))

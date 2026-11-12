@@ -90,7 +90,7 @@ func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -118,7 +118,7 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get pagination parameters from query
 	page, limit, err := utils.ValidatePagination(r.URL.Query().Get("page"), r.URL.Query().Get("limit"), 1, 100)
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid pagination parameters", err.Error(), nil)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidPagination, err.Error(), nil)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -202,7 +202,7 @@ func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := utils.ValidateID(vars["id"])
 	if err != nil {
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return

@@ -101,8 +101,8 @@ func (h *GenreHandler) GetGenreHandler(w http.ResponseWriter, r *http.Request) {
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 			"id":    vars["id"],
-		}).Error("Invalid genre ID")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid genre ID", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		}).Error(msgInvalidGenreID)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidGenreID, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -174,8 +174,8 @@ func (h *GenreHandler) UpdateGenreHandler(w http.ResponseWriter, r *http.Request
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 			"id":    vars["id"],
-		}).Error("Invalid genre ID")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid genre ID", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		}).Error(msgInvalidGenreID)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidGenreID, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return
@@ -222,8 +222,8 @@ func (h *GenreHandler) DeleteGenreHandler(w http.ResponseWriter, r *http.Request
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 			"id":    vars["id"],
-		}).Error("Invalid genre ID")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid genre ID", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		}).Error(msgInvalidGenreID)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidGenreID, msgInvalidIDDetail, map[string]interface{}{
 			"id": vars["id"],
 		})
 		return

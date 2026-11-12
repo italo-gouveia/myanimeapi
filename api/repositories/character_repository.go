@@ -79,7 +79,7 @@ func (r *CharacterRepositoryImpl) Create(ctx context.Context, entity interface{}
 
 	character, ok := entity.(*models.Character)
 	if !ok {
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type",
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType,
 			"Expected *models.Character", http.StatusBadRequest, nil, nil)
 	}
 
@@ -99,7 +99,7 @@ func (r *CharacterRepositoryImpl) Update(ctx context.Context, entity interface{}
 
 	character, ok := entity.(*models.Character)
 	if !ok {
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type",
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType,
 			"Expected *models.Character", http.StatusBadRequest, nil, nil)
 	}
 

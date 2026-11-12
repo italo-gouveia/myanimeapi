@@ -80,11 +80,11 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		// Log the request completion with appropriate level
 		switch level {
 		case "ERROR":
-			logger.WithFields(logFields).Error("Request completed")
+			logger.WithFields(logFields).Error(msgRequestCompleted)
 		case "WARNING":
-			logger.WithFields(logFields).Warning("Request completed")
+			logger.WithFields(logFields).Warning(msgRequestCompleted)
 		default:
-			logger.WithFields(logFields).Info("Request completed")
+			logger.WithFields(logFields).Info(msgRequestCompleted)
 		}
 	})
 }

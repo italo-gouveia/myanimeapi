@@ -48,7 +48,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 	// Get user ID from context (set by auth middleware)
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -80,7 +80,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to add favorite to database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to add favorite to database", nil)
 		return
 	}
 
@@ -121,7 +121,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 	// Get user ID from context (set by auth middleware)
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -152,7 +152,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove favorite from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove favorite from database", nil)
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	// Get user ID from context (set by auth middleware)
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
@@ -198,7 +198,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve favorites from database", nil)
 		return
 	}
 

@@ -19,12 +19,12 @@ interface TopListProps {
   extra?: (row: AnalyticsRow) => React.ReactNode
 }
 
-function TopList({ title, rows, isLoading, extra }: TopListProps) {
+function TopList({ title, rows, isLoading, extra }: Readonly<TopListProps>) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-3">
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</p>
       {isLoading
-        ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+        ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={`skeleton-${i}`} />)
         : rows.length === 0
           ? <p className="text-sm text-slate-400">No data yet.</p>
           : rows.map((row, i) => (
@@ -56,7 +56,7 @@ interface SparkBarProps {
   color: string
 }
 
-function SparkBar({ days, isLoading, label, color }: SparkBarProps) {
+function SparkBar({ days, isLoading, label, color }: Readonly<SparkBarProps>) {
   const max = Math.max(...days.map((d) => d.count), 1)
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-3">
@@ -64,7 +64,7 @@ function SparkBar({ days, isLoading, label, color }: SparkBarProps) {
       {isLoading ? (
         <div className="flex items-end gap-1.5 h-16">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="flex-1 bg-slate-100 rounded animate-pulse" style={{ height: `${30 + i * 5}%` }} />
+            <div key={`bar-${i}`} className="flex-1 bg-slate-100 rounded animate-pulse" style={{ height: `${30 + i * 5}%` }} />
           ))}
         </div>
       ) : days.length === 0 ? (

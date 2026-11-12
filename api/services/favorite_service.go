@@ -14,9 +14,9 @@ import (
 // FavoriteServiceInterface defines the interface for favorite operations
 type FavoriteServiceInterface interface {
 	// AddFavorite adds an anime to a user's favorites
-	AddFavorite(ctx context.Context, userID uint, animeID uint) (*models.Favorite, error)
+	AddFavorite(ctx context.Context, userID, animeID uint) (*models.Favorite, error)
 	// RemoveFavorite removes an anime from a user's favorites
-	RemoveFavorite(ctx context.Context, userID uint, animeID uint) error
+	RemoveFavorite(ctx context.Context, userID, animeID uint) error
 	// GetFavorites retrieves all favorites for a user
 	GetFavorites(ctx context.Context, userID uint) ([]models.Favorite, error)
 }
@@ -45,7 +45,7 @@ func NewFavoriteService(
 }
 
 // AddFavorite adds an anime to a user's favorites
-func (s *FavoriteService) AddFavorite(ctx context.Context, userID uint, animeID uint) (*models.Favorite, error) {
+func (s *FavoriteService) AddFavorite(ctx context.Context, userID, animeID uint) (*models.Favorite, error) {
 	s.logger.WithFields(map[string]interface{}{
 		"user_id":  userID,
 		"anime_id": animeID,
@@ -173,7 +173,7 @@ func (s *FavoriteService) AddFavorite(ctx context.Context, userID uint, animeID 
 }
 
 // RemoveFavorite removes an anime from a user's favorites
-func (s *FavoriteService) RemoveFavorite(ctx context.Context, userID uint, animeID uint) error {
+func (s *FavoriteService) RemoveFavorite(ctx context.Context, userID, animeID uint) error {
 	s.logger.WithFields(map[string]interface{}{
 		"user_id":  userID,
 		"anime_id": animeID,

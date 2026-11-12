@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
 
 interface AuthState {
   token: string | null
@@ -44,7 +44,7 @@ function readSession(): AuthState {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [state, setState] = useState<AuthState>(() => readSession())
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const claims = state.token ? decodeJWT(state.token) : {}
 
-  const value: AuthContextValue = {
+  const value = useMemo<AuthContextValue>(() => ({
     ...state,
     setSession,
     clearSession,
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: Boolean(claims.is_admin),
     role: claims.role ?? 'user',
     userId: claims.user_id ? Number(claims.user_id) : null,
-  }
+  }), [state, setSession, clearSession, claims.is_admin, claims.role, claims.user_id])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

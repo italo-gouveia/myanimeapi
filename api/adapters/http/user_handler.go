@@ -154,7 +154,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.WithFields(logFields).Error("Failed to get user ID from context")
+		log.WithFields(logFields).Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
 		return
 	}
@@ -198,7 +198,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.WithFields(logFields).Error("Failed to get user ID from context")
+		log.WithFields(logFields).Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
 		return
 	}
@@ -284,7 +284,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.WithFields(logFields).Error("Failed to get user ID from context")
+		log.WithFields(logFields).Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
 		return
 	}
@@ -337,7 +337,7 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.WithFields(logFields).Error("Failed to get user ID from context")
+		log.WithFields(logFields).Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
 		return
 	}
@@ -498,7 +498,7 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		log.WithFields(logFields).Error("Failed to get user ID from context")
+		log.WithFields(logFields).Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "The user is not authenticated.", logFields)
 		return
 	}

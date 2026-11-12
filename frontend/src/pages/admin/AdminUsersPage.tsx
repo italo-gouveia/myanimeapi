@@ -10,7 +10,7 @@ interface RoleSelectProps {
   currentRole: string
 }
 
-function RoleSelect({ userId, currentRole }: RoleSelectProps) {
+function RoleSelect({ userId, currentRole }: Readonly<RoleSelectProps>) {
   const queryClient = useQueryClient()
   const { mutate, isPending } = useMutation({
     mutationFn: (role: string) => updateUserRole(userId, role),

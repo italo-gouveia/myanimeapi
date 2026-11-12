@@ -87,8 +87,8 @@ func (r *GenreRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]in
 	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&genres).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve genres")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve genres", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveGenres)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveGenres, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Convert to interface slice
@@ -110,8 +110,8 @@ func (r *GenreRepositoryImpl) Create(ctx context.Context, entity interface{}) er
 
 	genre, ok := entity.(*models.Genre)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Genre", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Genre", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(genre).Error; err != nil {
@@ -133,8 +133,8 @@ func (r *GenreRepositoryImpl) Update(ctx context.Context, entity interface{}) er
 
 	genre, ok := entity.(*models.Genre)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Genre", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Genre", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(genre).Error; err != nil {
@@ -181,8 +181,8 @@ func (r *GenreRepositoryImpl) GetByIDs(ctx context.Context, ids []uint) ([]model
 		r.logger.WithFields(map[string]interface{}{
 			"ids":   ids,
 			"error": err.Error(),
-		}).Error("Failed to retrieve genres")
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve genres", err.Error(), http.StatusInternalServerError, map[string]interface{}{"ids": ids}, err)
+		}).Error(msgFailedRetrieveGenres)
+		return nil, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveGenres, err.Error(), http.StatusInternalServerError, map[string]interface{}{"ids": ids}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{

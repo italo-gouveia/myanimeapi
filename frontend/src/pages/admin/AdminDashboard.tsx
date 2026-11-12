@@ -9,7 +9,7 @@ interface StatCardProps {
   isLoading?: boolean
 }
 
-function StatCard({ label, value, sub, isLoading }: StatCardProps) {
+function StatCard({ label, value, sub, isLoading }: Readonly<StatCardProps>) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-1">
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>

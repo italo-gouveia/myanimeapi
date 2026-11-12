@@ -42,7 +42,7 @@ interface GenreDropdownProps {
   onChange: (selected: string[]) => void
 }
 
-function GenreDropdown({ genres, selected, onChange }: GenreDropdownProps) {
+function GenreDropdown({ genres, selected, onChange }: Readonly<GenreDropdownProps>) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -80,8 +80,8 @@ function GenreDropdown({ genres, selected, onChange }: GenreDropdownProps) {
       </button>
 
       {open && (
-        <div
-          className="absolute z-20 mt-1 w-52 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg py-1"
+        <ul
+          className="absolute z-20 mt-1 w-52 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg py-1 list-none p-0"
           role="listbox"
           aria-multiselectable="true"
         >
@@ -112,7 +112,7 @@ function GenreDropdown({ genres, selected, onChange }: GenreDropdownProps) {
               </label>
             )
           })}
-        </div>
+        </ul>
       )}
     </div>
   )
@@ -230,12 +230,12 @@ export function HomePage() {
           data-testid="catalog-sort"
         >
           {SORT_OPTIONS.map((opt, i) => (
-            <option key={i} value={i}>{opt.label}</option>
+            <option key={opt.value} value={i}>{opt.label}</option>
           ))}
         </select>
 
         {/* Status chips — multi-select, OR logic */}
-        <div className="flex items-center gap-1.5" role="group" aria-label="Filter by status">
+        <section className="flex items-center gap-1.5" aria-label="Filter by status">
           {ALL_STATUSES.map((s) => {
             const active = statuses.includes(s)
             return (
@@ -256,7 +256,7 @@ export function HomePage() {
               </button>
             )
           })}
-        </div>
+        </section>
 
         {/* Genre multi-select dropdown */}
         {genreList && (
