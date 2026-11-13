@@ -7,7 +7,6 @@ import (
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/models"
 	"myanimeapi/api/services"
-	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 
@@ -26,6 +25,20 @@ func NewWatchlistHandler(watchlistService services.WatchlistServiceInterface) *W
 		watchlistService: watchlistService,
 		logger:           logger.New(),
 	}
+}
+
+// extractUserAndAnimeID reads the user ID from the request context and the anime ID
+// from the "animeId" URL path variable. Writes an error response and returns false on failure.
+func (h *WatchlistHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.Request) (uint, uint, bool) {
+	userID := middleware.GetUserFromContext(r.Context())
+	if userID == 0 {
+		h.logger.Error(msgFailedGetUserID)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
+		return 0, 0, false
+	}
+	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
+	animeID, ok := extractAnimeID(w, r, "animeId", h.logger)
+	return userID, animeID, ok
 }
 
 // watchlistGrouped is the grouped-by-status response shape
@@ -53,7 +66,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
 		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -64,11 +77,10 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 			"user_id": userID,
 			"error":   err.Error(),
 		}).Error("Failed to retrieve watchlist")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve watchlist from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve watchlist from database", nil)
 		return
 	}
 
@@ -93,14 +105,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 		Grouped: grouped,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id": userID,
-			"error":   err.Error(),
-		}).Error("Failed to encode watchlist response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, result, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -126,26 +131,10 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("Starting to upsert watchlist entry")
 
-	userID := middleware.GetUserFromContext(r.Context())
-	if userID == 0 {
-		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+	userID, animeID, ok := h.extractUserAndAnimeID(w, r)
+	if !ok {
 		return
 	}
-	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
-
-	vars := mux.Vars(r)
-	animeIDStr := vars["animeId"]
-	animeID, err := utils.ValidateID(animeIDStr)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"anime_id": animeIDStr,
-			"error":    err.Error(),
-		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
-		return
-	}
-	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	var req models.WatchlistUpsertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -174,24 +163,15 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to upsert watchlist entry")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to upsert watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to upsert watchlist entry", nil)
 		return
 	}
 
 	resp := entry.ToResponse()
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id":  userID,
-			"anime_id": animeID,
-			"error":    err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, resp, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -217,26 +197,10 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("Starting to remove watchlist entry")
 
-	userID := middleware.GetUserFromContext(r.Context())
-	if userID == 0 {
-		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+	userID, animeID, ok := h.extractUserAndAnimeID(w, r)
+	if !ok {
 		return
 	}
-	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
-
-	vars := mux.Vars(r)
-	animeIDStr := vars["animeId"]
-	animeID, err := utils.ValidateID(animeIDStr)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"anime_id": animeIDStr,
-			"error":    err.Error(),
-		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
-		return
-	}
-	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	if err := h.watchlistService.RemoveWatchlistEntry(r.Context(), userID, animeID); err != nil {
 		h.logger.WithFields(map[string]interface{}{
@@ -244,11 +208,10 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to remove watchlist entry")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove watchlist entry", nil)
 		return
 	}
 

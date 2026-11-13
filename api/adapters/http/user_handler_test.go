@@ -1,14 +1,17 @@
 package httphandler
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	appdb "myanimeapi/internal/db"
 	"myanimeapi/api/mocks"
 	"myanimeapi/api/models"
 	apperrors "myanimeapi/internal/errors"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -433,4 +436,212 @@ func (s *UserHandlerSuite) TestDeleteAccount_Unauthenticated() {
 	s.handler.DeleteAccount(rr, req)
 
 	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
+}
+
+func TestPasswordResetRateLimit(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		maxReqs, window := passwordResetRateLimit()
+		if maxReqs <= 0 {
+			t.Errorf("expected positive maxReqs, got %d", maxReqs)
+		}
+		if window <= 0 {
+			t.Errorf("expected positive window, got %v", window)
+		}
+	})
+}
+
+// ─── UpdateProfile – extra branches ──────────────────────────────────────────
+
+func (s *UserHandlerSuite) TestUpdateProfile_Unauthenticated() {
+	req := httptest.NewRequest(http.MethodPut, "/users/profile",
+		jsonBuf(map[string]string{"username": "newname"}))
+	req = req.WithContext(noAuthCtx())
+	rr := httptest.NewRecorder()
+	s.handler.UpdateProfile(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
+}
+
+func (s *UserHandlerSuite) TestUpdateProfile_GetUserInternalError() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).
+		Return(nil, fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/users/profile",
+		jsonBuf(map[string]string{"username": "newname"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.UpdateProfile(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+func (s *UserHandlerSuite) TestUpdateProfile_WithGenres() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).Return(sampleUser(1), nil).Once()
+	s.genreSvc.EXPECT().GetGenresByIDs(mock.Anything, []uint{1, 2}).
+		Return([]models.Genre{{ID: 1, Name: "Action"}, {ID: 2, Name: "Drama"}}, nil).Once()
+	s.userSvc.EXPECT().UpdateUser(mock.Anything, mock.AnythingOfType("*models.User")).Return(nil).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/users/profile",
+		jsonBuf(map[string]interface{}{"genre_ids": []uint{1, 2}}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.UpdateProfile(rr, req)
+
+	s.Equal(http.StatusOK, rr.Code)
+}
+
+func (s *UserHandlerSuite) TestUpdateProfile_GetGenresError() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).Return(sampleUser(1), nil).Once()
+	s.genreSvc.EXPECT().GetGenresByIDs(mock.Anything, []uint{99}).
+		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "Genre not found", "", http.StatusNotFound, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/users/profile",
+		jsonBuf(map[string]interface{}{"genre_ids": []uint{99}}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.UpdateProfile(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
+}
+
+func (s *UserHandlerSuite) TestUpdateProfile_UpdateUserInternalError() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).Return(sampleUser(1), nil).Once()
+	s.userSvc.EXPECT().UpdateUser(mock.Anything, mock.AnythingOfType("*models.User")).
+		Return(fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodPut, "/users/profile",
+		jsonBuf(map[string]string{"username": "newname"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.UpdateProfile(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ─── ChangePassword – extra branches ─────────────────────────────────────────
+
+func (s *UserHandlerSuite) TestChangePassword_Unauthenticated() {
+	req := httptest.NewRequest(http.MethodPost, "/users/change-password",
+		jsonBuf(map[string]string{"current_password": "old", "new_password": "new"}))
+	req = req.WithContext(noAuthCtx())
+	rr := httptest.NewRecorder()
+	s.handler.ChangePassword(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
+}
+
+func (s *UserHandlerSuite) TestChangePassword_GetUserFails() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).
+		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "User not found", "", http.StatusNotFound, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/users/change-password",
+		jsonBuf(map[string]string{"current_password": "old", "new_password": "new"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.ChangePassword(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
+}
+
+func (s *UserHandlerSuite) TestChangePassword_InternalError() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).Return(sampleUser(1), nil).Once()
+	s.userSvc.EXPECT().ChangePassword(mock.Anything, uint(1), "old", "new").
+		Return(fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/users/change-password",
+		jsonBuf(map[string]string{"current_password": "old", "new_password": "new"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.ChangePassword(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ─── DeactivateAccount – extra branches ──────────────────────────────────────
+
+func (s *UserHandlerSuite) TestDeactivateAccount_Unauthenticated() {
+	req := httptest.NewRequest(http.MethodPost, "/users/deactivate",
+		jsonBuf(map[string]string{"password": "mypassword"}))
+	req = req.WithContext(noAuthCtx())
+	rr := httptest.NewRecorder()
+	s.handler.DeactivateAccount(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
+}
+
+func (s *UserHandlerSuite) TestDeactivateAccount_GetUserFails() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).
+		Return(nil, apperrors.NewError(apperrors.ErrResourceNotFound, "User not found", "", http.StatusNotFound, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/users/deactivate",
+		jsonBuf(map[string]string{"password": "mypassword"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.DeactivateAccount(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusNotFound, apperrors.ErrResourceNotFound)
+}
+
+func (s *UserHandlerSuite) TestDeactivateAccount_InternalError() {
+	s.userSvc.EXPECT().GetByID(mock.Anything, uint(1)).Return(sampleUser(1), nil).Once()
+	s.userSvc.EXPECT().DeactivateAccount(mock.Anything, uint(1), "mypassword").
+		Return(fmt.Errorf("raw DB error")).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/users/deactivate",
+		jsonBuf(map[string]string{"password": "mypassword"}))
+	req = req.WithContext(testCtx())
+	rr := httptest.NewRecorder()
+	s.handler.DeactivateAccount(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusInternalServerError, apperrors.ErrInternalServer)
+}
+
+// ─── ExportUserDataHandler ────────────────────────────────────────────────────
+
+func newExportTestDB(t *testing.T) *UserHandler {
+	t.Helper()
+	db := newSQLiteTestDB(t,
+		&models.User{}, &models.Anime{}, &models.Review{},
+		&models.Favorite{}, &models.WatchlistEntry{}, &models.Genre{}, &models.Tag{},
+	)
+	return NewUserHandler(nil, nil, nil, appdb.NewGormDB(db))
+}
+
+func TestExportUserDataHandler_Unauthenticated(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export", nil)
+	req = req.WithContext(noAuthCtx())
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestExportUserDataHandler_JSONFormat(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export", nil)
+	req = req.WithContext(testCtx()) // userID = 1
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Header().Get("Content-Type"), "application/json")
+	body := bodyJSON(t, rr)
+	assert.Contains(t, body, "favorites")
+	assert.Contains(t, body, "watchlist")
+	assert.Contains(t, body, "reviews")
+}
+
+func TestExportUserDataHandler_CSVFormat(t *testing.T) {
+	h := newExportTestDB(t)
+	req := httptest.NewRequest(http.MethodGet, "/users/export?format=csv", nil)
+	req = req.WithContext(testCtx()) // userID = 1
+	rr := httptest.NewRecorder()
+	h.ExportUserDataHandler(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Header().Get("Content-Type"), "text/csv")
+	assert.Contains(t, rr.Body.String(), "FAVORITES")
+	assert.Contains(t, rr.Body.String(), "WATCHLIST")
+	assert.Contains(t, rr.Body.String(), "REVIEWS")
 }

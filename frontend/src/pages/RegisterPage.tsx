@@ -46,7 +46,7 @@ export function RegisterPage() {
     },
     onSuccess: ({ token, username }) => {
       setSession(token, username)
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     },
     onError: (error) => {
       setSubmitError(extractErrorMessage(error, 'Could not create the account.'))

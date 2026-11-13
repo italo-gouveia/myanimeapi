@@ -1,12 +1,10 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"myanimeapi/api/middleware"
 	"myanimeapi/api/services"
-	"myanimeapi/api/utils"
 	"myanimeapi/internal/errors"
 	"myanimeapi/internal/logger"
 
@@ -27,6 +25,20 @@ func NewFavoriteHandler(favoriteService services.FavoriteServiceInterface) *Favo
 	}
 }
 
+// extractUserAndAnimeID reads the user ID from the request context and the anime ID
+// from the "anime_id" URL path variable. Writes an error response and returns false on failure.
+func (h *FavoriteHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.Request) (uint, uint, bool) {
+	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
+	if !ok {
+		h.logger.Error(msgFailedGetUserID)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
+		return 0, 0, false
+	}
+	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
+	animeID, ok := extractAnimeID(w, r, "anime_id", h.logger)
+	return userID, animeID, ok
+}
+
 // AddFavoriteHandler handles adding an anime to user's favorites
 // @Summary Add anime to favorites
 // @Description Add an anime to the authenticated user's favorites
@@ -45,28 +57,10 @@ func NewFavoriteHandler(favoriteService services.FavoriteServiceInterface) *Favo
 func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("Starting to add favorite")
 
-	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
+	userID, animeID, ok := h.extractUserAndAnimeID(w, r)
 	if !ok {
-		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
-	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
-
-	// Get anime ID from URL
-	vars := mux.Vars(r)
-	animeIDStr := vars["anime_id"]
-	animeID, err := utils.ValidateID(animeIDStr)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"anime_id": animeIDStr,
-			"error":    err.Error(),
-		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
-		return
-	}
-	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	// Add favorite using service
 	favorite, err := h.favoriteService.AddFavorite(r.Context(), userID, animeID)
@@ -76,24 +70,15 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to add favorite")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to add favorite to database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to add favorite to database", nil)
 		return
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(favorite); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id":  userID,
-			"anime_id": animeID,
-			"error":    err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusCreated, favorite, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{
@@ -118,28 +103,10 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("Starting to remove favorite")
 
-	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
+	userID, animeID, ok := h.extractUserAndAnimeID(w, r)
 	if !ok {
-		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
 		return
 	}
-	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
-
-	// Get anime ID from URL
-	vars := mux.Vars(r)
-	animeIDStr := vars["anime_id"]
-	animeID, err := utils.ValidateID(animeIDStr)
-	if err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"anime_id": animeIDStr,
-			"error":    err.Error(),
-		}).Error("Invalid anime ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid anime ID format", "The provided anime ID must be a valid unsigned integer", nil)
-		return
-	}
-	h.logger.WithField("anime_id", animeID).Info("Retrieved anime ID from URL")
 
 	// Remove favorite using service
 	if err := h.favoriteService.RemoveFavorite(r.Context(), userID, animeID); err != nil {
@@ -148,11 +115,10 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to remove favorite")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove favorite from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove favorite from database", nil)
 		return
 	}
 
@@ -182,7 +148,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
 		h.logger.Error(msgFailedGetUserID)
-		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, "User not authenticated", "Authentication required to access this resource", nil)
+		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}
 	h.logger.WithField("user_id", userID).Info("Retrieved user ID from context")
@@ -194,23 +160,15 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 			"user_id": userID,
 			"error":   err.Error(),
 		}).Error("Failed to retrieve favorites")
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve favorites from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", nil)
 		return
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(favorites); err != nil {
-		h.logger.WithFields(map[string]interface{}{
-			"user_id": userID,
-			"error":   err.Error(),
-		}).Error("Failed to encode response")
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response", nil)
+	if !writeJSON(w, http.StatusOK, favorites, h.logger) {
 		return
 	}
 	h.logger.WithFields(map[string]interface{}{

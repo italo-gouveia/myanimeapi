@@ -17,7 +17,7 @@ export function Layout() {
 
   const handleLogout = () => {
     clearSession()
-    navigate('/')
+    void navigate('/')
   }
 
   return (

@@ -19,74 +19,60 @@ import (
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		requestID := r.Context().Value(RequestIDContextKey)
-		if requestID == nil {
-			requestID = uuid.New().String()
-		}
-
-		// Create base log fields
-		logFields := map[string]interface{}{
-			"request_id":   requestID,
-			"method":       r.Method,
-			"path":         r.URL.Path,
-			"remote_addr":  r.RemoteAddr,
-			"user_agent":   r.UserAgent(),
-			"content_type": r.Header.Get("Content-Type"),
-		}
-
-		// Add query parameters for GET requests
-		if r.Method == "GET" && len(r.URL.RawQuery) > 0 {
-			logFields["query"] = r.URL.RawQuery
-		}
-
-		// Add request body size for POST/PUT requests
-		if r.Method == "POST" || r.Method == "PUT" {
-			logFields["content_length"] = r.ContentLength
-		}
-
-		// Log the incoming request details
+		logFields := buildRequestLogFields(r)
 		logger.WithFields(logFields).Info("Incoming request")
 
 		lw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		serveWithRecovery(next, lw, r, w, logFields)
 
-		// Wrap the handler in a panic recovery
-		func() {
-			defer func() {
-				if err := recover(); err != nil {
-					logger.WithFields(logFields).WithField("error", err).Error("Panic recovered in logging middleware")
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				}
-			}()
-			next.ServeHTTP(lw, r)
-		}()
-
-		duration := time.Since(start)
-
-		// Determine log level based on status code
-		var level string
-		if lw.statusCode >= 500 {
-			level = "ERROR"
-		} else if lw.statusCode >= 400 {
-			level = "WARNING"
-		} else {
-			level = "INFO"
-		}
-
-		// Add response fields
 		logFields["status"] = lw.statusCode
-		logFields["duration_ms"] = duration.Milliseconds()
+		logFields["duration_ms"] = time.Since(start).Milliseconds()
 		logFields["size"] = lw.size
-
-		// Log the request completion with appropriate level
-		switch level {
-		case "ERROR":
-			logger.WithFields(logFields).Error(msgRequestCompleted)
-		case "WARNING":
-			logger.WithFields(logFields).Warning(msgRequestCompleted)
-		default:
-			logger.WithFields(logFields).Info(msgRequestCompleted)
-		}
+		logCompletion(logFields, lw.statusCode)
 	})
+}
+
+func buildRequestLogFields(r *http.Request) map[string]interface{} {
+	requestID := r.Context().Value(RequestIDContextKey)
+	if requestID == nil {
+		requestID = uuid.New().String()
+	}
+	fields := map[string]interface{}{
+		"request_id":   requestID,
+		"method":       r.Method,
+		"path":         r.URL.Path,
+		"remote_addr":  r.RemoteAddr,
+		"user_agent":   r.UserAgent(),
+		"content_type": r.Header.Get("Content-Type"),
+	}
+	if r.Method == "GET" && len(r.URL.RawQuery) > 0 {
+		fields["query"] = r.URL.RawQuery
+	}
+	if r.Method == "POST" || r.Method == "PUT" {
+		fields["content_length"] = r.ContentLength
+	}
+	return fields
+}
+
+func serveWithRecovery(next http.Handler, lw *loggingResponseWriter, r *http.Request, w http.ResponseWriter, logFields map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.WithFields(logFields).WithField("error", err).Error("Panic recovered in logging middleware")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+	}()
+	next.ServeHTTP(lw, r)
+}
+
+func logCompletion(logFields map[string]interface{}, statusCode int) {
+	switch {
+	case statusCode >= 500:
+		logger.WithFields(logFields).Error("Request completed")
+	case statusCode >= 400:
+		logger.WithFields(logFields).Warning("Request completed")
+	default:
+		logger.WithFields(logFields).Info("Request completed")
+	}
 }
 
 // loggingResponseWriter wraps http.ResponseWriter to capture status code and response size.

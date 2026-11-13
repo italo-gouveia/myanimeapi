@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	msgInvalidAnimeType = "Invalid anime type"
+	msgTypeAssertFailed = "Type assertion failed"
+)
+
 // animeListCache is used to serialise paginated anime lists into/out of cache.
 type animeListCache struct {
 	Items []*models.Anime `json:"items"`
@@ -93,8 +98,8 @@ func (s *AnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.Anime
 
 	anime, ok := animeInterface.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", id).Error("Invalid anime type")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", id).Error(msgInvalidAnimeType)
+		return nil, errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id": id,
 			},
@@ -152,7 +157,7 @@ func (s *AnimeService) GetAllAnimes(ctx context.Context, page, limit int, filter
 		anime, ok := animeInterface.(*models.Anime)
 		if !ok {
 			s.logger.WithField("index", i).Error("Invalid anime type in slice")
-			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid anime type",
+			return nil, 0, errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType,
 				fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError,
 				map[string]interface{}{"index": i}, nil)
 		}
@@ -300,8 +305,8 @@ func (s *AnimeService) DeleteAnime(ctx context.Context, id uint) error {
 
 	animeModel, ok := existingAnime.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", id).Error("Invalid anime type")
-		return errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", id).Error(msgInvalidAnimeType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id": id,
 			},
@@ -515,8 +520,8 @@ func (s *AnimeService) AddGenresToAnime(ctx context.Context, animeID uint, genre
 
 	anime, ok := animeInterface.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", animeID).Error("Invalid anime type")
-		return errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", animeID).Error(msgInvalidAnimeType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id":  animeID,
 				"genre_ids": genreIDs,
@@ -592,8 +597,8 @@ func (s *AnimeService) RemoveGenresFromAnime(ctx context.Context, animeID uint, 
 
 	animeObj, ok := anime.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", animeID).Error("Invalid anime type")
-		return errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", animeID).Error(msgInvalidAnimeType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id":  animeID,
 				"genre_ids": genreIDs,
@@ -668,8 +673,8 @@ func (s *AnimeService) AddTagsToAnime(ctx context.Context, animeID uint, tagIDs 
 
 	anime, ok := animeInterface.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", animeID).Error("Invalid anime type")
-		return errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", animeID).Error(msgInvalidAnimeType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id": animeID,
 				"tag_ids":  tagIDs,
@@ -745,8 +750,8 @@ func (s *AnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint, ta
 
 	animeObj, ok := anime.(*models.Anime)
 	if !ok {
-		s.logger.WithField("anime_id", animeID).Error("Invalid anime type")
-		return errors.NewError(errors.ErrInternalServer, "Invalid anime type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("anime_id", animeID).Error(msgInvalidAnimeType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidAnimeType, msgTypeAssertFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"anime_id": animeID,
 				"tag_ids":  tagIDs,

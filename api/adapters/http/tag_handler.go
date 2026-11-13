@@ -1,7 +1,6 @@
 package httphandler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"myanimeapi/api/middleware"
@@ -59,7 +58,7 @@ func (h *TagHandler) CreateTagHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.TagCreateRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -69,20 +68,14 @@ func (h *TagHandler) CreateTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.CreateTag(r.Context(), tag); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to create tag", "An internal server error occurred while creating the tag.", nil)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(tag.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusCreated, tag.ToResponse(), nil)
 }
 
 // GetTagHandler handles retrieving a tag by ID.
@@ -98,19 +91,14 @@ func (h *TagHandler) GetTagHandler(w http.ResponseWriter, r *http.Request) {
 
 	tag, err := h.tagService.GetTagByID(r.Context(), id)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve tag", "An internal server error occurred while retrieving the tag.", nil)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(tag.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, tag.ToResponse(), nil)
 }
 
 // GetAllTagsHandler handles retrieving all tags.
@@ -124,8 +112,7 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 
 	tags, total, err := h.tagService.GetAllTags(r.Context(), page, limit)
 	if err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve tags", "An internal server error occurred while retrieving the tags.", nil)
@@ -150,11 +137,7 @@ func (h *TagHandler) GetAllTagsHandler(w http.ResponseWriter, r *http.Request) {
 		Limit: limit,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, response, nil)
 }
 
 // UpdateTagHandler handles updating an existing tag.
@@ -171,7 +154,7 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the validated and sanitized payload from the context
 	payload, ok := r.Context().Value(middleware.ValidatedPayloadKey).(*models.TagUpdateRequest)
 	if !ok {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Invalid payload", "The request payload could not be retrieved.", nil)
+		respondInvalidPayload(w, nil)
 		return
 	}
 
@@ -182,19 +165,14 @@ func (h *TagHandler) UpdateTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.UpdateTag(r.Context(), tag); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to update tag", "An internal server error occurred while updating the tag.", nil)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(tag.ToResponse()); err != nil {
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to encode response", "An internal server error occurred while encoding the response.", nil)
-		return
-	}
+	writeJSON(w, http.StatusOK, tag.ToResponse(), nil)
 }
 
 // DeleteTagHandler handles the deletion of a tag.
@@ -209,8 +187,7 @@ func (h *TagHandler) DeleteTagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.tagService.DeleteTag(r.Context(), id); err != nil {
-		if appErr, ok := err.(*errors.AppError); ok {
-			errors.WriteErrorResponse(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details, appErr.Context)
+		if writeAppError(w, err) {
 			return
 		}
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to delete tag", "An internal server error occurred while deleting the tag.", nil)

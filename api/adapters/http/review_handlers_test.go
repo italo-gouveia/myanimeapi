@@ -291,3 +291,49 @@ func (s *ReviewHandlerSuite) TestDelete_Unauthenticated() {
 
 	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
 }
+
+func TestMediaTypeFromExt(t *testing.T) {
+	assert := func(ext, want string) {
+		t.Helper()
+		if got := mediaTypeFromExt(ext); got != want {
+			t.Errorf("mediaTypeFromExt(%q) = %q, want %q", ext, got, want)
+		}
+	}
+	assert(".mp4", "video")
+	assert(".webm", "video")
+	assert(".mov", "video")
+	assert(".jpg", "image")
+	assert(".png", "image")
+	assert("", "image")
+}
+
+func (s *ReviewHandlerSuite) TestCreate_Unauthenticated() {
+	req := multipartReq(s.T(), http.MethodPost, "/reviews")
+	ctx := withPayload(noAuthCtx(), &models.ReviewCreateRequest{AnimeID: 1, Content: "Great!", Rating: 9})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	s.handler.CreateReviewHandler(rr, req)
+
+	assertErrorCode(s.T(), rr, http.StatusUnauthorized, apperrors.ErrUnauthorized)
+}
+
+func (s *ReviewHandlerSuite) TestCreate_FileUploadError() {
+	body := &bytes.Buffer{}
+	mw := multipart.NewWriter(body)
+	fw, err := mw.CreateFormFile("media", "test.jpg")
+	s.Require().NoError(err)
+	_, _ = fw.Write([]byte("fake image data"))
+	s.Require().NoError(mw.Close())
+
+	s.storageSvc.EXPECT().SaveFile(mock.Anything, mock.Anything).
+		Return("", apperrors.NewError(apperrors.ErrInternalServer, "upload failed", "", http.StatusInternalServerError, nil, nil)).Once()
+
+	req := httptest.NewRequest(http.MethodPost, "/reviews", body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	ctx := withPayload(testCtx(), &models.ReviewCreateRequest{AnimeID: 1, Content: "Great!", Rating: 9})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	s.handler.CreateReviewHandler(rr, req)
+
+	s.Equal(http.StatusInternalServerError, rr.Code)
+}
