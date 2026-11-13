@@ -14,8 +14,8 @@ import (
 	gormerrors "gorm.io/gorm"
 )
 
-// ETLServiceInterface defines the contract for data-ingestion operations.
-type ETLServiceInterface interface {
+// Syncer defines the contract for data-ingestion operations.
+type Syncer interface {
 	SyncFromJikan(ctx context.Context, pages int) (SyncResult, error)
 }
 
@@ -28,7 +28,7 @@ type SyncResult struct {
 	Pages    int `json:"pages"`
 }
 
-// ETLService implements ETLServiceInterface.
+// ETLService implements Syncer.
 // It bypasses the high-level service/repository interfaces so it can use GORM
 // bulk operations (FirstOrCreate, Association.Replace) that the generic interface
 // does not expose.
@@ -41,7 +41,7 @@ type ETLService struct {
 
 // NewETLService creates an ETLService backed by the given database and cache.
 // Pass a cache.NoopCache when Redis is unavailable — invalidation becomes a no-op.
-func NewETLService(database db.DBInterface, cacheImpl cache.CacheInterface) ETLServiceInterface {
+func NewETLService(database db.DBInterface, cacheImpl cache.CacheInterface) Syncer {
 	return &ETLService{
 		db:     database,
 		jikan:  jikan.NewClient(),

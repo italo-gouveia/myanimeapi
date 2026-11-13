@@ -101,8 +101,8 @@ func (r *TagRepositoryImpl) Create(ctx context.Context, entity interface{}) erro
 
 	tag, ok := entity.(*models.Tag)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Tag", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Tag", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(tag).Error; err != nil {
@@ -124,8 +124,8 @@ func (r *TagRepositoryImpl) Update(ctx context.Context, entity interface{}) erro
 
 	tag, ok := entity.(*models.Tag)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Tag", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Tag", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(tag).Error; err != nil {

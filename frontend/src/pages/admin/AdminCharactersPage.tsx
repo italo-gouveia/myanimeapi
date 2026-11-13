@@ -19,7 +19,7 @@ interface CharacterFormProps {
   isPending: boolean
 }
 
-function CharacterForm({ initial, onSubmit, onCancel, isPending }: CharacterFormProps) {
+function CharacterForm({ initial, onSubmit, onCancel, isPending }: Readonly<CharacterFormProps>) {
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [voiceActor, setVoiceActor] = useState(initial?.voice_actor ?? '')
@@ -109,12 +109,11 @@ interface ModalProps {
   children: React.ReactNode
 }
 
-function Modal({ title, onClose, children }: ModalProps) {
+function Modal({ title, onClose, children }: Readonly<ModalProps>) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      open
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 border-0 p-0 m-0 max-w-none w-full h-full"
       aria-labelledby="modal-title"
     >
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 flex flex-col gap-4">
@@ -133,7 +132,7 @@ function Modal({ title, onClose, children }: ModalProps) {
         </div>
         {children}
       </div>
-    </div>
+    </dialog>
   )
 }
 

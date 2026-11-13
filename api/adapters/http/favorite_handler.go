@@ -30,7 +30,7 @@ func NewFavoriteHandler(favoriteService services.FavoriteServiceInterface) *Favo
 func (h *FavoriteHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.Request) (uint, uint, bool) {
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return 0, 0, false
 	}
@@ -147,7 +147,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 	// Get user ID from context (set by auth middleware)
 	userID, ok := r.Context().Value(middleware.UserContextKey).(uint)
 	if !ok {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}

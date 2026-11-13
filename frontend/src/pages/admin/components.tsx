@@ -3,13 +3,13 @@ interface TableSkeletonProps {
   cols: number
 }
 
-export function TableSkeleton({ rows = 5, cols }: TableSkeletonProps) {
+export function TableSkeleton({ rows = 5, cols }: Readonly<TableSkeletonProps>) {
   return (
     <>
       {Array.from({ length: rows }).map((_, i) => (
-        <tr key={i}>
+        <tr key={`row-${i}`}>
           {Array.from({ length: cols }).map((__, j) => (
-            <td key={j} className="px-4 py-3">
+            <td key={`col-${j}`} className="px-4 py-3">
               <div className="h-4 bg-slate-100 rounded animate-pulse" />
             </td>
           ))}
@@ -26,7 +26,7 @@ interface PaginationProps {
   onNext: () => void
 }
 
-export function Pagination({ page, totalPages, onPrev, onNext }: PaginationProps) {
+export function Pagination({ page, totalPages, onPrev, onNext }: Readonly<PaginationProps>) {
   if (totalPages <= 1) return null
   return (
     <div className="flex items-center justify-between">

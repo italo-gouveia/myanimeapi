@@ -13,11 +13,11 @@ import (
 
 // ETLHandler exposes admin-only endpoints for data ingestion.
 type ETLHandler struct {
-	etlService services.ETLServiceInterface
+	etlService services.Syncer
 }
 
 // NewETLHandler creates an ETLHandler.
-func NewETLHandler(etlService services.ETLServiceInterface) *ETLHandler {
+func NewETLHandler(etlService services.Syncer) *ETLHandler {
 	return &ETLHandler{etlService: etlService}
 }
 

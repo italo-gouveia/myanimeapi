@@ -5,7 +5,7 @@ interface ProtectedRouteProps {
   requireAdmin?: boolean
 }
 
-export function ProtectedRoute({ requireAdmin = false }: ProtectedRouteProps) {
+export function ProtectedRoute({ requireAdmin = false }: Readonly<ProtectedRouteProps>) {
   const { isAuthenticated, isAdmin } = useAuth()
   const location = useLocation()
 

@@ -27,7 +27,7 @@ function CharacterAvatar({ character }: Readonly<{ character: Character }>) {
   )
 }
 
-export function CharacterCard({ character }: CharacterCardProps) {
+export function CharacterCard({ character }: Readonly<CharacterCardProps>) {
   return (
     <div
       className="flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-md hover:border-brand-300 transition-shadow"
