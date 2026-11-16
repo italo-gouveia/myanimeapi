@@ -93,8 +93,8 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, entity interface{}) err
 
 	user, ok := entity.(*models.User)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.User", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.User", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
@@ -119,8 +119,8 @@ func (r *UserRepositoryImpl) Update(ctx context.Context, entity interface{}) err
 
 	user, ok := entity.(*models.User)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.User", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.User", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(user).Error; err != nil {

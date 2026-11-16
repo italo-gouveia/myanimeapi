@@ -39,7 +39,7 @@ func ValidateToken(tokenString string) (*CustomClaims, error) {
 		return claims, nil
 	}
 
-	return nil, apperrors.NewError(apperrors.ErrUnauthorized, "Invalid token",
+	return nil, apperrors.NewError(apperrors.ErrUnauthorized, msgInvalidToken,
 		"The provided token is invalid", http.StatusUnauthorized, nil, nil)
 }
 
@@ -100,7 +100,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			}).Warning("Invalid token")
 
 			apperrors.WriteErrorResponse(w, http.StatusUnauthorized, apperrors.ErrUnauthorized,
-				"Invalid token",
+				msgInvalidToken,
 				"The provided token is invalid or has expired",
 				map[string]interface{}{
 					"error": err.Error(),
@@ -113,7 +113,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			log.WithField("error", err).Error("Failed to parse user ID")
 			apperrors.WriteErrorResponse(w, http.StatusUnauthorized, apperrors.ErrUnauthorized,
-				"Invalid token",
+				msgInvalidToken,
 				"The authentication token contains an invalid user ID",
 				map[string]interface{}{
 					"error": "Invalid user ID in token",

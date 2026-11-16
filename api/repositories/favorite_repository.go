@@ -59,8 +59,8 @@ func (r *FavoriteRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([
 	if err := r.db.WithContext(ctx).Model(&models.Favorite{}).Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count favorites")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count favorites", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedCountFavorites)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountFavorites, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Calculate offset
@@ -70,8 +70,8 @@ func (r *FavoriteRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([
 	if err := r.db.WithContext(ctx).Preload("User").Preload("Anime").Offset(offset).Limit(limit).Find(&favorites).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve favorites")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve favorites", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveFavorites)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveFavorites, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Convert to interface slice
@@ -93,8 +93,8 @@ func (r *FavoriteRepositoryImpl) Create(ctx context.Context, entity interface{})
 
 	favorite, ok := entity.(*models.Favorite)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Favorite", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Favorite", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(favorite).Error; err != nil {
@@ -116,8 +116,8 @@ func (r *FavoriteRepositoryImpl) Update(ctx context.Context, entity interface{})
 
 	favorite, ok := entity.(*models.Favorite)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Favorite", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Favorite", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(favorite).Error; err != nil {
@@ -143,8 +143,8 @@ func (r *FavoriteRepositoryImpl) Delete(ctx context.Context, id uint) error {
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),
-		}).Error("Failed to delete favorite")
-		return errors.NewError(errors.ErrInternalServer, "Failed to delete favorite", err.Error(), http.StatusInternalServerError, map[string]interface{}{"id": id}, err)
+		}).Error(msgFailedDeleteFavorite)
+		return errors.NewError(errors.ErrInternalServer, msgFailedDeleteFavorite, err.Error(), http.StatusInternalServerError, map[string]interface{}{"id": id}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -164,8 +164,8 @@ func (r *FavoriteRepositoryImpl) GetByUserID(ctx context.Context, userID uint) (
 		r.logger.WithFields(map[string]interface{}{
 			"userID": userID,
 			"error":  err.Error(),
-		}).Error("Failed to retrieve favorites")
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve favorites", err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID}, err)
+		}).Error(msgFailedRetrieveFavorites)
+		return nil, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveFavorites, err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -191,8 +191,8 @@ func (r *FavoriteRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint,
 		r.logger.WithFields(map[string]interface{}{
 			"animeID": animeID,
 			"error":   err.Error(),
-		}).Error("Failed to count favorites")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count favorites", err.Error(), http.StatusInternalServerError, map[string]interface{}{"animeID": animeID}, err)
+		}).Error(msgFailedCountFavorites)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountFavorites, err.Error(), http.StatusInternalServerError, map[string]interface{}{"animeID": animeID}, err)
 	}
 
 	// Calculate offset
@@ -203,8 +203,8 @@ func (r *FavoriteRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint,
 		r.logger.WithFields(map[string]interface{}{
 			"animeID": animeID,
 			"error":   err.Error(),
-		}).Error("Failed to retrieve favorites")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve favorites", err.Error(), http.StatusInternalServerError, map[string]interface{}{"animeID": animeID}, err)
+		}).Error(msgFailedRetrieveFavorites)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveFavorites, err.Error(), http.StatusInternalServerError, map[string]interface{}{"animeID": animeID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -250,8 +250,8 @@ func (r *FavoriteRepositoryImpl) DeleteByUserAndAnime(ctx context.Context, userI
 			"userID":  userID,
 			"animeID": animeID,
 			"error":   err.Error(),
-		}).Error("Failed to delete favorite")
-		return errors.NewError(errors.ErrInternalServer, "Failed to delete favorite", err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, err)
+		}).Error(msgFailedDeleteFavorite)
+		return errors.NewError(errors.ErrInternalServer, msgFailedDeleteFavorite, err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{

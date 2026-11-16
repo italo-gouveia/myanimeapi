@@ -9,7 +9,7 @@ import {
 } from '../lib/api/watchlist'
 
 /** Placeholder shown when an anime has no cover_url yet */
-function CoverPlaceholder({ title }: { title: string }) {
+function CoverPlaceholder({ title }: Readonly<{ title: string }>) {
   const initials = title
     .split(' ')
     .slice(0, 2)
@@ -45,7 +45,7 @@ export function AnimeCard({
   isFavorited = false,
   watchlistStatus = null,
   isAuthenticated = false,
-}: AnimeCardProps) {
+}: Readonly<AnimeCardProps>) {
   const queryClient         = useQueryClient()
   const favFlash            = useFlash()
   const watchFlash          = useFlash()
@@ -130,22 +130,14 @@ export function AnimeCard({
             type="button"
             onClick={(e) => { e.stopPropagation(); favMutation.mutate() }}
             disabled={favMutation.isPending}
-            className={`
-              relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md
-              transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center
-              ${favFlash.flash
-                ? 'bg-green-500 text-white scale-105'
-                : isFavorited
-                  ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                  : 'text-slate-500 hover:text-red-500 hover:bg-red-50'
-              }
-            `}
+            className={(() => {
+              const flashClass = 'bg-green-500 text-white scale-105'
+              const favClass = isFavorited ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'
+              return `relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center ${favFlash.flash ? flashClass : favClass}`
+            })()}
             aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
           >
-            {favFlash.flash
-              ? favFlash.flash
-              : (isFavorited ? '♥ Saved' : '♡ Save')
-            }
+            {favFlash.flash ?? (isFavorited ? '♥ Saved' : '♡ Save')}
           </button>
 
           {/* Watchlist dropdown with inline flash */}

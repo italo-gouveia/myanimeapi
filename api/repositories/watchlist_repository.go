@@ -91,8 +91,8 @@ func (r *WatchlistRepositoryImpl) Create(ctx context.Context, entity interface{}
 
 	entry, ok := entity.(*models.WatchlistEntry)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.WatchlistEntry", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.WatchlistEntry", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(entry).Error; err != nil {
@@ -114,8 +114,8 @@ func (r *WatchlistRepositoryImpl) Update(ctx context.Context, entity interface{}
 
 	entry, ok := entity.(*models.WatchlistEntry)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.WatchlistEntry", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.WatchlistEntry", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(entry).Error; err != nil {

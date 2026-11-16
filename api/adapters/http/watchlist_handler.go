@@ -32,7 +32,7 @@ func NewWatchlistHandler(watchlistService services.WatchlistServiceInterface) *W
 func (h *WatchlistHandler) extractUserAndAnimeID(w http.ResponseWriter, r *http.Request) (uint, uint, bool) {
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return 0, 0, false
 	}
@@ -65,7 +65,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgAuthRequired, nil)
 		return
 	}

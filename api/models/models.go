@@ -279,10 +279,6 @@ type PasswordChangeRequest struct {
 //	  }
 //	}
 //
-// TODO: In the future, consider implementing a more comprehensive generic response type
-// that includes pagination metadata, error details, and other common response fields.
-// This would standardize API responses across all endpoints and make it easier to
-// add new features like pagination, filtering, and sorting
 // Error Response Example:
 //
 //	{

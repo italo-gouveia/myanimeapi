@@ -161,7 +161,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Get user ID from context
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthReview, nil)
 		return
 	}
@@ -232,7 +232,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	// Get user ID from context
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthUpdateReview, nil)
 		return
 	}
@@ -304,7 +304,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	userID := middleware.GetUserFromContext(r.Context())
 	if userID == 0 {
-		h.logger.Error("Failed to get user ID from context")
+		h.logger.Error(msgFailedGetUserID)
 		errors.WriteErrorResponse(w, http.StatusUnauthorized, errors.ErrUnauthorized, msgNotAuthenticated, msgNotAuthDeleteReview, nil)
 		return
 	}

@@ -59,8 +59,8 @@ func (r *ReviewRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]i
 	if err := r.db.WithContext(ctx).Model(&models.Review{}).Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count reviews", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedCountReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountReviews, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Calculate offset
@@ -70,8 +70,8 @@ func (r *ReviewRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]i
 	if err := r.db.WithContext(ctx).Preload("User").Preload("Anime").Offset(offset).Limit(limit).Find(&reviews).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve reviews", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveReviews, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Convert to interface slice
@@ -93,8 +93,8 @@ func (r *ReviewRepositoryImpl) Create(ctx context.Context, entity interface{}) e
 
 	review, ok := entity.(*models.Review)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Review", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Review", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Create(review).Error; err != nil {
@@ -116,8 +116,8 @@ func (r *ReviewRepositoryImpl) Update(ctx context.Context, entity interface{}) e
 
 	review, ok := entity.(*models.Review)
 	if !ok {
-		r.logger.Error("Invalid entity type")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid entity type", "Expected *models.Review", http.StatusBadRequest, nil, nil)
+		r.logger.Error(msgInvalidEntityType)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidEntityType, "Expected *models.Review", http.StatusBadRequest, nil, nil)
 	}
 
 	if err := r.db.WithContext(ctx).Save(review).Error; err != nil {
@@ -168,8 +168,8 @@ func (r *ReviewRepositoryImpl) GetByUserID(ctx context.Context, userID uint, pag
 	if err := r.db.WithContext(ctx).Model(&models.Review{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count reviews", err.Error(), http.StatusInternalServerError, map[string]interface{}{"user_id": userID}, err)
+		}).Error(msgFailedCountReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountReviews, err.Error(), http.StatusInternalServerError, map[string]interface{}{"user_id": userID}, err)
 	}
 
 	// Calculate offset
@@ -179,8 +179,8 @@ func (r *ReviewRepositoryImpl) GetByUserID(ctx context.Context, userID uint, pag
 	if err := r.db.WithContext(ctx).Preload("Anime").Where("user_id = ?", userID).Offset(offset).Limit(limit).Find(&reviews).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve reviews", err.Error(), http.StatusInternalServerError, map[string]interface{}{"user_id": userID}, err)
+		}).Error(msgFailedRetrieveReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveReviews, err.Error(), http.StatusInternalServerError, map[string]interface{}{"user_id": userID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -206,8 +206,8 @@ func (r *ReviewRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint, p
 	if err := r.db.WithContext(ctx).Model(&models.Review{}).Where("anime_id = ?", animeID).Count(&total).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to count reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to count reviews", err.Error(), http.StatusInternalServerError, map[string]interface{}{"anime_id": animeID}, err)
+		}).Error(msgFailedCountReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedCountReviews, err.Error(), http.StatusInternalServerError, map[string]interface{}{"anime_id": animeID}, err)
 	}
 
 	// Calculate offset
@@ -217,8 +217,8 @@ func (r *ReviewRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint, p
 	if err := r.db.WithContext(ctx).Preload("User").Where("anime_id = ?", animeID).Offset(offset).Limit(limit).Find(&reviews).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve reviews")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve reviews", err.Error(), http.StatusInternalServerError, map[string]interface{}{"anime_id": animeID}, err)
+		}).Error(msgFailedRetrieveReviews)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveReviews, err.Error(), http.StatusInternalServerError, map[string]interface{}{"anime_id": animeID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
