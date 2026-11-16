@@ -40,7 +40,7 @@ function setupQueries({
   animesLoading = false,
   genresData = undefined as unknown,
 } = {}) {
-  vi.mocked(useQuery).mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
+  vi.mocked(useQuery).mockImplementation(({ queryKey }: { queryKey: readonly unknown[] }) => {
     const key = Array.isArray(queryKey) ? queryKey[0] : ''
     if (key === 'genres') {
       return { data: genresData, isLoading: false, isError: false } as ReturnType<typeof useQuery>

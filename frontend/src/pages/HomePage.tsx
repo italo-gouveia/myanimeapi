@@ -315,7 +315,7 @@ export function HomePage() {
           Could not load the catalog. {(error as Error).message}
         </p>
       )}
-      {data && data.data.length === 0 && !isLoading && (
+      {data?.data.length === 0 && !isLoading && (
         <p className="text-slate-500" data-testid="catalog-empty">
           {debouncedSearch
             ? `No anime matched "${debouncedSearch}".`
