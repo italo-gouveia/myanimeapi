@@ -67,11 +67,11 @@ func serveWithRecovery(next http.Handler, lw *loggingResponseWriter, r *http.Req
 func logCompletion(logFields map[string]interface{}, statusCode int) {
 	switch {
 	case statusCode >= 500:
-		logger.WithFields(logFields).Error("Request completed")
+		logger.WithFields(logFields).Error(msgRequestCompleted)
 	case statusCode >= 400:
-		logger.WithFields(logFields).Warning("Request completed")
+		logger.WithFields(logFields).Warning(msgRequestCompleted)
 	default:
-		logger.WithFields(logFields).Info("Request completed")
+		logger.WithFields(logFields).Info(msgRequestCompleted)
 	}
 }
 

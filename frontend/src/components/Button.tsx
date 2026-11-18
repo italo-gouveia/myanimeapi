@@ -21,7 +21,7 @@ export function Button({
   type = 'button',
   children,
   ...rest
-}: ButtonProps) {
+}: Readonly<ButtonProps>) {
   return (
     <button
       type={type}

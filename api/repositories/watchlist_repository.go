@@ -68,8 +68,8 @@ func (r *WatchlistRepositoryImpl) GetAll(ctx context.Context, page, limit int) (
 	if err := r.db.WithContext(ctx).Preload("Anime").Offset(offset).Limit(limit).Find(&entries).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve watchlist entries")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve watchlist entries", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveWatchlist)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveWatchlist, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	result := make([]interface{}, len(entries))
@@ -98,8 +98,8 @@ func (r *WatchlistRepositoryImpl) Create(ctx context.Context, entity interface{}
 	if err := r.db.WithContext(ctx).Create(entry).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to create watchlist entry")
-		return errors.NewError(errors.ErrInternalServer, "Failed to create watchlist entry", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedCreateWatchlist)
+		return errors.NewError(errors.ErrInternalServer, msgFailedCreateWatchlist, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -121,8 +121,8 @@ func (r *WatchlistRepositoryImpl) Update(ctx context.Context, entity interface{}
 	if err := r.db.WithContext(ctx).Save(entry).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to update watchlist entry")
-		return errors.NewError(errors.ErrInternalServer, "Failed to update watchlist entry", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedUpdateWatchlist)
+		return errors.NewError(errors.ErrInternalServer, msgFailedUpdateWatchlist, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -141,8 +141,8 @@ func (r *WatchlistRepositoryImpl) Delete(ctx context.Context, id uint) error {
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),
-		}).Error("Failed to delete watchlist entry")
-		return errors.NewError(errors.ErrInternalServer, "Failed to delete watchlist entry", err.Error(), http.StatusInternalServerError, map[string]interface{}{"id": id}, err)
+		}).Error(msgFailedDeleteWatchlist)
+		return errors.NewError(errors.ErrInternalServer, msgFailedDeleteWatchlist, err.Error(), http.StatusInternalServerError, map[string]interface{}{"id": id}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -162,8 +162,8 @@ func (r *WatchlistRepositoryImpl) GetByUserID(ctx context.Context, userID uint) 
 		r.logger.WithFields(map[string]interface{}{
 			"userID": userID,
 			"error":  err.Error(),
-		}).Error("Failed to retrieve watchlist entries")
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve watchlist entries", err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID}, err)
+		}).Error(msgFailedRetrieveWatchlist)
+		return nil, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveWatchlist, err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
@@ -181,7 +181,7 @@ func (r *WatchlistRepositoryImpl) GetByUserAndAnime(ctx context.Context, userID,
 	}).Info("Retrieving watchlist entry by user and anime IDs")
 
 	var entry models.WatchlistEntry
-	if err := r.db.WithContext(ctx).Where("user_id = ? AND anime_id = ?", userID, animeID).First(&entry).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where(queryUserAnimeID, userID, animeID).First(&entry).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"userID":  userID,
 			"animeID": animeID,
@@ -205,7 +205,7 @@ func (r *WatchlistRepositoryImpl) UpsertByUserAndAnime(ctx context.Context, user
 	}).Info("Upserting watchlist entry")
 
 	var entry models.WatchlistEntry
-	err := r.db.WithContext(ctx).Where("user_id = ? AND anime_id = ?", userID, animeID).First(&entry).Error
+	err := r.db.WithContext(ctx).Where(queryUserAnimeID, userID, animeID).First(&entry).Error
 
 	if err != nil {
 		if err == gormerrors.ErrRecordNotFound {
@@ -220,8 +220,8 @@ func (r *WatchlistRepositoryImpl) UpsertByUserAndAnime(ctx context.Context, user
 					"userID":  userID,
 					"animeID": animeID,
 					"error":   createErr.Error(),
-				}).Error("Failed to create watchlist entry")
-				return nil, errors.NewError(errors.ErrInternalServer, "Failed to create watchlist entry", createErr.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, createErr)
+				}).Error(msgFailedCreateWatchlist)
+				return nil, errors.NewError(errors.ErrInternalServer, msgFailedCreateWatchlist, createErr.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, createErr)
 			}
 		} else {
 			r.logger.WithFields(map[string]interface{}{
@@ -238,8 +238,8 @@ func (r *WatchlistRepositoryImpl) UpsertByUserAndAnime(ctx context.Context, user
 			r.logger.WithFields(map[string]interface{}{
 				"id":    entry.ID,
 				"error": saveErr.Error(),
-			}).Error("Failed to update watchlist entry")
-			return nil, errors.NewError(errors.ErrInternalServer, "Failed to update watchlist entry", saveErr.Error(), http.StatusInternalServerError, map[string]interface{}{"id": entry.ID}, saveErr)
+			}).Error(msgFailedUpdateWatchlist)
+			return nil, errors.NewError(errors.ErrInternalServer, msgFailedUpdateWatchlist, saveErr.Error(), http.StatusInternalServerError, map[string]interface{}{"id": entry.ID}, saveErr)
 		}
 	}
 
@@ -268,13 +268,13 @@ func (r *WatchlistRepositoryImpl) DeleteByUserAndAnime(ctx context.Context, user
 		"animeID": animeID,
 	}).Info("Deleting watchlist entry by user and anime IDs")
 
-	if err := r.db.WithContext(ctx).Where("user_id = ? AND anime_id = ?", userID, animeID).Delete(&models.WatchlistEntry{}).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where(queryUserAnimeID, userID, animeID).Delete(&models.WatchlistEntry{}).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"userID":  userID,
 			"animeID": animeID,
 			"error":   err.Error(),
-		}).Error("Failed to delete watchlist entry")
-		return errors.NewError(errors.ErrInternalServer, "Failed to delete watchlist entry", err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, err)
+		}).Error(msgFailedDeleteWatchlist)
+		return errors.NewError(errors.ErrInternalServer, msgFailedDeleteWatchlist, err.Error(), http.StatusInternalServerError, map[string]interface{}{"userID": userID, "animeID": animeID}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{

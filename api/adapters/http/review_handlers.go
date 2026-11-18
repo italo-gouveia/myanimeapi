@@ -128,8 +128,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		h.logger.WithField("err", err).Warning("Invalid ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		h.logger.WithField("err", err).Warning(msgInvalidIDFormat)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": idStr,
 		})
 		return
@@ -211,8 +211,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		h.logger.WithField("err", err).Warning("Invalid ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		h.logger.WithField("err", err).Warning(msgInvalidIDFormat)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": idStr,
 		})
 		return
@@ -295,8 +295,8 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	id, err := utils.ValidateID(idStr)
 	if err != nil {
-		h.logger.WithField("err", err).Warning("Invalid ID format")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid ID format", "The provided ID is not a valid unsigned integer.", map[string]interface{}{
+		h.logger.WithField("err", err).Warning(msgInvalidIDFormat)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidIDFormat, msgInvalidIDDetail, map[string]interface{}{
 			"id": idStr,
 		})
 		return

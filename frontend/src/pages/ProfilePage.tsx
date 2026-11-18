@@ -6,7 +6,7 @@ import { exportUserData, type ExportFormat } from '../lib/api/export'
 import { useAuth } from '../lib/auth/AuthProvider'
 import { Button } from '../components/Button'
 
-function Avatar({ username }: { username: string }) {
+function Avatar({ username }: Readonly<{ username: string }>) {
   const initials = username
     .split(/[\s_-]/)
     .map((w) => w[0]?.toUpperCase() ?? '')

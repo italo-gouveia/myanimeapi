@@ -107,7 +107,7 @@ func LoadConfig() *Config {
 }
 
 // getEnv retrieves the value of an environment variable or returns a default value if the variable is not set.
-func getEnv(key string, defaultValue string) string {
+func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}

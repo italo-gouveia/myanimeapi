@@ -80,7 +80,7 @@ func (h *WatchlistHandler) GetWatchlistHandler(w http.ResponseWriter, r *http.Re
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve watchlist from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve watchlist from database", nil)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *WatchlistHandler) UpsertWatchlistHandler(w http.ResponseWriter, r *http
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to upsert watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to upsert watchlist entry", nil)
 		return
 	}
 
@@ -211,7 +211,7 @@ func (h *WatchlistHandler) RemoveWatchlistHandler(w http.ResponseWriter, r *http
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove watchlist entry", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove watchlist entry", nil)
 		return
 	}
 

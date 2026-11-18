@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAnime } from '../lib/api/animes'
@@ -32,7 +32,7 @@ function starsFromRating(rating: number): string {
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-function Avatar({ name, size = 'md' }: { name?: string; size?: 'sm' | 'md' }) {
+function Avatar({ name, size = 'md' }: Readonly<{ name?: string; size?: 'sm' | 'md' }>) {
   const sz = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'
   return (
     <div className={`${sz} rounded-full bg-brand-600 text-white flex items-center justify-center font-semibold shrink-0`}>
@@ -124,7 +124,7 @@ function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId,
 
       <div className="flex gap-2">
         <Button type="submit" disabled={!canSubmit}>
-          {mutation.isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Post review'}
+          {mutation.isPending ? 'Saving…' : (isEdit ? 'Save changes' : 'Post review')}
         </Button>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
@@ -280,13 +280,81 @@ export function AnimeDetailPage() {
 
   const startYear = formatYear(anime.start_date)
   const endYear   = formatYear(anime.end_date)
-  const yearRange = startYear ? (endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear) : null
+  let yearRange: string | null = null
+  if (startYear) {
+    yearRange = endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear
+  }
 
   const myReview     = isAuthenticated && userId
     ? anime.reviews?.find((r) => (r.userId ?? r.user_id) === userId)
     : undefined
   const otherReviews = (anime.reviews ?? []).filter((r) => (r.userId ?? r.user_id) !== userId)
   const totalReviews = (anime.reviews ?? []).length
+
+  let myReviewSection: ReactNode
+  if (!isAuthenticated) {
+    myReviewSection = (
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-lg shrink-0">✍</div>
+        <p className="text-sm text-slate-600">
+          <Link to="/login" className="text-brand-700 font-semibold hover:underline">Sign in</Link> to write a review and share your opinion.
+        </p>
+      </div>
+    )
+  } else if (myReview) {
+    if (editingReviewId === myReview.id) {
+      myReviewSection = (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-slate-600">Edit your review</p>
+          <ReviewForm
+            animeId={animeId}
+            reviewId={myReview.id}
+            initialContent={myReview.content}
+            initialRating={myReview.rating}
+            onDone={() => setEditingReviewId(null)}
+            onCancel={() => setEditingReviewId(null)}
+          />
+        </div>
+      )
+    } else {
+      myReviewSection = (
+        <ReviewCard
+          review={myReview}
+          isOwn
+          onEdit={() => setEditingReviewId(myReview.id)}
+          onDelete={() => deleteMutation.mutate(myReview.id)}
+          isDeleting={deleteMutation.isPending}
+        />
+      )
+    }
+  } else if (showForm) {
+    myReviewSection = (
+      <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-700">Write a review</p>
+          <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+        </div>
+        <ReviewForm animeId={animeId} onDone={() => setShowForm(false)} onCancel={() => setShowForm(false)} />
+      </div>
+    )
+  } else {
+    myReviewSection = (
+      <button
+        type="button"
+        onClick={() => setShowForm(true)}
+        className="flex items-center gap-3 w-full text-left p-4 rounded-xl border border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-colors group"
+        data-testid="write-review-cta"
+      >
+        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-300 group-hover:border-brand-400 flex items-center justify-center text-slate-400 group-hover:text-brand-600 transition-colors text-lg">
+          +
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-700 group-hover:text-brand-700 transition-colors">Write a review</p>
+          <p className="text-xs text-slate-400">Share your thoughts about this anime</p>
+        </div>
+      </button>
+    )
+  }
 
   return (
     <>
@@ -396,66 +464,7 @@ export function AnimeDetailPage() {
         </div>
 
         {/* My review or write form */}
-        {isAuthenticated ? (
-          myReview ? (
-            editingReviewId === myReview.id ? (
-              /* Editing */
-              <div className="flex flex-col gap-3">
-                <p className="text-sm font-semibold text-slate-600">Edit your review</p>
-                <ReviewForm
-                  animeId={animeId}
-                  reviewId={myReview.id}
-                  initialContent={myReview.content}
-                  initialRating={myReview.rating}
-                  onDone={() => setEditingReviewId(null)}
-                  onCancel={() => setEditingReviewId(null)}
-                />
-              </div>
-            ) : (
-              /* My review card */
-              <ReviewCard
-                review={myReview}
-                isOwn
-                onEdit={() => setEditingReviewId(myReview.id)}
-                onDelete={() => deleteMutation.mutate(myReview.id)}
-                isDeleting={deleteMutation.isPending}
-              />
-            )
-          ) : showForm ? (
-            /* Write form */
-            <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-700">Write a review</p>
-                <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
-              </div>
-              <ReviewForm animeId={animeId} onDone={() => setShowForm(false)} onCancel={() => setShowForm(false)} />
-            </div>
-          ) : (
-            /* CTA to open form */
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-3 w-full text-left p-4 rounded-xl border border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-colors group"
-              data-testid="write-review-cta"
-            >
-              <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-300 group-hover:border-brand-400 flex items-center justify-center text-slate-400 group-hover:text-brand-600 transition-colors text-lg">
-                +
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 group-hover:text-brand-700 transition-colors">Write a review</p>
-                <p className="text-xs text-slate-400">Share your thoughts about this anime</p>
-              </div>
-            </button>
-          )
-        ) : (
-          /* Not logged in */
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-lg shrink-0">✍</div>
-            <p className="text-sm text-slate-600">
-              <Link to="/login" className="text-brand-700 font-semibold hover:underline">Sign in</Link> to write a review and share your opinion.
-            </p>
-          </div>
-        )}
+        {myReviewSection}
 
         {/* Divider if there are other reviews */}
         {otherReviews.length > 0 && myReview && (

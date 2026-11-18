@@ -54,8 +54,8 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UserCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -96,8 +96,8 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req UserLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -177,8 +177,8 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UserUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -191,11 +191,11 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedGetUser)
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgFailedGetUser, msgInternalServerGetUser, logFields)
 		return
 	}
 
@@ -260,8 +260,8 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	var req models.ChangePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -274,11 +274,11 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedGetUser)
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgFailedGetUser, msgInternalServerGetUser, logFields)
 		return
 	}
 
@@ -311,8 +311,8 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 
 	var req models.DeactivateAccountRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -325,11 +325,11 @@ func (h *UserHandler) DeactivateAccount(w http.ResponseWriter, r *http.Request) 
 
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedGetUser)
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgFailedGetUser, msgInternalServerGetUser, logFields)
 		return
 	}
 
@@ -362,8 +362,8 @@ func (h *UserHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Reques
 
 	var req models.PasswordResetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -396,8 +396,8 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	var req models.ResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to decode request body")
-		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, "Invalid request body", "The request body is not a valid JSON object.", logFields)
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedDecodeBody)
+		errors.WriteErrorResponse(w, http.StatusBadRequest, errors.ErrInvalidInput, msgInvalidRequestBody, msgInvalidJSONBody, logFields)
 		return
 	}
 
@@ -482,11 +482,11 @@ func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetByID(r.Context(), userID)
 	if err != nil {
-		log.WithFields(logFields).WithField("error", err).Error("Failed to get user")
+		log.WithFields(logFields).WithField("error", err).Error(msgFailedGetUser)
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to get user", "An internal server error occurred while retrieving the user.", logFields)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgFailedGetUser, msgInternalServerGetUser, logFields)
 		return
 	}
 
@@ -527,21 +527,21 @@ func (h *UserHandler) ExportUserDataHandler(w http.ResponseWriter, r *http.Reque
 	gdb := h.db.WithContext(r.Context())
 
 	var favorites []models.Favorite
-	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&favorites).Error; err != nil {
+	if err := gdb.Where(queryUserID, userID).Preload("Anime").Find(&favorites).Error; err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to query favorites")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve favorites", "", logFields)
 		return
 	}
 
 	var watchlist []models.WatchlistEntry
-	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&watchlist).Error; err != nil {
+	if err := gdb.Where(queryUserID, userID).Preload("Anime").Find(&watchlist).Error; err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to query watchlist")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve watchlist", "", logFields)
 		return
 	}
 
 	var reviews []models.Review
-	if err := gdb.Where("user_id = ?", userID).Preload("Anime").Find(&reviews).Error; err != nil {
+	if err := gdb.Where(queryUserID, userID).Preload("Anime").Find(&reviews).Error; err != nil {
 		log.WithFields(logFields).WithField("error", err).Error("Failed to query reviews")
 		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Failed to retrieve reviews", "", logFields)
 		return

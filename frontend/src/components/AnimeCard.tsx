@@ -8,6 +8,16 @@ import {
   WATCHLIST_STATUSES, WATCHLIST_STATUS_LABELS, type WatchlistStatus,
 } from '../lib/api/watchlist'
 
+function favBtnClass(flash: string | null, favorited: boolean): string {
+  if (flash) return 'bg-green-500 text-white scale-105'
+  if (favorited) return 'text-red-500 bg-red-50 hover:bg-red-100'
+  return 'text-slate-500 hover:text-red-500 hover:bg-red-50'
+}
+
+function favLabel(favorited: boolean): string {
+  return favorited ? '♥ Saved' : '♡ Save'
+}
+
 /** Placeholder shown when an anime has no cover_url yet */
 function CoverPlaceholder({ title }: Readonly<{ title: string }>) {
   const initials = title
@@ -130,14 +140,10 @@ export function AnimeCard({
             type="button"
             onClick={(e) => { e.stopPropagation(); favMutation.mutate() }}
             disabled={favMutation.isPending}
-            className={(() => {
-              const flashClass = 'bg-green-500 text-white scale-105'
-              const favClass = isFavorited ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'
-              return `relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center ${favFlash.flash ? flashClass : favClass}`
-            })()}
+            className={`relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center ${favBtnClass(favFlash.flash, isFavorited)}`}
             aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
           >
-            {favFlash.flash ?? (isFavorited ? '♥ Saved' : '♡ Save')}
+            {favFlash.flash ?? favLabel(isFavorited)}
           </button>
 
           {/* Watchlist dropdown with inline flash */}

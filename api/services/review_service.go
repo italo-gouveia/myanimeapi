@@ -63,8 +63,8 @@ func (s *ReviewService) GetReviewByID(ctx context.Context, id uint) (*models.Rev
 		s.logger.WithFields(map[string]interface{}{
 			"review_id": id,
 			"error":     err.Error(),
-		}).Error("Failed to retrieve review")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "Review not found", err.Error(), http.StatusNotFound,
+		}).Error(msgFailedRetrieveReview)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgReviewNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"review_id": id,
 			},
@@ -73,8 +73,8 @@ func (s *ReviewService) GetReviewByID(ctx context.Context, id uint) (*models.Rev
 
 	review, ok := reviewInterface.(*models.Review)
 	if !ok {
-		s.logger.WithField("review_id", id).Error("Invalid review type returned from repository")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid review type returned from repository", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("review_id", id).Error(msgInvalidReviewType)
+		return nil, errors.NewError(errors.ErrInternalServer, msgInvalidReviewType, msgTypeAssertionFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"review_id": id,
 			},
@@ -157,7 +157,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, review *models.Review)
 			"anime_id": review.AnimeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found", err.Error(), http.StatusNotFound,
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": review.AnimeID,
 			},
@@ -185,7 +185,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, review *models.Review)
 			"user_id":  review.UserID,
 			"anime_id": review.AnimeID,
 			"rating":   review.Rating,
-		}).Error("Invalid rating")
+		}).Error(msgInvalidRating)
 		return errors.NewError(errors.ErrInvalidInput, "Rating must be between 1 and 10", fmt.Sprintf("Provided rating: %d", review.Rating), http.StatusBadRequest,
 			map[string]interface{}{
 				"user_id":  review.UserID,
@@ -241,8 +241,8 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 		s.logger.WithFields(map[string]interface{}{
 			"review_id": review.ID,
 			"error":     err.Error(),
-		}).Error("Failed to retrieve review")
-		return errors.NewError(errors.ErrResourceNotFound, "Review not found", err.Error(), http.StatusNotFound,
+		}).Error(msgFailedRetrieveReview)
+		return errors.NewError(errors.ErrResourceNotFound, msgReviewNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"review_id": review.ID,
 			},
@@ -252,8 +252,8 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 	// Update the review
 	existingReviewModel, ok := existingReview.(*models.Review)
 	if !ok {
-		s.logger.WithField("review_id", review.ID).Error("Invalid review type returned from repository")
-		return errors.NewError(errors.ErrInternalServer, "Invalid review type returned from repository", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("review_id", review.ID).Error(msgInvalidReviewType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidReviewType, msgTypeAssertionFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"review_id": review.ID,
 			},
@@ -268,8 +268,8 @@ func (s *ReviewService) UpdateReview(ctx context.Context, review *models.Review)
 		s.logger.WithFields(map[string]interface{}{
 			"review_id": review.ID,
 			"rating":    review.Rating,
-		}).Error("Invalid rating")
-		return errors.NewError(errors.ErrInvalidInput, "Invalid rating", "Rating must be between 1 and 10", http.StatusBadRequest,
+		}).Error(msgInvalidRating)
+		return errors.NewError(errors.ErrInvalidInput, msgInvalidRating, "Rating must be between 1 and 10", http.StatusBadRequest,
 			map[string]interface{}{
 				"review_id": review.ID,
 				"rating":    review.Rating,
@@ -315,8 +315,8 @@ func (s *ReviewService) DeleteReview(ctx context.Context, id uint) error {
 		s.logger.WithFields(map[string]interface{}{
 			"review_id": id,
 			"error":     err.Error(),
-		}).Error("Failed to retrieve review")
-		return errors.NewError(errors.ErrResourceNotFound, "Review not found", err.Error(), http.StatusNotFound,
+		}).Error(msgFailedRetrieveReview)
+		return errors.NewError(errors.ErrResourceNotFound, msgReviewNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"review_id": id,
 			},
@@ -325,8 +325,8 @@ func (s *ReviewService) DeleteReview(ctx context.Context, id uint) error {
 
 	reviewModel, ok := review.(*models.Review)
 	if !ok {
-		s.logger.WithField("review_id", id).Error("Invalid review type returned from repository")
-		return errors.NewError(errors.ErrInternalServer, "Invalid review type returned from repository", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("review_id", id).Error(msgInvalidReviewType)
+		return errors.NewError(errors.ErrInternalServer, msgInvalidReviewType, msgTypeAssertionFailed, http.StatusInternalServerError,
 			map[string]interface{}{
 				"review_id": id,
 			},
@@ -422,7 +422,7 @@ func (s *ReviewService) GetReviewsByAnimeID(ctx context.Context, animeID uint, p
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime")
-		return nil, 0, errors.NewError(errors.ErrResourceNotFound, "Anime not found", err.Error(), http.StatusNotFound,
+		return nil, 0, errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": animeID,
 			},

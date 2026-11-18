@@ -20,7 +20,7 @@ const SECTION_ICONS: Record<WatchlistStatus, string> = {
   dropped:       '🗑',
 }
 
-function WatchlistCard({ entry, onToast }: { entry: WatchlistEntry; onToast: (msg: string) => void }) {
+function WatchlistCard({ entry, onToast }: Readonly<{ entry: WatchlistEntry; onToast: (msg: string) => void }>) {
   const queryClient = useQueryClient()
 
   const moveMutation = useMutation({

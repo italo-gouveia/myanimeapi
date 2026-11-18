@@ -279,7 +279,7 @@ jobs:
 
   test-e2e-frontend:
     name: E2E tests (frontend, Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build-backend, build-frontend]
     permissions:
       contents: read

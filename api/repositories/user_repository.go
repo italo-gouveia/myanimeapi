@@ -35,13 +35,13 @@ func (r *UserRepositoryImpl) GetByID(ctx context.Context, id uint) (interface{},
 		r.logger.WithFields(map[string]interface{}{
 			"id":    id,
 			"error": err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with ID %d not found", id), http.StatusNotFound, map[string]interface{}{"id": id}, err)
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, fmt.Sprintf("User with ID %d not found", id), http.StatusNotFound, map[string]interface{}{"id": id}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
 		"id": id,
-	}).Info("Successfully retrieved user")
+	}).Info(msgSuccessRetrievedUser)
 	return &user, nil
 }
 
@@ -169,13 +169,13 @@ func (r *UserRepositoryImpl) GetByUsername(ctx context.Context, username string)
 		r.logger.WithFields(map[string]interface{}{
 			"username": username,
 			"error":    err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with username '%s' not found", username), http.StatusNotFound, map[string]interface{}{"username": username}, err)
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, fmt.Sprintf("User with username '%s' not found", username), http.StatusNotFound, map[string]interface{}{"username": username}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
 		"username": username,
-	}).Info("Successfully retrieved user")
+	}).Info(msgSuccessRetrievedUser)
 	return &user, nil
 }
 
@@ -190,12 +190,12 @@ func (r *UserRepositoryImpl) GetByEmail(ctx context.Context, email string) (*mod
 		r.logger.WithFields(map[string]interface{}{
 			"email": email,
 			"error": err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("User with email '%s' not found", email), http.StatusNotFound, map[string]interface{}{"email": email}, err)
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, fmt.Sprintf("User with email '%s' not found", email), http.StatusNotFound, map[string]interface{}{"email": email}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
 		"email": email,
-	}).Info("Successfully retrieved user")
+	}).Info(msgSuccessRetrievedUser)
 	return &user, nil
 }
