@@ -372,3 +372,110 @@ func TestAnimeService_GetReviewsForAnime_ReviewError(t *testing.T) {
 	_, _, err := svc.GetReviewsForAnime(ctx, 1, 1, 10)
 	require.Error(t, err)
 }
+
+func TestAnimeService_AddTagsToAnime_Success(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	tagRepo := &mockTagRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, tagRepo, &mockReviewRepo{})
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	tags := []models.Tag{{Name: "Action"}}
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	tagRepo.On("GetByIDs", ctx, []uint{2}).Return(tags, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(nil)
+
+	err := svc.AddTagsToAnime(ctx, 1, []uint{2})
+	require.NoError(t, err)
+}
+
+func TestAnimeService_AddTagsToAnime_AnimeNotFound(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(nil, errors.New("not found"))
+
+	err := svc.AddTagsToAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_AddTagsToAnime_TagsError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	tagRepo := &mockTagRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, tagRepo, &mockReviewRepo{})
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	tagRepo.On("GetByIDs", ctx, []uint{2}).Return(nil, errors.New("db error"))
+
+	err := svc.AddTagsToAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_AddTagsToAnime_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	tagRepo := &mockTagRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, tagRepo, &mockReviewRepo{})
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	tags := []models.Tag{{Name: "Action"}}
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	tagRepo.On("GetByIDs", ctx, []uint{2}).Return(tags, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	err := svc.AddTagsToAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_RemoveTagsFromAnime_Success(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	actionTag := models.Tag{Name: "Action"}
+	actionTag.ID = 2
+	anime := &models.Anime{Title: "Naruto", Tags: []models.Tag{actionTag}}
+	anime.ID = 1
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(nil)
+
+	err := svc.RemoveTagsFromAnime(ctx, 1, []uint{2})
+	require.NoError(t, err)
+}
+
+func TestAnimeService_RemoveTagsFromAnime_AnimeNotFound(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(nil, errors.New("not found"))
+
+	err := svc.RemoveTagsFromAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_RemoveTagsFromAnime_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	actionTag := models.Tag{Name: "Action"}
+	actionTag.ID = 2
+	anime := &models.Anime{Title: "Naruto", Tags: []models.Tag{actionTag}}
+	anime.ID = 1
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	err := svc.RemoveTagsFromAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}

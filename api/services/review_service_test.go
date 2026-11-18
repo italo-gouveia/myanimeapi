@@ -304,6 +304,36 @@ func TestReviewService_GetReviewsByAnimeID_AnimeNotFound(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestReviewService_UpdateReview_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	reviewRepo := &mockReviewRepo{}
+	svc := newReviewSvc(reviewRepo, &mockUserRepo{}, &mockAnimeRepo{}, &mockStorageSvc{})
+
+	existing := &models.Review{UserID: 1, AnimeID: 10, Rating: 8}
+	existing.ID = 1
+	reviewRepo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	reviewRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	review := &models.Review{UserID: 1, AnimeID: 10, Rating: 9}
+	review.ID = 1
+	err := svc.UpdateReview(ctx, review)
+	require.Error(t, err)
+}
+
+func TestReviewService_DeleteReview_DeleteError(t *testing.T) {
+	ctx := context.Background()
+	reviewRepo := &mockReviewRepo{}
+	svc := newReviewSvc(reviewRepo, &mockUserRepo{}, &mockAnimeRepo{}, &mockStorageSvc{})
+
+	review := &models.Review{UserID: 1, AnimeID: 10, Rating: 8}
+	review.ID = 1
+	reviewRepo.On("GetByID", ctx, uint(1)).Return(review, nil)
+	reviewRepo.On("Delete", ctx, uint(1)).Return(errors.New("db error"))
+
+	err := svc.DeleteReview(ctx, 1)
+	require.Error(t, err)
+}
+
 func TestNewReviewService(t *testing.T) {
 	svc := NewReviewService(&mockReviewRepo{}, &mockUserRepo{}, &mockAnimeRepo{}, &mockStorageSvc{}, cache.NewNoopCache())
 	require.NotNil(t, svc)

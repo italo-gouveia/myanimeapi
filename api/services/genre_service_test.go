@@ -276,6 +276,36 @@ func TestGenreService_BulkDeleteGenres_Error(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGenreService_UpdateGenre_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockGenreRepo{}
+	svc := newGenreSvc(repo)
+
+	existing := &models.Genre{Name: "Action"}
+	existing.ID = 1
+	repo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	repo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	genre := &models.Genre{Name: "Action"}
+	genre.ID = 1
+	err := svc.UpdateGenre(ctx, genre)
+	require.Error(t, err)
+}
+
+func TestGenreService_DeleteGenre_DeleteError(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockGenreRepo{}
+	svc := newGenreSvc(repo)
+
+	existing := &models.Genre{Name: "Action"}
+	existing.ID = 1
+	repo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	repo.On("Delete", ctx, uint(1)).Return(errors.New("db error"))
+
+	err := svc.DeleteGenre(ctx, 1)
+	require.Error(t, err)
+}
+
 func TestNewGenreService(t *testing.T) {
 	svc := NewGenreService(&mockGenreRepo{}, cache.NewNoopCache())
 	require.NotNil(t, svc)
