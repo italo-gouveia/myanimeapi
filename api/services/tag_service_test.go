@@ -196,3 +196,8 @@ func TestTagService_GetTagsByIDs_Error(t *testing.T) {
 	_, err := svc.GetTagsByIDs(ctx, []uint{1})
 	require.Error(t, err)
 }
+
+func TestNewTagService(t *testing.T) {
+	svc := NewTagService(&mockTagRepo{}, cache.NewNoopCache())
+	require.NotNil(t, svc)
+}

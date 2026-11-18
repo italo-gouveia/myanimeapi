@@ -280,9 +280,10 @@ export function AnimeDetailPage() {
 
   const startYear = formatYear(anime.start_date)
   const endYear   = formatYear(anime.end_date)
-  const yearRange = startYear
-    ? (endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear)
-    : null
+  let yearRange: string | null = null
+  if (startYear) {
+    yearRange = endYear && endYear !== startYear ? `${startYear} – ${endYear}` : startYear
+  }
 
   const myReview     = isAuthenticated && userId
     ? anime.reviews?.find((r) => (r.userId ?? r.user_id) === userId)

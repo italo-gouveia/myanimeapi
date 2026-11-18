@@ -303,3 +303,8 @@ func TestReviewService_GetReviewsByAnimeID_AnimeNotFound(t *testing.T) {
 	_, _, err := svc.GetReviewsByAnimeID(ctx, 10, 1, 10)
 	require.Error(t, err)
 }
+
+func TestNewReviewService(t *testing.T) {
+	svc := NewReviewService(&mockReviewRepo{}, &mockUserRepo{}, &mockAnimeRepo{}, &mockStorageSvc{}, cache.NewNoopCache())
+	require.NotNil(t, svc)
+}

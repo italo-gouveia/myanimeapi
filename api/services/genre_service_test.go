@@ -275,3 +275,8 @@ func TestGenreService_BulkDeleteGenres_Error(t *testing.T) {
 	err := svc.BulkDeleteGenres(ctx, ids)
 	require.Error(t, err)
 }
+
+func TestNewGenreService(t *testing.T) {
+	svc := NewGenreService(&mockGenreRepo{}, cache.NewNoopCache())
+	require.NotNil(t, svc)
+}

@@ -292,3 +292,83 @@ func TestAnimeService_RemoveGenresFromAnime_Success(t *testing.T) {
 	err := svc.RemoveGenresFromAnime(ctx, 1, []uint{2})
 	require.NoError(t, err)
 }
+
+func TestNewAnimeService(t *testing.T) {
+	svc := NewAnimeService(&mockAnimeRepo{}, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{}, cache.NewNoopCache())
+	require.NotNil(t, svc)
+}
+
+func TestAnimeService_UpdateAnime_TitleConflict(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	existing := &models.Anime{Title: "OldTitle"}
+	existing.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+
+	conflict := models.Anime{Title: "NewTitle"}
+	conflict.ID = 2
+	animeRepo.On("GetByTitle", ctx, "NewTitle", 1, 1).Return([]models.Anime{conflict}, int64(1), nil)
+
+	anime := &models.Anime{Title: "NewTitle"}
+	anime.ID = 1
+	err := svc.UpdateAnime(ctx, anime)
+	require.Error(t, err)
+}
+
+func TestAnimeService_UpdateAnime_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	existing := &models.Anime{Title: "Naruto"}
+	existing.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	err := svc.UpdateAnime(ctx, anime)
+	require.Error(t, err)
+}
+
+func TestAnimeService_DeleteAnime_DeleteError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	existing := &models.Anime{Title: "Naruto"}
+	existing.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	animeRepo.On("Delete", ctx, uint(1)).Return(errors.New("db error"))
+
+	err := svc.DeleteAnime(ctx, 1)
+	require.Error(t, err)
+}
+
+func TestAnimeService_GetAnimesByGenre_Error(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	animeRepo.On("GetByGenre", ctx, "Action", 1, 10).Return(nil, int64(0), errors.New("db error"))
+
+	_, _, err := svc.GetAnimesByGenre(ctx, "Action", 1, 10)
+	require.Error(t, err)
+}
+
+func TestAnimeService_GetReviewsForAnime_ReviewError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	reviewRepo := &mockReviewRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, reviewRepo)
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	reviewRepo.On("GetByAnimeID", ctx, uint(1), 1, 10).Return(nil, int64(0), errors.New("db error"))
+
+	_, _, err := svc.GetReviewsForAnime(ctx, 1, 1, 10)
+	require.Error(t, err)
+}

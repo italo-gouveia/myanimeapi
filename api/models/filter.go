@@ -91,27 +91,27 @@ func validateSortFields(sortBy, sortOrder string) error {
 	return nil
 }
 
-func validateFloatRange(min, max float64, minName, maxName string) error {
-	if min < 0 || min > 10 {
+func validateFloatRange(lo, hi float64, minName, maxName string) error {
+	if lo < 0 || lo > 10 {
 		return fmt.Errorf("%s must be between 0 and 10", minName)
 	}
-	if max < 0 || max > 10 {
+	if hi < 0 || hi > 10 {
 		return fmt.Errorf("%s must be between 0 and 10", maxName)
 	}
-	if min > 0 && max > 0 && min > max {
+	if lo > 0 && hi > 0 && lo > hi {
 		return fmt.Errorf("%s cannot be greater than %s", minName, maxName)
 	}
 	return nil
 }
 
-func validateIntRange(min, max int, minName, maxName string) error {
-	if min < 0 {
+func validateIntRange(lo, hi int, minName, maxName string) error {
+	if lo < 0 {
 		return fmt.Errorf("%s must be >= 0", minName)
 	}
-	if max < 0 {
+	if hi < 0 {
 		return fmt.Errorf("%s must be >= 0", maxName)
 	}
-	if min > 0 && max > 0 && min > max {
+	if lo > 0 && hi > 0 && lo > hi {
 		return fmt.Errorf("%s cannot be greater than %s", minName, maxName)
 	}
 	return nil

@@ -195,3 +195,8 @@ func TestFavoriteService_GetFavorites_RepoError(t *testing.T) {
 	_, err := svc.GetFavorites(ctx, 1)
 	require.Error(t, err)
 }
+
+func TestNewFavoriteService(t *testing.T) {
+	svc := NewFavoriteService(&mockFavoriteRepo{}, &mockUserRepo{}, &mockAnimeRepo{})
+	require.NotNil(t, svc)
+}
