@@ -4,12 +4,14 @@ interface TableSkeletonProps {
 }
 
 export function TableSkeleton({ rows = 5, cols }: Readonly<TableSkeletonProps>) {
+  const rowKeys = Array.from({ length: rows }, (_, i) => `skel-row-${i}`)
+  const colKeys = Array.from({ length: cols }, (_, j) => `skel-col-${j}`)
   return (
     <>
-      {Array.from({ length: rows }).map((_, i) => (
-        <tr key={`row-${i}`}>
-          {Array.from({ length: cols }).map((__, j) => (
-            <td key={`col-${j}`} className="px-4 py-3">
+      {rowKeys.map((rowKey) => (
+        <tr key={rowKey}>
+          {colKeys.map((colKey) => (
+            <td key={colKey} className="px-4 py-3">
               <div className="h-4 bg-slate-100 rounded animate-pulse" />
             </td>
           ))}

@@ -77,8 +77,8 @@ func (s *GenreService) GetGenreByID(ctx context.Context, id uint) (*models.Genre
 
 	genre, ok := genreInterface.(*models.Genre)
 	if !ok {
-		s.logger.WithField("genre_id", id).Error("Invalid genre type")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid genre type", "Type assertion failed", http.StatusInternalServerError,
+		s.logger.WithField("genre_id", id).Error(msgInvalidGenreType)
+		return nil, errors.NewError(errors.ErrInternalServer, msgInvalidGenreType, "Type assertion failed", http.StatusInternalServerError,
 			map[string]interface{}{
 				"genre_id": id,
 			},
@@ -137,7 +137,7 @@ func (s *GenreService) GetAllGenres(ctx context.Context, page, limit int) ([]mod
 			s.logger.WithFields(map[string]interface{}{
 				"index": i,
 			}).Error("Invalid genre type in slice")
-			return nil, 0, errors.NewError(errors.ErrInternalServer, "Invalid genre type", fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError,
+			return nil, 0, errors.NewError(errors.ErrInternalServer, msgInvalidGenreType, fmt.Sprintf("Type assertion failed at index %d", i), http.StatusInternalServerError,
 				map[string]interface{}{
 					"index": i,
 				},

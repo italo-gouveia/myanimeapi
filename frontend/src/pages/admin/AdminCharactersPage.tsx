@@ -24,6 +24,7 @@ function CharacterForm({ initial, onSubmit, onCancel, isPending }: Readonly<Char
   const [description, setDescription] = useState(initial?.description ?? '')
   const [voiceActor, setVoiceActor] = useState(initial?.voice_actor ?? '')
   const [imageUrl, setImageUrl] = useState(initial?.image_url ?? '')
+  const submitLabel = initial ? 'Save changes' : 'Create'
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -96,7 +97,7 @@ function CharacterForm({ initial, onSubmit, onCancel, isPending }: Readonly<Char
           disabled={isPending}
           className="px-4 py-2 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
         >
-          {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create'}
+          {isPending ? 'Saving…' : submitLabel}
         </button>
       </div>
     </form>

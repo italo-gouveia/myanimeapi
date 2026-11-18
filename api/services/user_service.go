@@ -130,8 +130,8 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
 
 	existingUser, err := s.userRepo.GetByUsername(ctx, user.Username)
 	if err == nil && existingUser != nil {
-		s.logger.WithField("username", user.Username).Warning("Username already exists")
-		return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
+		s.logger.WithField("username", user.Username).Warning(msgUsernameExists)
+		return errors.NewError(errors.ErrConflict, msgUsernameExists, fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
 			"username": user.Username,
 			"email":    user.Email,
 		}, nil)
@@ -139,8 +139,8 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
 
 	existingUser, err = s.userRepo.GetByEmail(ctx, user.Email)
 	if err == nil && existingUser != nil {
-		s.logger.WithField("email", user.Email).Warning("Email already exists")
-		return errors.NewError(errors.ErrConflict, "Email already exists", fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
+		s.logger.WithField("email", user.Email).Warning(msgEmailExists)
+		return errors.NewError(errors.ErrConflict, msgEmailExists, fmt.Sprintf("Email '%s' is already registered", user.Email), http.StatusConflict, map[string]interface{}{
 			"username": user.Username,
 			"email":    user.Email,
 		}, nil)
@@ -198,8 +198,8 @@ func (s *UserService) DeleteUser(ctx context.Context, id uint) error {
 		s.logger.WithFields(map[string]interface{}{
 			"user_id": id,
 			"error":   err.Error(),
-		}).Error("Failed to retrieve user")
-		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+		}).Error(msgFailedRetrieveUser)
+		return errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, err.Error(), http.StatusNotFound, map[string]interface{}{
 			"user_id": id,
 		}, err)
 	}
@@ -227,21 +227,21 @@ func (s *UserService) GetByID(ctx context.Context, id uint) (*models.User, error
 		s.logger.WithFields(map[string]interface{}{
 			"user_id": id,
 			"error":   err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, err.Error(), http.StatusNotFound, map[string]interface{}{
 			"user_id": id,
 		}, err)
 	}
 
 	user, ok := userInterface.(*models.User)
 	if !ok {
-		s.logger.WithField("user_id", id).Error("Invalid user type returned from repository")
-		return nil, errors.NewError(errors.ErrInternalServer, "Invalid user type returned from repository", "Type assertion failed", http.StatusInternalServerError, map[string]interface{}{
+		s.logger.WithField("user_id", id).Error(msgInvalidUserType)
+		return nil, errors.NewError(errors.ErrInternalServer, msgInvalidUserType, msgTypeAssertionFailed, http.StatusInternalServerError, map[string]interface{}{
 			"user_id": id,
 		}, nil)
 	}
 
-	s.logger.WithField("user_id", id).Info("Successfully retrieved user")
+	s.logger.WithField("user_id", id).Info(msgSuccessRetrievedUser)
 	return user, nil
 }
 
@@ -253,13 +253,13 @@ func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.Use
 		s.logger.WithFields(map[string]interface{}{
 			"email": email,
 			"error": err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with email '%s'", email), http.StatusNotFound, map[string]interface{}{
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, fmt.Sprintf("No user found with email '%s'", email), http.StatusNotFound, map[string]interface{}{
 			"email": email,
 		}, err)
 	}
 
-	s.logger.WithField("email", email).Info("Successfully retrieved user")
+	s.logger.WithField("email", email).Info(msgSuccessRetrievedUser)
 	return user, nil
 }
 
@@ -271,13 +271,13 @@ func (s *UserService) GetByUsername(ctx context.Context, username string) (*mode
 		s.logger.WithFields(map[string]interface{}{
 			"username": username,
 			"error":    err.Error(),
-		}).Error("Failed to retrieve user")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "User not found", fmt.Sprintf("No user found with username '%s'", username), http.StatusNotFound, map[string]interface{}{
+		}).Error(msgFailedRetrieveUser)
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, fmt.Sprintf("No user found with username '%s'", username), http.StatusNotFound, map[string]interface{}{
 			"username": username,
 		}, err)
 	}
 
-	s.logger.WithField("username", username).Info("Successfully retrieved user")
+	s.logger.WithField("username", username).Info(msgSuccessRetrievedUser)
 	return user, nil
 }
 
@@ -290,7 +290,7 @@ func (s *UserService) ValidateUser(ctx context.Context, username, password strin
 		s.logger.WithFields(map[string]interface{}{
 			"username": username,
 			"error":    err.Error(),
-		}).Error("Failed to retrieve user")
+		}).Error(msgFailedRetrieveUser)
 		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid credentials", "Invalid username or password", http.StatusUnauthorized, map[string]interface{}{
 			"username": username,
 		}, err)
@@ -301,8 +301,8 @@ func (s *UserService) ValidateUser(ctx context.Context, username, password strin
 		s.logger.WithFields(map[string]interface{}{
 			"username": username,
 			"error":    err.Error(),
-		}).Error("Invalid password")
-		return nil, errors.NewError(errors.ErrUnauthorized, "Invalid password", "The provided password is incorrect", http.StatusUnauthorized, map[string]interface{}{
+		}).Error(msgInvalidPassword)
+		return nil, errors.NewError(errors.ErrUnauthorized, msgInvalidPassword, "The provided password is incorrect", http.StatusUnauthorized, map[string]interface{}{
 			"username": username,
 		}, err)
 	}
@@ -326,8 +326,8 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 		s.logger.WithFields(map[string]interface{}{
 			"user_id": user.ID,
 			"error":   err.Error(),
-		}).Error("Failed to retrieve user")
-		return errors.NewError(errors.ErrResourceNotFound, "User not found", err.Error(), http.StatusNotFound, map[string]interface{}{
+		}).Error(msgFailedRetrieveUser)
+		return errors.NewError(errors.ErrResourceNotFound, msgUserNotFound, err.Error(), http.StatusNotFound, map[string]interface{}{
 			"user_id": user.ID,
 		}, err)
 	}
@@ -336,8 +336,8 @@ func (s *UserService) UpdateUser(ctx context.Context, user *models.User) error {
 	if user.Username != existingUser.(*models.User).Username {
 		existingUser, err = s.userRepo.GetByUsername(ctx, user.Username)
 		if err == nil {
-			s.logger.WithField("username", user.Username).Warning("Username already exists")
-			return errors.NewError(errors.ErrConflict, "Username already exists", fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
+			s.logger.WithField("username", user.Username).Warning(msgUsernameExists)
+			return errors.NewError(errors.ErrConflict, msgUsernameExists, fmt.Sprintf("Username '%s' is already taken", user.Username), http.StatusConflict, map[string]interface{}{
 				"username": user.Username,
 				"user_id":  user.ID,
 			}, nil)

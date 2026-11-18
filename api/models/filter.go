@@ -61,58 +61,77 @@ type AnimeFilter struct {
 	SortOrder string
 }
 
-// Validate returns a descriptive error if any field contains an invalid value.
-func (f AnimeFilter) Validate() error {
-	if f.Status != "" {
-		if _, ok := AllowedStatuses[f.Status]; !ok {
-			return fmt.Errorf("invalid status %q: allowed values are Airing, Completed, Upcoming", f.Status)
+func validateStatuses(status string, statuses []string) error {
+	if status != "" {
+		if _, ok := AllowedStatuses[status]; !ok {
+			return fmt.Errorf("invalid status %q: allowed values are Airing, Completed, Upcoming", status)
 		}
 	}
-	for _, s := range f.Statuses {
+	for _, s := range statuses {
 		if _, ok := AllowedStatuses[s]; !ok {
 			return fmt.Errorf("invalid status %q in statuses: allowed values are Airing, Completed, Upcoming", s)
 		}
 	}
-	if f.SortBy != "" {
-		if _, ok := AllowedSortFields[f.SortBy]; !ok {
+	return nil
+}
+
+func validateSortFields(sortBy, sortOrder string) error {
+	if sortBy != "" {
+		if _, ok := AllowedSortFields[sortBy]; !ok {
 			keys := make([]string, 0, len(AllowedSortFields))
 			for k := range AllowedSortFields {
 				keys = append(keys, k)
 			}
-			return fmt.Errorf("invalid sort_by %q: allowed values are %s", f.SortBy, strings.Join(keys, ", "))
+			return fmt.Errorf("invalid sort_by %q: allowed values are %s", sortBy, strings.Join(keys, ", "))
 		}
 	}
-	if f.SortOrder != "" && f.SortOrder != "asc" && f.SortOrder != "desc" {
-		return fmt.Errorf("invalid order %q: allowed values are asc, desc", f.SortOrder)
-	}
-	if f.RatingMin < 0 || f.RatingMin > 10 {
-		return fmt.Errorf("rating_min must be between 0 and 10")
-	}
-	if f.RatingMax < 0 || f.RatingMax > 10 {
-		return fmt.Errorf("rating_max must be between 0 and 10")
-	}
-	if f.RatingMin > 0 && f.RatingMax > 0 && f.RatingMin > f.RatingMax {
-		return fmt.Errorf("rating_min cannot be greater than rating_max")
-	}
-	if f.EpisodesMin < 0 {
-		return fmt.Errorf("episodes_min must be >= 0")
-	}
-	if f.EpisodesMax < 0 {
-		return fmt.Errorf("episodes_max must be >= 0")
-	}
-	if f.EpisodesMin > 0 && f.EpisodesMax > 0 && f.EpisodesMin > f.EpisodesMax {
-		return fmt.Errorf("episodes_min cannot be greater than episodes_max")
-	}
-	if f.YearFrom < 0 {
-		return fmt.Errorf("year_from must be >= 0")
-	}
-	if f.YearTo < 0 {
-		return fmt.Errorf("year_to must be >= 0")
-	}
-	if f.YearFrom > 0 && f.YearTo > 0 && f.YearFrom > f.YearTo {
-		return fmt.Errorf("year_from cannot be greater than year_to")
+	if sortOrder != "" && sortOrder != "asc" && sortOrder != "desc" {
+		return fmt.Errorf("invalid order %q: allowed values are asc, desc", sortOrder)
 	}
 	return nil
+}
+
+func validateFloatRange(min, max float64, minName, maxName string) error {
+	if min < 0 || min > 10 {
+		return fmt.Errorf("%s must be between 0 and 10", minName)
+	}
+	if max < 0 || max > 10 {
+		return fmt.Errorf("%s must be between 0 and 10", maxName)
+	}
+	if min > 0 && max > 0 && min > max {
+		return fmt.Errorf("%s cannot be greater than %s", minName, maxName)
+	}
+	return nil
+}
+
+func validateIntRange(min, max int, minName, maxName string) error {
+	if min < 0 {
+		return fmt.Errorf("%s must be >= 0", minName)
+	}
+	if max < 0 {
+		return fmt.Errorf("%s must be >= 0", maxName)
+	}
+	if min > 0 && max > 0 && min > max {
+		return fmt.Errorf("%s cannot be greater than %s", minName, maxName)
+	}
+	return nil
+}
+
+// Validate returns a descriptive error if any field contains an invalid value.
+func (f AnimeFilter) Validate() error {
+	if err := validateStatuses(f.Status, f.Statuses); err != nil {
+		return err
+	}
+	if err := validateSortFields(f.SortBy, f.SortOrder); err != nil {
+		return err
+	}
+	if err := validateFloatRange(f.RatingMin, f.RatingMax, "rating_min", "rating_max"); err != nil {
+		return err
+	}
+	if err := validateIntRange(f.EpisodesMin, f.EpisodesMax, "episodes_min", "episodes_max"); err != nil {
+		return err
+	}
+	return validateIntRange(f.YearFrom, f.YearTo, "year_from", "year_to")
 }
 
 // OrderClause returns a safe SQL ORDER BY clause derived from the filter.

@@ -191,7 +191,7 @@ func (e *NotFoundError) Error() string {
 //
 // Returns:
 //   - *NotFoundError: A pointer to the newly created NotFoundError.
-func NewNotFoundError(resource string, id string, code string) *NotFoundError {
+func NewNotFoundError(resource, id, code string) *NotFoundError {
 	return &NotFoundError{
 		Resource: resource,
 		ID:       id,

@@ -83,7 +83,7 @@ func (r *FavoriteRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([
 	r.logger.WithFields(map[string]interface{}{
 		"count": len(favorites),
 		"total": total,
-	}).Info("Successfully retrieved favorites")
+	}).Info(msgSuccessRetrievedFavorites)
 	return result, total, nil
 }
 
@@ -171,7 +171,7 @@ func (r *FavoriteRepositoryImpl) GetByUserID(ctx context.Context, userID uint) (
 	r.logger.WithFields(map[string]interface{}{
 		"userID": userID,
 		"count":  len(favorites),
-	}).Info("Successfully retrieved favorites")
+	}).Info(msgSuccessRetrievedFavorites)
 	return favorites, nil
 }
 
@@ -211,7 +211,7 @@ func (r *FavoriteRepositoryImpl) GetByAnimeID(ctx context.Context, animeID uint,
 		"animeID": animeID,
 		"count":   len(favorites),
 		"total":   total,
-	}).Info("Successfully retrieved favorites")
+	}).Info(msgSuccessRetrievedFavorites)
 	return favorites, total, nil
 }
 

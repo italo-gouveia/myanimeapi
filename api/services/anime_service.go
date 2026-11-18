@@ -88,7 +88,7 @@ func (s *AnimeService) GetAnimeByID(ctx context.Context, id uint) (*models.Anime
 			"anime_id": id,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", id), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": id,
@@ -233,7 +233,7 @@ func (s *AnimeService) UpdateAnime(ctx context.Context, anime *models.Anime) err
 			"anime_id": anime.ID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for update")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", anime.ID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": anime.ID,
@@ -295,7 +295,7 @@ func (s *AnimeService) DeleteAnime(ctx context.Context, id uint) error {
 			"anime_id": id,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for deletion")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", id), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": id,
@@ -458,7 +458,7 @@ func (s *AnimeService) GetReviewsForAnime(ctx context.Context, animeID uint, pag
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for reviews")
-		return nil, 0, errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return nil, 0, errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", animeID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": animeID,
@@ -509,7 +509,7 @@ func (s *AnimeService) AddGenresToAnime(ctx context.Context, animeID uint, genre
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for adding genres")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", animeID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id":  animeID,
@@ -586,7 +586,7 @@ func (s *AnimeService) RemoveGenresFromAnime(ctx context.Context, animeID uint, 
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for removing genres")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", animeID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id":  animeID,
@@ -662,7 +662,7 @@ func (s *AnimeService) AddTagsToAnime(ctx context.Context, animeID uint, tagIDs 
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for adding tags")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", animeID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": animeID,
@@ -739,7 +739,7 @@ func (s *AnimeService) RemoveTagsFromAnime(ctx context.Context, animeID uint, ta
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to retrieve anime for removing tags")
-		return errors.NewError(errors.ErrResourceNotFound, "Anime not found",
+		return errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound,
 			fmt.Sprintf("Anime with ID %d not found", animeID), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": animeID,

@@ -73,7 +73,7 @@ func (h *FavoriteHandler) AddFavoriteHandler(w http.ResponseWriter, r *http.Requ
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to add favorite to database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to add favorite to database", nil)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *FavoriteHandler) RemoveFavoriteHandler(w http.ResponseWriter, r *http.R
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to remove favorite from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to remove favorite from database", nil)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *FavoriteHandler) GetFavoritesHandler(w http.ResponseWriter, r *http.Req
 		if writeAppError(w, err) {
 			return
 		}
-		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, "Database error", "Failed to retrieve favorites from database", nil)
+		errors.WriteErrorResponse(w, http.StatusInternalServerError, errors.ErrInternalServer, msgDatabaseError, "Failed to retrieve favorites from database", nil)
 		return
 	}
 

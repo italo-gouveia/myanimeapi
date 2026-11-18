@@ -82,7 +82,7 @@ func (s *FavoriteService) AddFavorite(ctx context.Context, userID, animeID uint)
 			"anime_id": animeID,
 			"error":    err.Error(),
 		}).Error("Failed to find anime")
-		return nil, errors.NewError(errors.ErrResourceNotFound, "Anime not found", err.Error(), http.StatusNotFound,
+		return nil, errors.NewError(errors.ErrResourceNotFound, msgAnimeNotFound, err.Error(), http.StatusNotFound,
 			map[string]interface{}{
 				"anime_id": animeID,
 			},

@@ -82,8 +82,7 @@ function GenreDropdown({ genres, selected, onChange }: Readonly<GenreDropdownPro
       {open && (
         <ul
           className="absolute z-20 mt-1 w-52 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg py-1 list-none p-0"
-          role="listbox"
-          aria-multiselectable="true"
+          role="list"
         >
           {selected.length > 0 && (
             <button

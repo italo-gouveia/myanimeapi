@@ -78,8 +78,8 @@ func (r *TagRepositoryImpl) GetAll(ctx context.Context, page, limit int) ([]inte
 	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&tags).Error; err != nil {
 		r.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
-		}).Error("Failed to retrieve tags")
-		return nil, 0, errors.NewError(errors.ErrInternalServer, "Failed to retrieve tags", err.Error(), http.StatusInternalServerError, nil, err)
+		}).Error(msgFailedRetrieveTags)
+		return nil, 0, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveTags, err.Error(), http.StatusInternalServerError, nil, err)
 	}
 
 	// Convert to interface slice
@@ -172,8 +172,8 @@ func (r *TagRepositoryImpl) GetByIDs(ctx context.Context, ids []uint) ([]models.
 		r.logger.WithFields(map[string]interface{}{
 			"ids":   ids,
 			"error": err.Error(),
-		}).Error("Failed to retrieve tags")
-		return nil, errors.NewError(errors.ErrInternalServer, "Failed to retrieve tags", err.Error(), http.StatusInternalServerError, map[string]interface{}{"ids": ids}, err)
+		}).Error(msgFailedRetrieveTags)
+		return nil, errors.NewError(errors.ErrInternalServer, msgFailedRetrieveTags, err.Error(), http.StatusInternalServerError, map[string]interface{}{"ids": ids}, err)
 	}
 
 	r.logger.WithFields(map[string]interface{}{
