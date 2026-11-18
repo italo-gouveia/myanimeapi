@@ -325,3 +325,111 @@ func TestUserService_DeactivateAccount_WrongPassword(t *testing.T) {
 	err = svc.DeactivateAccount(ctx, 1, "wrongpassword")
 	require.Error(t, err)
 }
+
+func TestNewUserService(t *testing.T) {
+	repo := &mockUserRepo{}
+	svc := NewUserService(repo)
+	require.NotNil(t, svc)
+}
+
+func TestUserService_GetByEmail_Error(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	repo.On("GetByEmail", ctx, "missing@test.com").Return(nil, errors.New("not found"))
+
+	_, err := svc.GetByEmail(ctx, "missing@test.com")
+	require.Error(t, err)
+}
+
+func TestUserService_GetByUsername_Error(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	repo.On("GetByUsername", ctx, "missing").Return(nil, errors.New("not found"))
+
+	_, err := svc.GetByUsername(ctx, "missing")
+	require.Error(t, err)
+}
+
+func TestUserService_UpdateUser_UsernameConflict(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	existing := &models.User{Username: "oldname", Email: "test@test.com"}
+	existing.ID = 1
+	repo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+
+	conflict := &models.User{Username: "takenname"}
+	repo.On("GetByUsername", ctx, "takenname").Return(conflict, nil)
+
+	user := &models.User{Username: "takenname", Email: "test@test.com"}
+	user.ID = 1
+	err := svc.UpdateUser(ctx, user)
+	require.Error(t, err)
+}
+
+func TestUserService_UpdateUser_EmailConflict(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	existing := &models.User{Username: "testuser", Email: "old@test.com"}
+	existing.ID = 1
+	repo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+
+	conflict := &models.User{Email: "taken@test.com"}
+	repo.On("GetByEmail", ctx, "taken@test.com").Return(conflict, nil)
+
+	user := &models.User{Username: "testuser", Email: "taken@test.com"}
+	user.ID = 1
+	err := svc.UpdateUser(ctx, user)
+	require.Error(t, err)
+}
+
+func TestUserService_UpdateUser_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	existing := &models.User{Username: "testuser", Email: "test@test.com"}
+	existing.ID = 1
+	repo.On("GetByID", ctx, uint(1)).Return(existing, nil)
+	repo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	user := &models.User{Username: "testuser", Email: "test@test.com"}
+	user.ID = 1
+	err := svc.UpdateUser(ctx, user)
+	require.Error(t, err)
+}
+
+func TestUserService_CreateUser_CreateError(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	repo.On("GetByUsername", ctx, "newuser").Return(nil, errors.New("not found"))
+	repo.On("GetByEmail", ctx, "new@test.com").Return(nil, errors.New("not found"))
+	repo.On("Create", ctx, mock.Anything).Return(errors.New("db error"))
+
+	user := &models.User{Username: "newuser", Email: "new@test.com", Password: "password123"}
+	err := svc.CreateUser(ctx, user)
+	require.Error(t, err)
+}
+
+func TestUserService_CreateUser_DuplicateOnInsert(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockUserRepo{}
+	svc := newUserSvc(repo)
+
+	repo.On("GetByUsername", ctx, "newuser").Return(nil, errors.New("not found"))
+	repo.On("GetByEmail", ctx, "new@test.com").Return(nil, errors.New("not found"))
+	repo.On("Create", ctx, mock.Anything).Return(errors.New("unique constraint violation"))
+
+	user := &models.User{Username: "newuser", Email: "new@test.com", Password: "password123"}
+	err := svc.CreateUser(ctx, user)
+	require.Error(t, err)
+}

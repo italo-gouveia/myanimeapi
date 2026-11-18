@@ -130,3 +130,9 @@ func TestWatchlistService_GetWatchlistEntry_NotFound(t *testing.T) {
 	_, err := svc.GetWatchlistEntry(ctx, 1, 10)
 	require.Error(t, err)
 }
+
+func TestNewWatchlistService(t *testing.T) {
+	repo := &mockWatchlistRepo{}
+	svc := NewWatchlistService(repo)
+	require.NotNil(t, svc)
+}
