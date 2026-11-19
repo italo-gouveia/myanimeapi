@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAnime } from '../lib/api/animes'
@@ -100,6 +100,7 @@ function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId,
 
   const charLeft = 500 - content.length
   const canSubmit = rating > 0 && content.trim().length > 0 && !mutation.isPending
+  const submitLabel = isEdit ? 'Save changes' : 'Post review'
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }} className="flex flex-col gap-4">
@@ -124,7 +125,7 @@ function ReviewForm({ animeId, initialContent = '', initialRating = 0, reviewId,
 
       <div className="flex gap-2">
         <Button type="submit" disabled={!canSubmit}>
-          {mutation.isPending ? 'Saving…' : (isEdit ? 'Save changes' : 'Post review')}
+          {mutation.isPending ? 'Saving…' : submitLabel}
         </Button>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
@@ -197,6 +198,85 @@ function ReviewCard({ review, isOwn, onEdit, onDelete, isDeleting }: Readonly<Re
       {/* Content */}
       <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{review.content}</p>
     </div>
+  )
+}
+
+// ── My-review section ─────────────────────────────────────────────────────────
+interface MyReviewSectionProps {
+  isAuthenticated: boolean
+  myReview?: Review
+  animeId: number
+  editingReviewId: number | null
+  setEditingReviewId: (id: number | null) => void
+  showForm: boolean
+  setShowForm: (show: boolean) => void
+  onDelete: (id: number) => void
+  isDeleting: boolean
+}
+
+function MyReviewSection({ isAuthenticated, myReview, animeId, editingReviewId, setEditingReviewId, showForm, setShowForm, onDelete, isDeleting }: Readonly<MyReviewSectionProps>) {
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-lg shrink-0">✍</div>
+        <p className="text-sm text-slate-600">
+          <Link to="/login" className="text-brand-700 font-semibold hover:underline">Sign in</Link> to write a review and share your opinion.
+        </p>
+      </div>
+    )
+  }
+  if (myReview) {
+    if (editingReviewId === myReview.id) {
+      return (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-slate-600">Edit your review</p>
+          <ReviewForm
+            animeId={animeId}
+            reviewId={myReview.id}
+            initialContent={myReview.content}
+            initialRating={myReview.rating}
+            onDone={() => setEditingReviewId(null)}
+            onCancel={() => setEditingReviewId(null)}
+          />
+        </div>
+      )
+    }
+    return (
+      <ReviewCard
+        review={myReview}
+        isOwn
+        onEdit={() => setEditingReviewId(myReview.id)}
+        onDelete={() => onDelete(myReview.id)}
+        isDeleting={isDeleting}
+      />
+    )
+  }
+  if (showForm) {
+    return (
+      <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-700">Write a review</p>
+          <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+        </div>
+        <ReviewForm animeId={animeId} onDone={() => setShowForm(false)} onCancel={() => setShowForm(false)} />
+      </div>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setShowForm(true)}
+      className="flex items-center gap-3 w-full text-left p-4 rounded-xl border border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-colors group"
+      data-testid="write-review-cta"
+    >
+      <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-300 group-hover:border-brand-400 flex items-center justify-center text-slate-400 group-hover:text-brand-600 transition-colors text-lg">
+        +
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-slate-700 group-hover:text-brand-700 transition-colors">Write a review</p>
+        <p className="text-xs text-slate-400">Share your thoughts about this anime</p>
+      </div>
+    </button>
   )
 }
 
@@ -291,70 +371,19 @@ export function AnimeDetailPage() {
   const otherReviews = (anime.reviews ?? []).filter((r) => (r.userId ?? r.user_id) !== userId)
   const totalReviews = (anime.reviews ?? []).length
 
-  let myReviewSection: ReactNode
-  if (!isAuthenticated) {
-    myReviewSection = (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-lg shrink-0">✍</div>
-        <p className="text-sm text-slate-600">
-          <Link to="/login" className="text-brand-700 font-semibold hover:underline">Sign in</Link> to write a review and share your opinion.
-        </p>
-      </div>
-    )
-  } else if (myReview) {
-    if (editingReviewId === myReview.id) {
-      myReviewSection = (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold text-slate-600">Edit your review</p>
-          <ReviewForm
-            animeId={animeId}
-            reviewId={myReview.id}
-            initialContent={myReview.content}
-            initialRating={myReview.rating}
-            onDone={() => setEditingReviewId(null)}
-            onCancel={() => setEditingReviewId(null)}
-          />
-        </div>
-      )
-    } else {
-      myReviewSection = (
-        <ReviewCard
-          review={myReview}
-          isOwn
-          onEdit={() => setEditingReviewId(myReview.id)}
-          onDelete={() => deleteMutation.mutate(myReview.id)}
-          isDeleting={deleteMutation.isPending}
-        />
-      )
-    }
-  } else if (showForm) {
-    myReviewSection = (
-      <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-700">Write a review</p>
-          <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
-        </div>
-        <ReviewForm animeId={animeId} onDone={() => setShowForm(false)} onCancel={() => setShowForm(false)} />
-      </div>
-    )
-  } else {
-    myReviewSection = (
-      <button
-        type="button"
-        onClick={() => setShowForm(true)}
-        className="flex items-center gap-3 w-full text-left p-4 rounded-xl border border-dashed border-slate-300 hover:border-brand-400 hover:bg-brand-50 transition-colors group"
-        data-testid="write-review-cta"
-      >
-        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-300 group-hover:border-brand-400 flex items-center justify-center text-slate-400 group-hover:text-brand-600 transition-colors text-lg">
-          +
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-700 group-hover:text-brand-700 transition-colors">Write a review</p>
-          <p className="text-xs text-slate-400">Share your thoughts about this anime</p>
-        </div>
-      </button>
-    )
-  }
+  const myReviewSection = (
+    <MyReviewSection
+      isAuthenticated={isAuthenticated}
+      myReview={myReview}
+      animeId={animeId}
+      editingReviewId={editingReviewId}
+      setEditingReviewId={setEditingReviewId}
+      showForm={showForm}
+      setShowForm={setShowForm}
+      onDelete={(id) => deleteMutation.mutate(id)}
+      isDeleting={deleteMutation.isPending}
+    />
+  )
 
   return (
     <>
