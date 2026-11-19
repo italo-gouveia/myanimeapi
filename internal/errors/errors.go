@@ -226,7 +226,7 @@ func (e *ValidationError) Error() string {
 //
 // Returns:
 //   - *ValidationError: A pointer to the newly created ValidationError.
-func NewValidationError(field string, message string, code string) *ValidationError {
+func NewValidationError(field, message, code string) *ValidationError {
 	return &ValidationError{
 		Errors: map[string]string{field: message},
 		Code:   code,

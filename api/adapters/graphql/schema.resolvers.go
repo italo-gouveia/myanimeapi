@@ -15,7 +15,7 @@ import (
 )
 
 // Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, username string, email string, password string) (*model.User, error) {
+func (r *mutationResolver) Register(ctx context.Context, username, email, password string) (*model.User, error) {
 	user := &models.User{
 		Username: username,
 		Email:    email,
@@ -35,7 +35,7 @@ func (r *mutationResolver) Register(ctx context.Context, username string, email 
 }
 
 // Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.AuthPayload, error) {
+func (r *mutationResolver) Login(ctx context.Context, username, password string) (*model.AuthPayload, error) {
 	creds := &models.UserCredentials{
 		Username: username,
 		Password: password,
@@ -82,7 +82,7 @@ func (r *mutationResolver) DeleteAnime(ctx context.Context, id string) (bool, er
 }
 
 // CreateCharacter is the resolver for the createCharacter field.
-func (r *mutationResolver) CreateCharacter(ctx context.Context, name string, description *string, voiceActor *string, imageURL *string) (*model.Character, error) {
+func (r *mutationResolver) CreateCharacter(ctx context.Context, name string, description, voiceActor, imageURL *string) (*model.Character, error) {
 	character := &models.Character{Name: name}
 	if description != nil {
 		character.Description = *description
@@ -98,7 +98,7 @@ func (r *mutationResolver) CreateCharacter(ctx context.Context, name string, des
 }
 
 // UpdateCharacter is the resolver for the updateCharacter field.
-func (r *mutationResolver) UpdateCharacter(ctx context.Context, id string, name *string, description *string, voiceActor *string, imageURL *string) (*model.Character, error) {
+func (r *mutationResolver) UpdateCharacter(ctx context.Context, id string, name, description, voiceActor, imageURL *string) (*model.Character, error) {
 	uid, err := parseID(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid character ID: %s", id)
@@ -199,7 +199,7 @@ func gqlFilterToModel(filter *model.AnimeFilterInput) models.AnimeFilter {
 }
 
 // Animes is the resolver for the animes field.
-func (r *queryResolver) Animes(ctx context.Context, page *int, limit *int, filter *model.AnimeFilterInput) (*model.AnimeList, error) {
+func (r *queryResolver) Animes(ctx context.Context, page, limit *int, filter *model.AnimeFilterInput) (*model.AnimeList, error) {
 	p, l := paginationArgs(page, limit)
 	f := gqlFilterToModel(filter)
 	if err := f.Validate(); err != nil {
@@ -220,7 +220,7 @@ func (r *queryResolver) Animes(ctx context.Context, page *int, limit *int, filte
 }
 
 // AnimesByTitle is the resolver for the animesByTitle field.
-func (r *queryResolver) AnimesByTitle(ctx context.Context, title string, page *int, limit *int, sortBy *string, sortOrder *string) (*model.AnimeList, error) {
+func (r *queryResolver) AnimesByTitle(ctx context.Context, title string, page, limit *int, sortBy, sortOrder *string) (*model.AnimeList, error) {
 	p, l := paginationArgs(page, limit)
 	f := models.AnimeFilter{Title: title}
 	if sortBy != nil {
@@ -260,7 +260,7 @@ func (r *queryResolver) Genre(ctx context.Context, id string) (*model.Genre, err
 }
 
 // Genres is the resolver for the genres field.
-func (r *queryResolver) Genres(ctx context.Context, page *int, limit *int) ([]*model.Genre, error) {
+func (r *queryResolver) Genres(ctx context.Context, page, limit *int) ([]*model.Genre, error) {
 	p, l := paginationArgs(page, limit)
 	genres, _, err := r.GenreService.GetAllGenres(ctx, p, l)
 	if err != nil {
@@ -287,7 +287,7 @@ func (r *queryResolver) Character(ctx context.Context, id string) (*model.Charac
 }
 
 // Characters is the resolver for the characters field.
-func (r *queryResolver) Characters(ctx context.Context, page *int, limit *int) (*model.CharacterList, error) {
+func (r *queryResolver) Characters(ctx context.Context, page, limit *int) (*model.CharacterList, error) {
 	p, l := paginationArgs(page, limit)
 	characters, total, err := r.CharacterService.GetAllCharacters(ctx, p, l)
 	if err != nil {
@@ -304,7 +304,7 @@ func (r *queryResolver) Characters(ctx context.Context, page *int, limit *int) (
 }
 
 // CharactersByName is the resolver for the charactersByName field.
-func (r *queryResolver) CharactersByName(ctx context.Context, name string, page *int, limit *int) (*model.CharacterList, error) {
+func (r *queryResolver) CharactersByName(ctx context.Context, name string, page, limit *int) (*model.CharacterList, error) {
 	p, l := paginationArgs(page, limit)
 	characters, total, err := r.CharacterService.GetCharactersByName(ctx, name, p, l)
 	if err != nil {
@@ -321,7 +321,7 @@ func (r *queryResolver) CharactersByName(ctx context.Context, name string, page 
 }
 
 // CharactersByAnime is the resolver for the charactersByAnime field.
-func (r *queryResolver) CharactersByAnime(ctx context.Context, animeID string, page *int, limit *int) (*model.CharacterList, error) {
+func (r *queryResolver) CharactersByAnime(ctx context.Context, animeID string, page, limit *int) (*model.CharacterList, error) {
 	uid, err := parseID(animeID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid anime ID: %s", animeID)
