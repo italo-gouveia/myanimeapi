@@ -10,7 +10,7 @@ import (
 )
 
 func TestResetTokenExpiry_Default(t *testing.T) {
-	os.Unsetenv("RESET_TOKEN_EXPIRY_MINUTES")
+	require.NoError(t, os.Unsetenv("RESET_TOKEN_EXPIRY_MINUTES"))
 	d := resetTokenExpiry()
 	assert.Equal(t, time.Hour, d)
 }
