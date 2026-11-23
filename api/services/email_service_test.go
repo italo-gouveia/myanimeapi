@@ -9,9 +9,9 @@ import (
 )
 
 func TestNewEmailService_MissingConfig(t *testing.T) {
-	os.Unsetenv("EMAIL_FROM")
-	os.Unsetenv("SMTP_HOST")
-	os.Unsetenv("SMTP_PORT")
+	require.NoError(t, os.Unsetenv("EMAIL_FROM"))
+	require.NoError(t, os.Unsetenv("SMTP_HOST"))
+	require.NoError(t, os.Unsetenv("SMTP_PORT"))
 
 	svc, err := NewEmailService()
 	assert.Nil(t, svc)
