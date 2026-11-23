@@ -201,3 +201,39 @@ func TestNewTagService(t *testing.T) {
 	svc := NewTagService(&mockTagRepo{}, cache.NewNoopCache())
 	require.NotNil(t, svc)
 }
+
+func TestTagService_GetTagByID_CacheHit(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockTagRepo{}
+	mc := &mockCache{}
+
+	tag := &models.Tag{Name: "Action"}
+	tag.ID = 1
+	data := []byte(`{"ID":1,"Name":"Action","CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","Animes":null}`)
+
+	mc.On("Get", ctx, cache.KeyTag(uint(1))).Return(data, nil)
+
+	svc := &TagService{tagRepo: repo, log: newTestLogger(), cache: mc}
+	result, err := svc.GetTagByID(ctx, 1)
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	mc.AssertExpectations(t)
+	repo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything)
+}
+
+func TestTagService_GetAllTags_CacheHit(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockTagRepo{}
+	mc := &mockCache{}
+
+	data := []byte(`{"items":[{"ID":1,"Name":"Action","CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","Animes":null}],"total":1}`)
+	mc.On("Get", ctx, cache.KeyTagList(1, 10)).Return(data, nil)
+
+	svc := &TagService{tagRepo: repo, log: newTestLogger(), cache: mc}
+	items, total, err := svc.GetAllTags(ctx, 1, 10)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Len(t, items, 1)
+	mc.AssertExpectations(t)
+	repo.AssertNotCalled(t, "GetAll", mock.Anything, mock.Anything, mock.Anything)
+}

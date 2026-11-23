@@ -142,7 +142,7 @@ export function AnimeCard({
           {/* Favorite toggle with inline flash */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); isFavorited ? removeFavMutation.mutate() : addFavMutation.mutate() }}
+            onClick={(e) => { e.stopPropagation(); if (isFavorited) removeFavMutation.mutate(); else addFavMutation.mutate() }}
             disabled={addFavMutation.isPending || removeFavMutation.isPending}
             className={`relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center ${favBtnClass(favFlash.flash, isFavorited)}`}
             aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}

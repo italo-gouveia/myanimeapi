@@ -276,6 +276,38 @@ func TestAnimeService_AddGenresToAnime_AnimeNotFound(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestAnimeService_AddGenresToAnime_GenresError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	genreRepo := &mockGenreRepo{}
+	svc := newAnimeSvc(animeRepo, genreRepo, &mockTagRepo{}, &mockReviewRepo{})
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	genreRepo.On("GetByIDs", ctx, []uint{2}).Return(nil, errors.New("db error"))
+
+	err := svc.AddGenresToAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_AddGenresToAnime_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	genreRepo := &mockGenreRepo{}
+	svc := newAnimeSvc(animeRepo, genreRepo, &mockTagRepo{}, &mockReviewRepo{})
+
+	anime := &models.Anime{Title: "Naruto"}
+	anime.ID = 1
+	genres := []models.Genre{{Name: "Action"}}
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	genreRepo.On("GetByIDs", ctx, []uint{2}).Return(genres, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	err := svc.AddGenresToAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
 func TestAnimeService_RemoveGenresFromAnime_Success(t *testing.T) {
 	ctx := context.Background()
 	animeRepo := &mockAnimeRepo{}
@@ -291,6 +323,33 @@ func TestAnimeService_RemoveGenresFromAnime_Success(t *testing.T) {
 
 	err := svc.RemoveGenresFromAnime(ctx, 1, []uint{2})
 	require.NoError(t, err)
+}
+
+func TestAnimeService_RemoveGenresFromAnime_AnimeNotFound(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	animeRepo.On("GetByID", ctx, uint(1)).Return(nil, errors.New("not found"))
+
+	err := svc.RemoveGenresFromAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
+}
+
+func TestAnimeService_RemoveGenresFromAnime_UpdateError(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	svc := newAnimeSvc(animeRepo, &mockGenreRepo{}, &mockTagRepo{}, &mockReviewRepo{})
+
+	actionGenre := models.Genre{Name: "Action"}
+	actionGenre.ID = 2
+	anime := &models.Anime{Title: "Naruto", Genres: []models.Genre{actionGenre}}
+	anime.ID = 1
+	animeRepo.On("GetByID", ctx, uint(1)).Return(anime, nil)
+	animeRepo.On("Update", ctx, mock.Anything).Return(errors.New("db error"))
+
+	err := svc.RemoveGenresFromAnime(ctx, 1, []uint{2})
+	require.Error(t, err)
 }
 
 func TestNewAnimeService(t *testing.T) {
@@ -478,4 +537,28 @@ func TestAnimeService_RemoveTagsFromAnime_UpdateError(t *testing.T) {
 
 	err := svc.RemoveTagsFromAnime(ctx, 1, []uint{2})
 	require.Error(t, err)
+}
+
+func TestAnimeService_GetAnimeByID_CacheHit(t *testing.T) {
+	ctx := context.Background()
+	animeRepo := &mockAnimeRepo{}
+	mc := &mockCache{}
+
+	data := []byte(`{"ID":1,"Title":"Naruto","Description":"","Episodes":0,"Status":"","Rating":0,"CoverURL":"","AirDate":"0001-01-01T00:00:00Z","Genres":null,"Tags":null,"Characters":null,"Reviews":null,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z"}`)
+	mc.On("Get", ctx, cache.KeyAnime(uint(1))).Return(data, nil)
+
+	svc := &AnimeService{
+		animeRepo:  animeRepo,
+		genreRepo:  &mockGenreRepo{},
+		tagRepo:    &mockTagRepo{},
+		reviewRepo: &mockReviewRepo{},
+		logger:     newTestLogger(),
+		cache:      mc,
+	}
+
+	result, err := svc.GetAnimeByID(ctx, 1)
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	mc.AssertExpectations(t)
+	animeRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything)
 }

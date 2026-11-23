@@ -3,12 +3,46 @@ package services
 import (
 	"context"
 	"mime/multipart"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 
 	"myanimeapi/api/models"
 	"myanimeapi/api/repositories"
+	"myanimeapi/internal/logger"
 )
+
+// mockCache is a testify mock for cache.CacheInterface.
+type mockCache struct{ mock.Mock }
+
+func (m *mockCache) Get(ctx context.Context, key string) ([]byte, error) {
+	ret := m.Called(ctx, key)
+	if ret.Get(0) == nil {
+		return nil, ret.Error(1)
+	}
+	return ret.Get(0).([]byte), ret.Error(1)
+}
+func (m *mockCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+	return m.Called(ctx, key, value, ttl).Error(0)
+}
+func (m *mockCache) Delete(ctx context.Context, keys ...string) error {
+	args := make([]interface{}, len(keys)+1)
+	args[0] = ctx
+	for i, k := range keys {
+		args[i+1] = k
+	}
+	return m.Called(args...).Error(0)
+}
+func (m *mockCache) DeleteByPattern(ctx context.Context, pattern string) error {
+	return m.Called(ctx, pattern).Error(0)
+}
+func (m *mockCache) Ping(ctx context.Context) error {
+	return m.Called(ctx).Error(0)
+}
+
+func newTestLogger() *logger.Logger {
+	return logger.New()
+}
 
 // mockUserRepo is a testify mock for repositories.UserRepository.
 type mockUserRepo struct{ mock.Mock }
@@ -325,6 +359,77 @@ func (m *mockWatchlistRepo) UpsertByUserAndAnime(ctx context.Context, userID, an
 }
 func (m *mockWatchlistRepo) DeleteByUserAndAnime(ctx context.Context, userID, animeID uint) error {
 	return m.Called(ctx, userID, animeID).Error(0)
+}
+
+// mockAuthRepo is a testify mock for repositories.AuthRepository.
+type mockAuthRepo struct{ mock.Mock }
+
+func (m *mockAuthRepo) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	ret := m.Called(ctx, username)
+	if ret.Get(0) == nil {
+		return nil, ret.Error(1)
+	}
+	return ret.Get(0).(*models.User), ret.Error(1)
+}
+func (m *mockAuthRepo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	ret := m.Called(ctx, email)
+	if ret.Get(0) == nil {
+		return nil, ret.Error(1)
+	}
+	return ret.Get(0).(*models.User), ret.Error(1)
+}
+func (m *mockAuthRepo) CreateUser(ctx context.Context, user *models.User) error {
+	return m.Called(ctx, user).Error(0)
+}
+func (m *mockAuthRepo) UpdateUser(ctx context.Context, user *models.User) error {
+	return m.Called(ctx, user).Error(0)
+}
+
+// mockCharacterRepo is a testify mock for repositories.CharacterRepository.
+type mockCharacterRepo struct{ mock.Mock }
+
+func (m *mockCharacterRepo) GetByID(ctx context.Context, id uint) (interface{}, error) {
+	ret := m.Called(ctx, id)
+	if ret.Get(0) == nil {
+		return nil, ret.Error(1)
+	}
+	return ret.Get(0), ret.Error(1)
+}
+func (m *mockCharacterRepo) GetAll(ctx context.Context, page, limit int) ([]interface{}, int64, error) {
+	ret := m.Called(ctx, page, limit)
+	if ret.Get(0) == nil {
+		return nil, ret.Get(1).(int64), ret.Error(2)
+	}
+	return ret.Get(0).([]interface{}), ret.Get(1).(int64), ret.Error(2)
+}
+func (m *mockCharacterRepo) Create(ctx context.Context, entity interface{}) error {
+	return m.Called(ctx, entity).Error(0)
+}
+func (m *mockCharacterRepo) Update(ctx context.Context, entity interface{}) error {
+	return m.Called(ctx, entity).Error(0)
+}
+func (m *mockCharacterRepo) Delete(ctx context.Context, id uint) error {
+	return m.Called(ctx, id).Error(0)
+}
+func (m *mockCharacterRepo) GetByAnimeID(ctx context.Context, animeID uint, page, limit int) ([]models.Character, int64, error) {
+	ret := m.Called(ctx, animeID, page, limit)
+	if ret.Get(0) == nil {
+		return nil, ret.Get(1).(int64), ret.Error(2)
+	}
+	return ret.Get(0).([]models.Character), ret.Get(1).(int64), ret.Error(2)
+}
+func (m *mockCharacterRepo) GetByName(ctx context.Context, name string, page, limit int) ([]models.Character, int64, error) {
+	ret := m.Called(ctx, name, page, limit)
+	if ret.Get(0) == nil {
+		return nil, ret.Get(1).(int64), ret.Error(2)
+	}
+	return ret.Get(0).([]models.Character), ret.Get(1).(int64), ret.Error(2)
+}
+func (m *mockCharacterRepo) AddToAnime(ctx context.Context, animeID uint, characterIDs []uint) error {
+	return m.Called(ctx, animeID, characterIDs).Error(0)
+}
+func (m *mockCharacterRepo) RemoveFromAnime(ctx context.Context, animeID, characterID uint) error {
+	return m.Called(ctx, animeID, characterID).Error(0)
 }
 
 // mockStorageSvc is a testify mock for StorageServiceInterface.
