@@ -404,3 +404,372 @@ func TestAnimesResolver_WithResults(t *testing.T) {
 	assert.Len(t, result.Data, 2)
 	mockAnime.AssertExpectations(t)
 }
+
+// ---- helpers ----------------------------------------------------------------
+
+func TestToGQLTag(t *testing.T) {
+	tag := &models.Tag{}
+	tag.ID = 1
+	tag.Name = "Action"
+	gql := toGQLTag(tag)
+	assert.NotNil(t, gql)
+	assert.Equal(t, "1", gql.ID)
+	assert.Equal(t, "Action", gql.Name)
+}
+
+func TestToGQLTag_Nil(t *testing.T) {
+	assert.Nil(t, toGQLTag(nil))
+}
+
+func TestToGQLCharacter(t *testing.T) {
+	c := &models.Character{Name: "Naruto", Description: "Hero", VoiceActor: "VA"}
+	c.ID = 1
+	img := "http://img.com/naruto.jpg"
+	c.ImageURL = &img
+
+	gql := toGQLCharacter(c)
+	assert.NotNil(t, gql)
+	assert.Equal(t, "1", gql.ID)
+	assert.Equal(t, "Naruto", gql.Name)
+	assert.NotNil(t, gql.Description)
+	assert.Equal(t, "Hero", *gql.Description)
+	assert.NotNil(t, gql.VoiceActor)
+	assert.Equal(t, "VA", *gql.VoiceActor)
+	assert.Equal(t, &img, gql.ImageURL)
+}
+
+func TestToGQLCharacter_Nil(t *testing.T) {
+	assert.Nil(t, toGQLCharacter(nil))
+}
+
+func TestToGQLCharacter_NoOptionals(t *testing.T) {
+	c := &models.Character{Name: "Sasuke"}
+	c.ID = 2
+	gql := toGQLCharacter(c)
+	assert.NotNil(t, gql)
+	assert.Nil(t, gql.Description)
+	assert.Nil(t, gql.VoiceActor)
+}
+
+// ---- auth resolvers ---------------------------------------------------------
+
+func TestRegisterResolver_Success(t *testing.T) {
+	mockAuth := &mocks.MockAuthServiceInterface{}
+	mockAuth.On("RegisterUser", mock.Anything, mock.AnythingOfType("*models.User")).Return(nil)
+
+	r := &mutationResolver{&Resolver{AuthService: mockAuth}}
+	result, err := r.Register(context.Background(), "user", "user@example.com", "pass")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	mockAuth.AssertExpectations(t)
+}
+
+func TestRegisterResolver_Error(t *testing.T) {
+	mockAuth := &mocks.MockAuthServiceInterface{}
+	mockAuth.On("RegisterUser", mock.Anything, mock.AnythingOfType("*models.User")).Return(errors.New("conflict"))
+
+	r := &mutationResolver{&Resolver{AuthService: mockAuth}}
+	result, err := r.Register(context.Background(), "user", "user@example.com", "pass")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockAuth.AssertExpectations(t)
+}
+
+func TestLoginResolver_Success(t *testing.T) {
+	mockAuth := &mocks.MockAuthServiceInterface{}
+	mockAuth.On("AuthenticateUser", mock.Anything, mock.AnythingOfType("*models.UserCredentials")).Return("jwt-token", nil)
+
+	r := &mutationResolver{&Resolver{AuthService: mockAuth}}
+	result, err := r.Login(context.Background(), "user", "pass")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "jwt-token", result.Token)
+	mockAuth.AssertExpectations(t)
+}
+
+func TestLoginResolver_Error(t *testing.T) {
+	mockAuth := &mocks.MockAuthServiceInterface{}
+	mockAuth.On("AuthenticateUser", mock.Anything, mock.AnythingOfType("*models.UserCredentials")).Return("", errors.New("invalid"))
+
+	r := &mutationResolver{&Resolver{AuthService: mockAuth}}
+	result, err := r.Login(context.Background(), "user", "wrong")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockAuth.AssertExpectations(t)
+}
+
+// ---- CreateAnime resolver ---------------------------------------------------
+
+func TestCreateAnimeResolver_Success(t *testing.T) {
+	mockAnime := &mocks.MockAnimeServiceInterface{}
+	desc := "Great anime"
+	ep := 24
+	status := "Airing"
+
+	anime := &models.Anime{Title: "Naruto", Description: desc, Episodes: ep, Status: status}
+	anime.ID = 1
+
+	mockAnime.On("CreateAnime", mock.Anything, mock.AnythingOfType("*models.Anime")).Return(nil)
+	mockAnime.On("GetAnimeByID", mock.Anything, uint(0)).Return(anime, nil)
+
+	r := &mutationResolver{&Resolver{AnimeService: mockAnime}}
+	result, err := r.CreateAnime(context.Background(), "Naruto", &desc, &ep, &status)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	mockAnime.AssertExpectations(t)
+}
+
+func TestCreateAnimeResolver_CreateError(t *testing.T) {
+	mockAnime := &mocks.MockAnimeServiceInterface{}
+	mockAnime.On("CreateAnime", mock.Anything, mock.AnythingOfType("*models.Anime")).Return(errors.New("db error"))
+
+	r := &mutationResolver{&Resolver{AnimeService: mockAnime}}
+	result, err := r.CreateAnime(context.Background(), "Naruto", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockAnime.AssertExpectations(t)
+}
+
+// ---- Character resolvers ----------------------------------------------------
+
+func TestCreateCharacterResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("CreateCharacter", mock.Anything, mock.AnythingOfType("*models.Character")).Return(nil)
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.CreateCharacter(context.Background(), "Naruto", nil, nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCreateCharacterResolver_Error(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("CreateCharacter", mock.Anything, mock.AnythingOfType("*models.Character")).Return(errors.New("db error"))
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.CreateCharacter(context.Background(), "Naruto", nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestUpdateCharacterResolver_InvalidID(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.UpdateCharacter(context.Background(), "bad", nil, nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestUpdateCharacterResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	c := &models.Character{Name: "Naruto"}
+	c.ID = 1
+	name := "Naruto Uzumaki"
+
+	mockChar.On("GetCharacterByID", mock.Anything, uint(1)).Return(c, nil)
+	mockChar.On("UpdateCharacter", mock.Anything, mock.AnythingOfType("*models.Character")).Return(nil)
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.UpdateCharacter(context.Background(), "1", &name, nil, nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestUpdateCharacterResolver_GetError(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("GetCharacterByID", mock.Anything, uint(1)).Return((*models.Character)(nil), errors.New("not found"))
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.UpdateCharacter(context.Background(), "1", nil, nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestDeleteCharacterResolver_InvalidID(t *testing.T) {
+	r := &mutationResolver{&Resolver{CharacterService: &mocks.MockCharacterServiceInterface{}}}
+	ok, err := r.DeleteCharacter(context.Background(), "bad")
+	assert.Error(t, err)
+	assert.False(t, ok)
+}
+
+func TestDeleteCharacterResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("DeleteCharacter", mock.Anything, uint(1)).Return(nil)
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	ok, err := r.DeleteCharacter(context.Background(), "1")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	mockChar.AssertExpectations(t)
+}
+
+func TestDeleteCharacterResolver_Error(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("DeleteCharacter", mock.Anything, uint(1)).Return(errors.New("db error"))
+
+	r := &mutationResolver{&Resolver{CharacterService: mockChar}}
+	ok, err := r.DeleteCharacter(context.Background(), "1")
+	assert.Error(t, err)
+	assert.False(t, ok)
+	mockChar.AssertExpectations(t)
+}
+
+// ---- AnimesByTitle, Genres, Characters resolvers ----------------------------
+
+func TestAnimesByTitleResolver_Success(t *testing.T) {
+	mockAnime := &mocks.MockAnimeServiceInterface{}
+	animes := []*models.Anime{{ID: 1, Title: "Naruto"}}
+
+	mockAnime.On("GetAllAnimes", mock.Anything, 1, 10, mock.MatchedBy(func(f models.AnimeFilter) bool {
+		return f.Title == "Naruto"
+	})).Return(animes, int64(1), nil)
+
+	r := &queryResolver{&Resolver{AnimeService: mockAnime}}
+	result, err := r.AnimesByTitle(context.Background(), "Naruto", nil, nil, nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 1, result.Total)
+	mockAnime.AssertExpectations(t)
+}
+
+func TestAnimesByTitleResolver_Error(t *testing.T) {
+	mockAnime := &mocks.MockAnimeServiceInterface{}
+	mockAnime.On("GetAllAnimes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, int64(0), errors.New("db error"))
+
+	r := &queryResolver{&Resolver{AnimeService: mockAnime}}
+	result, err := r.AnimesByTitle(context.Background(), "X", nil, nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockAnime.AssertExpectations(t)
+}
+
+func TestGenresResolver_Success(t *testing.T) {
+	mockGenre := &mocks.MockGenreServiceInterface{}
+	genres := []models.Genre{{Name: "Action"}}
+
+	mockGenre.On("GetAllGenres", mock.Anything, 1, 10).Return(genres, int64(1), nil)
+
+	r := &queryResolver{&Resolver{GenreService: mockGenre}}
+	result, err := r.Genres(context.Background(), nil, nil)
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	mockGenre.AssertExpectations(t)
+}
+
+func TestGenresResolver_Error(t *testing.T) {
+	mockGenre := &mocks.MockGenreServiceInterface{}
+	mockGenre.On("GetAllGenres", mock.Anything, 1, 10).Return(nil, int64(0), errors.New("db error"))
+
+	r := &queryResolver{&Resolver{GenreService: mockGenre}}
+	result, err := r.Genres(context.Background(), nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockGenre.AssertExpectations(t)
+}
+
+func TestCharacterResolver_InvalidID(t *testing.T) {
+	r := &queryResolver{&Resolver{CharacterService: &mocks.MockCharacterServiceInterface{}}}
+	result, err := r.Character(context.Background(), "bad")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCharacterResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	c := &models.Character{Name: "Naruto"}
+	c.ID = 1
+
+	mockChar.On("GetCharacterByID", mock.Anything, uint(1)).Return(c, nil)
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.Character(context.Background(), "1")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCharactersResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	chars := []*models.Character{{Name: "Naruto"}, {Name: "Sasuke"}}
+
+	mockChar.On("GetAllCharacters", mock.Anything, 1, 10).Return(chars, int64(2), nil)
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.Characters(context.Background(), nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 2, result.Total)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCharactersResolver_Error(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("GetAllCharacters", mock.Anything, 1, 10).Return(nil, int64(0), errors.New("db error"))
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.Characters(context.Background(), nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCharactersByNameResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	chars := []*models.Character{{Name: "Naruto"}}
+
+	mockChar.On("GetCharactersByName", mock.Anything, "Naruto", 1, 10).Return(chars, int64(1), nil)
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.CharactersByName(context.Background(), "Naruto", nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 1, result.Total)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCharactersByNameResolver_Error(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	mockChar.On("GetCharactersByName", mock.Anything, "X", 1, 10).Return(nil, int64(0), errors.New("db error"))
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.CharactersByName(context.Background(), "X", nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	mockChar.AssertExpectations(t)
+}
+
+func TestCharactersByAnimeResolver_InvalidID(t *testing.T) {
+	r := &queryResolver{&Resolver{CharacterService: &mocks.MockCharacterServiceInterface{}}}
+	result, err := r.CharactersByAnime(context.Background(), "bad", nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCharactersByAnimeResolver_Success(t *testing.T) {
+	mockChar := &mocks.MockCharacterServiceInterface{}
+	chars := []*models.Character{{Name: "Naruto"}}
+
+	mockChar.On("GetCharactersByAnime", mock.Anything, uint(1), 1, 10).Return(chars, int64(1), nil)
+
+	r := &queryResolver{&Resolver{CharacterService: mockChar}}
+	result, err := r.CharactersByAnime(context.Background(), "1", nil, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 1, result.Total)
+	mockChar.AssertExpectations(t)
+}
+
+func TestMutationResolver(t *testing.T) {
+	r := &Resolver{}
+	assert.NotNil(t, r.Mutation())
+}
+
+func TestQueryResolver(t *testing.T) {
+	r := &Resolver{}
+	assert.NotNil(t, r.Query())
+}

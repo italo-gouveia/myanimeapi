@@ -310,3 +310,19 @@ func TestNewGenreService(t *testing.T) {
 	svc := NewGenreService(&mockGenreRepo{}, cache.NewNoopCache())
 	require.NotNil(t, svc)
 }
+
+func TestGenreService_GetGenreByID_CacheHit(t *testing.T) {
+	ctx := context.Background()
+	repo := &mockGenreRepo{}
+	mc := &mockCache{}
+
+	data := []byte(`{"ID":1,"Name":"Action","CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","Animes":null}`)
+	mc.On("Get", ctx, cache.KeyGenre(uint(1))).Return(data, nil)
+
+	svc := &GenreService{genreRepo: repo, logger: newTestLogger(), cache: mc}
+	result, err := svc.GetGenreByID(ctx, 1)
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+	mc.AssertExpectations(t)
+	repo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything)
+}

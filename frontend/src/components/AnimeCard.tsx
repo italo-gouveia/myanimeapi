@@ -63,14 +63,18 @@ export function AnimeCard({
   // Clean up flash timers on unmount
   useEffect(() => () => { /* timers self-clean */ }, [])
 
-  const favMutation = useMutation<void, Error>({
-    mutationFn: async () => {
-      if (isFavorited) await removeFavorite(anime.id)
-      else await addFavorite(anime.id)
-    },
+  const addFavMutation = useMutation<void, Error>({
+    mutationFn: async () => { await addFavorite(anime.id) },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['favorites'] })
-      favFlash.trigger(isFavorited ? 'Removed' : '✓ Saved!')
+      favFlash.trigger('✓ Saved!')
+    },
+  })
+  const removeFavMutation = useMutation<void, Error>({
+    mutationFn: async () => { await removeFavorite(anime.id) },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      favFlash.trigger('Removed')
     },
   })
 
@@ -138,8 +142,8 @@ export function AnimeCard({
           {/* Favorite toggle with inline flash */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); favMutation.mutate() }}
-            disabled={favMutation.isPending}
+            onClick={(e) => { e.stopPropagation(); if (isFavorited) removeFavMutation.mutate(); else addFavMutation.mutate() }}
+            disabled={addFavMutation.isPending || removeFavMutation.isPending}
             className={`relative flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md transition-all duration-200 disabled:opacity-50 min-w-[64px] justify-center ${favBtnClass(favFlash.flash, isFavorited)}`}
             aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
           >

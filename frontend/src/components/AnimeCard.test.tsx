@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, vi, beforeEach } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { render, act, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AnimeCard } from './AnimeCard'
 import type { Anime } from '../lib/api/types'
@@ -52,6 +52,42 @@ describe('AnimeCard onSuccess callbacks', () => {
       await callbacks[0]?.(undefined, undefined, undefined)
       // watchlistMutation onSuccess
       await callbacks[1]?.(undefined, 'watching', undefined)
+    })
+  })
+
+  it('clicks favorite button when NOT favorited (addFavMutation branch)', async () => {
+    const addMutate = vi.fn()
+    const removeMutate = vi.fn()
+    vi.mocked(useMutation)
+      .mockImplementationOnce(() => ({ mutate: addMutate, isPending: false } as any))    // addFavMutation
+      .mockImplementationOnce(() => ({ mutate: removeMutate, isPending: false } as any)) // removeFavMutation
+      .mockImplementation(() => ({ mutate: vi.fn(), isPending: false } as any))
+
+    const { getByRole } = render(
+      <MemoryRouter>
+        <AnimeCard anime={mockAnime} isAuthenticated isFavorited={false} />
+      </MemoryRouter>,
+    )
+    await act(async () => {
+      fireEvent.click(getByRole('button', { name: /add to favorites/i }))
+    })
+  })
+
+  it('clicks favorite button when favorited (removeFavMutation branch)', async () => {
+    const addMutate = vi.fn()
+    const removeMutate = vi.fn()
+    vi.mocked(useMutation)
+      .mockImplementationOnce(() => ({ mutate: addMutate, isPending: false } as any))    // addFavMutation
+      .mockImplementationOnce(() => ({ mutate: removeMutate, isPending: false } as any)) // removeFavMutation
+      .mockImplementation(() => ({ mutate: vi.fn(), isPending: false } as any))
+
+    const { getByRole } = render(
+      <MemoryRouter>
+        <AnimeCard anime={mockAnime} isAuthenticated isFavorited={true} />
+      </MemoryRouter>,
+    )
+    await act(async () => {
+      fireEvent.click(getByRole('button', { name: /remove from favorites/i }))
     })
   })
 })
